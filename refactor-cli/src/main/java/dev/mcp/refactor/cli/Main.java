@@ -5,7 +5,7 @@ import picocli.CommandLine.Command;
 
 @Command(
     name = "java-refactor",
-    subcommands = {RenameCommand.class, ExtractCommand.class},
+    subcommands = {RenameCommand.class, ExtractCommand.class, InlineVarCommand.class},
     mixinStandardHelpOptions = true,
     description = "Headless semantic Java refactoring tool powered by Eclipse JDT."
 )

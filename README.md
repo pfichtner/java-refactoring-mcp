@@ -144,11 +144,19 @@ CLI: `java-refactor extract --file F --start-line L --start-column C --end-line 
 
 MCP tool: `extract_method` — returns the rewritten source, does not write to disk.
 
+### M7 — Inline Variable
+
+`JdtInliner.inlineVariable(source, unitName, offset)` replaces every use of a local variable with its initializer expression and removes the declaration. Parenthesises compound expressions conservatively.
+
+CLI: `java-refactor inline-var --file F --line L --column C [--dry-run]`
+
+MCP tool: `inline_variable` — returns rewritten source, does not write to disk.
+
 ## Planned
 
 | Milestone | Description |
 |-----------|-------------|
-| M7+ | Additional JDT refactorings: inline, extract variable/constant, move, pull up, push down, change signature, … |
+| M8+ | Additional JDT refactorings: extract variable/constant, inline method, move, pull up/push down, change signature, … |
 
 ## Design Principles
 
