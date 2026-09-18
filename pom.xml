@@ -12,6 +12,7 @@
 
     <modules>
         <module>refactor-core</module>
+        <module>refactor-cli</module>
     </modules>
 
     <properties>
