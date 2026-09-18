@@ -1,10 +1,16 @@
 package dev.mcp.refactor;
 
+import dev.mcp.refactor.project.MavenProject;
 import dev.mcp.refactor.support.Fixtures;
 import dev.mcp.refactor.support.RenameStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -66,6 +72,62 @@ class InlineMethodTest {
                 .build()
         );
     }
+
+    // -------------------------------------------------------------------------
+    // Multi-file inline (project-based)
+    // -------------------------------------------------------------------------
+
+    @Test
+    void inline_method_across_files_inlines_all_call_sites() throws Exception {
+        Path projectRoot = fixtures.projectPath("projects/rename-method");
+        MavenProject project = new MavenProject(projectRoot);
+
+        Path appFile  = project.sourceRoots().get(0).resolve("com/example/App.java");
+        Path calcFile = project.sourceRoots().get(0).resolve("com/example/Calculator.java");
+        String appSource  = Files.readString(appFile);
+        String calcSource = Files.readString(calcFile);
+
+        // Offset of 'a' in ".add(" in App.java
+        int offset = Fixtures.offsetOf(appSource, ".add(") + 1;
+
+        Map<Path, String> changed = JdtInlineMethod.inlineMethod(project, appFile, offset, false);
+
+        Approvals.verify(
+            RenameStoryBoard.titled("Inline method: add (multi-file, all call sites, declaration kept)")
+                .inputProject(Map.of("App.java", appSource, "Calculator.java", calcSource))
+                .refactoring("inline method",
+                        "`Calculator.add(int a, int b)` → inlined at all call sites",
+                        "call site in App.java replaced with expression; Calculator.java unchanged")
+                .outputProject(changed)
+                .build()
+        );
+    }
+
+    @Test
+    void inline_method_across_files_removes_declaration_when_requested() throws Exception {
+        Path projectRoot = fixtures.projectPath("projects/rename-method");
+        MavenProject project = new MavenProject(projectRoot);
+
+        Path appFile  = project.sourceRoots().get(0).resolve("com/example/App.java");
+        Path calcFile = project.sourceRoots().get(0).resolve("com/example/Calculator.java");
+        String appSource = Files.readString(appFile);
+
+        int offset = Fixtures.offsetOf(appSource, ".add(") + 1;
+        Map<Path, String> changed = JdtInlineMethod.inlineMethod(project, appFile, offset, true);
+
+        assertTrue(changed.containsKey(calcFile.toAbsolutePath().normalize()),
+                "Calculator.java must be changed when removeDeclaration=true");
+        assertFalse(changed.get(calcFile.toAbsolutePath().normalize()).contains("public int add("),
+                "Declaration should be removed");
+
+        Approvals.verify(
+            RenameStoryBoard.titled("Inline method: add (multi-file, declaration removed)")
+                .outputProject(changed)
+                .build()
+        );
+    }
+
+    // -------------------------------------------------------------------------
 
     @Test
     void inline_rejected_when_body_has_multiple_statements_in_value_context() throws Exception {

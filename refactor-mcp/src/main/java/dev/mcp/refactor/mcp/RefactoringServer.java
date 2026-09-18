@@ -504,14 +504,17 @@ public class RefactoringServer {
                 .tool(Tool.builder("inline_method", Map.of(
                         "type", "object",
                         "properties", Map.of(
-                                "file",   Map.of("type", "string",  "description", "Absolute path to the source file."),
-                                "line",   Map.of("type", "integer", "description", "1-based line of the method call."),
-                                "column", Map.of("type", "integer", "description", "1-based column of the method call name.")
+                                "project_root",       Map.of("type", "string",  "description", "Absolute Maven project root (enables multi-file inline)."),
+                                "file",               Map.of("type", "string",  "description", "Absolute path to the file containing the call."),
+                                "line",               Map.of("type", "integer", "description", "1-based line of the method call."),
+                                "column",             Map.of("type", "integer", "description", "1-based column of the method call name."),
+                                "remove_declaration", Map.of("type", "boolean", "description", "Also remove the method declaration (default false).")
                         ),
-                        "required", List.of("file", "line", "column")))
+                        "required", List.of("project_root", "file", "line", "column")))
                         .description("""
-                        Inline a method call: replace it with the method body (single file only).
-                        Returns the rewritten source; does not write to disk.
+                        Inline a method call at all call sites in the project.
+                        Optionally removes the method declaration.
+                        Returns new source for every changed file; does not write to disk.
                         """)
                         .build())
                 .callHandler((exchange, request) -> {
@@ -520,10 +523,18 @@ public class RefactoringServer {
                         String file = (String) args.get("file");
                         int line    = ((Number) args.get("line")).intValue();
                         int col     = ((Number) args.get("column")).intValue();
+                        boolean removeDel = Boolean.TRUE.equals(args.get("remove_declaration"));
                         String source = Files.readString(Path.of(file));
                         int offset    = JdtRenamer.toOffset(source, line, col);
-                        return ok(JdtInlineMethod.inlineMethod(
-                                source, Path.of(file).getFileName().toString(), offset));
+                        var changed = JdtInlineMethod.inlineMethod(
+                                new dev.mcp.refactor.project.MavenProject(
+                                        Path.of((String) args.get("project_root"))),
+                                Path.of(file), offset, removeDel);
+                        StringBuilder sb = new StringBuilder();
+                        changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                                .forEach(e -> sb.append("=== ").append(e.getKey().getFileName())
+                                        .append(" ===\n").append(e.getValue().stripTrailing()).append("\n\n"));
+                        return ok(sb.toString().stripTrailing());
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }
