@@ -192,11 +192,19 @@ CLI: `java-refactor introduce-param --file F --start-line L --start-column C --e
 
 MCP tool: `introduce_param` — returns new source for every changed file.
 
+### M12 — Remove Parameter
+
+`JdtRemoveParam.removeParam(project, sourceFile, offset)` removes an unused formal parameter from a method and the corresponding argument from every call site in the project. Rejects if the parameter is referenced in the method body.
+
+CLI: `java-refactor remove-param --file F --line L --column C [--project P] [--dry-run]`
+
+MCP tool: `remove_param` — returns changed files.
+
 ## Planned
 
 | Milestone | Description |
 |-----------|-------------|
-| M12+ | move, pull up/push down, change signature, extract interface/superclass, … |
+| M13+ | move, pull up/push down, extract interface/superclass, … |
 
 ## Design Principles
 
