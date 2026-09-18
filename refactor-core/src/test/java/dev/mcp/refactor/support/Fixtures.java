@@ -16,6 +16,18 @@ public class Fixtures {
         this.testClass = testClass;
     }
 
+    /**
+     * Returns the filesystem {@link Path} to a fixture directory or file.
+     * The resource must be on the real filesystem (not inside a JAR).
+     */
+    public Path projectPath(String relativePath) throws URISyntaxException {
+        var url = testClass.getClassLoader().getResource("fixtures/" + relativePath);
+        if (url == null) {
+            throw new IllegalStateException("Fixture not found: fixtures/" + relativePath);
+        }
+        return Path.of(url.toURI());
+    }
+
     /** Loads a single fixture file from {@code src/test/resources/fixtures/<path>}. */
     public String load(String path) throws IOException, URISyntaxException {
         var url = testClass.getClassLoader().getResource("fixtures/" + path);
