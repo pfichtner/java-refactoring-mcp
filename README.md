@@ -172,11 +172,21 @@ CLI: `java-refactor inline-method --file F --line L --column C [--dry-run]`
 
 MCP tool: `inline_method` — returns rewritten source, does not write to disk.
 
+### M10 — Extract Constant
+
+`JdtExtractConstant.extractConstant(source, unitName, selStart, selLen, constName, replaceAll)`
+
+Introduces a `private static final` field at the top of the enclosing class for the selected expression. With `replaceAll=true`, replaces every textually identical occurrence in the class body.
+
+CLI: `java-refactor extract-const --file F --start-line L --start-column C --end-line L2 --end-column C2 --name NAME [--replace-all] [--dry-run]`
+
+MCP tool: `extract_constant` — returns rewritten source, does not write to disk.
+
 ## Planned
 
 | Milestone | Description |
 |-----------|-------------|
-| M10+ | Additional JDT refactorings: move, pull up/push down, change signature, extract interface/superclass, … |
+| M11+ | Additional JDT refactorings: move, pull up/push down, change signature, extract interface/superclass, … |
 
 ## Design Principles
 
