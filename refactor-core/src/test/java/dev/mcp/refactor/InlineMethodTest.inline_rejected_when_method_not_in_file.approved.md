@@ -16,5 +16,5 @@ method declared in java.io.PrintStream — only single-file inline supported
 
 ### Diagnostic:
 ```
-Method 'println' is not declared in this file. Only single-file inline is supported.
+Method 'println' is not declared in this file. Use the project-based overload for cross-file inline.
 ```

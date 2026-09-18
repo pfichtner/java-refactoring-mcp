@@ -1,7 +1,11 @@
 package dev.mcp.refactor;
 
+import dev.mcp.refactor.project.MavenProject;
 import org.eclipse.jdt.core.dom.*;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -10,16 +14,26 @@ import java.util.*;
  * <p>Replaces a method call with the body of the called method, substituting
  * formal parameters with actual argument expressions.
  *
- * <p>Supported cases (single file):
+ * <p>Two modes:
+ * <ul>
+ *   <li><b>Single-file</b>: {@link #inlineMethod(String, String, int)} — call site
+ *       and declaration must be in the same source string (snippets).</li>
+ *   <li><b>Multi-file</b>: {@link #inlineMethod(MavenProject, Path, int, boolean)} —
+ *       inlines at <em>all</em> call sites found in the project; optionally removes
+ *       the method declaration.</li>
+ * </ul>
+ *
+ * <p>Supported call contexts:
  * <ul>
  *   <li>Void method called as a statement (zero or more parameters)</li>
  *   <li>Value-returning method with a single {@code return} statement, used
- *       as an expression (in a declaration, return, or argument)</li>
+ *       as an expression (in a declaration, return, or assignment)</li>
  * </ul>
  *
- * <p>Precondition failures (diagnostic, no file modified):
+ * <p>Precondition failures (diagnostic, no files modified):
  * <ul>
- *   <li>Method declaration not found in the same file</li>
+ *   <li>Method declaration not found (single-file mode: not in same file;
+ *       multi-file mode: not in project source roots)</li>
  *   <li>Method is abstract or native (no body)</li>
  *   <li>Void method body contains a {@code return} statement</li>
  *   <li>Value method has more than one statement in its body</li>
@@ -28,16 +42,16 @@ import java.util.*;
  */
 public class JdtInlineMethod {
 
+    // =========================================================================
+    // Public API — single file (backward-compatible)
+    // =========================================================================
+
     /**
-     * Inlines the method call whose name overlaps with {@code offset}.
-     *
-     * @param source   full source text
-     * @param unitName file name for binding resolution (e.g. {@code "Foo.java"})
-     * @param offset   character offset of any character within the call's method name
-     * @return rewritten source with the call replaced by the method body
+     * Inlines the method call at {@code offset} in {@code source}.
+     * Declaration must be in the same source text.
      */
     public static String inlineMethod(String source, String unitName, int offset) {
-        CompilationUnit cu = parse(source, unitName);
+        CompilationUnit cu = parseSingle(source, unitName);
 
         MethodInvocation call = findMethodInvocation(cu, offset);
         IMethodBinding binding = call.resolveMethodBinding();
@@ -45,53 +59,148 @@ public class JdtInlineMethod {
             throw new IllegalArgumentException(
                     "Cannot resolve method call at offset " + offset + ".");
         }
-
-        MethodDeclaration decl = findMethodDeclaration(cu, binding);
+        MethodDeclaration decl = findMethodDeclarationInCu(cu, binding.getMethodDeclaration().getKey());
         if (decl == null) {
             throw new IllegalArgumentException(
                     "Method '" + binding.getName()
-                    + "' is not declared in this file. Only single-file inline is supported.");
+                    + "' is not declared in this file. Use the project-based overload for cross-file inline.");
         }
-        if (decl == findEnclosingMethod(call)) {
-            throw new IllegalArgumentException(
-                    "Cannot inline a recursive call.");
-        }
+        validateDeclaration(decl, binding.getName(), call, cu);
 
-        Block body = decl.getBody();
-        if (body == null) {
-            throw new IllegalArgumentException(
-                    "Cannot inline '" + binding.getName()
-                    + "': method is abstract or native.");
-        }
-
-        @SuppressWarnings("unchecked")
-        List<Statement> stmts = body.statements();
-        if (stmts.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Cannot inline '" + binding.getName() + "': method body is empty.");
-        }
-
-        // Build parameter → argument text map
+        @SuppressWarnings("unchecked") List<Statement> stmts = decl.getBody().statements();
         Map<String, String> paramMap = buildParamMap(decl, call, source);
 
-        // Determine call context and inline accordingly
         ASTNode callParent = call.getParent();
         if (callParent instanceof ExpressionStatement callStmt) {
-            return inlineVoidCall(source, cu, callStmt, decl, stmts, paramMap);
+            Edit e = voidCallEdit(callStmt, source, source, cu, decl, stmts, paramMap);
+            return e.apply(source);
         } else {
-            return inlineValueCall(source, cu, call, decl, stmts, paramMap);
+            Edit e = valueCallEdit(call, source, source, cu, decl, stmts, paramMap);
+            return e.apply(source);
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Void call (ExpressionStatement context)
-    // -------------------------------------------------------------------------
+    // =========================================================================
+    // Public API — multi-file
+    // =========================================================================
 
-    private static String inlineVoidCall(
-            String source, CompilationUnit cu,
+    /**
+     * Inlines the method referenced by the call at {@code offset} in
+     * {@code sourceFile} at <em>every</em> call site found in the project.
+     *
+     * @param project           Maven project for source roots and classpath
+     * @param sourceFile        file containing the call that identifies the method
+     * @param offset            character offset of any character within the call name
+     * @param removeDeclaration if {@code true}, also deletes the method declaration
+     * @return map of {@code path → new source} for every changed file
+     */
+    public static Map<Path, String> inlineMethod(
+            MavenProject project, Path sourceFile, int offset, boolean removeDeclaration)
+            throws IOException, InterruptedException {
+
+        String[] classpath   = project.classpath();
+        String[] sourcePaths = project.sourceRoots().stream()
+                .map(Path::toString).toArray(String[]::new);
+        List<Path> allFiles  = collectSourceFiles(project);
+        Map<Path, String> sources = readAll(allFiles);
+        Map<Path, CompilationUnit> cus = parseAll(allFiles, classpath, sourcePaths);
+
+        Path absTarget = sourceFile.toAbsolutePath().normalize();
+        CompilationUnit targetCu = cus.get(absTarget);
+        if (targetCu == null) {
+            throw new IllegalArgumentException("Source file not found in project: " + sourceFile);
+        }
+
+        // Identify the method to inline
+        MethodInvocation refCall = findMethodInvocation(targetCu, offset);
+        IMethodBinding binding   = refCall.resolveMethodBinding();
+        if (binding == null) {
+            throw new IllegalArgumentException("Cannot resolve method call at offset " + offset + ".");
+        }
+        String methodKey = binding.getMethodDeclaration().getKey();
+
+        // Find declaration in the project
+        Path declFile = null;
+        MethodDeclaration decl = null;
+        for (Map.Entry<Path, CompilationUnit> e : cus.entrySet()) {
+            MethodDeclaration d = findMethodDeclarationInCu(e.getValue(), methodKey);
+            if (d != null) { declFile = e.getKey(); decl = d; break; }
+        }
+        if (decl == null) {
+            throw new IllegalArgumentException(
+                    "Method '" + binding.getName() + "' declaration not found in project source roots.");
+        }
+        validateDeclaration(decl, binding.getName(), refCall, targetCu);
+
+        @SuppressWarnings("unchecked") List<Statement> stmts = decl.getBody().statements();
+        String declSource = sources.get(declFile);
+        CompilationUnit declCu = cus.get(declFile);
+
+        // Collect edits per file: List<[start, end, replacement]>
+        Map<Path, List<Edit>> fileEdits = new LinkedHashMap<>();
+
+        for (Map.Entry<Path, CompilationUnit> entry : cus.entrySet()) {
+            Path filePath = entry.getKey();
+            CompilationUnit fileCu = entry.getValue();
+            String fileSource = sources.get(filePath);
+
+            List<MethodInvocation> calls = findAllCallSites(fileCu, methodKey);
+            if (calls.isEmpty()) continue;
+
+            List<Edit> edits = new ArrayList<>();
+            for (MethodInvocation c : calls) {
+                Map<String, String> paramMap = buildParamMap(decl, c, fileSource);
+                ASTNode parent = c.getParent();
+                if (parent instanceof ExpressionStatement cs) {
+                    edits.add(voidCallEdit(cs, fileSource, declSource, declCu, decl, stmts, paramMap));
+                } else {
+                    edits.add(valueCallEdit(c, fileSource, declSource, declCu, decl, stmts, paramMap));
+                }
+            }
+            fileEdits.computeIfAbsent(filePath, k -> new ArrayList<>()).addAll(edits);
+        }
+
+        // Remove declaration if requested
+        if (removeDeclaration && decl != null) {
+            int mStart = decl.getStartPosition();
+            int mEnd   = mStart + decl.getLength();
+            int lineStart = mStart;
+            while (lineStart > 0 && declSource.charAt(lineStart - 1) != '\n') lineStart--;
+            int lineEnd = mEnd;
+            while (lineEnd < declSource.length() && declSource.charAt(lineEnd) != '\n') lineEnd++;
+            if (lineEnd < declSource.length()) lineEnd++;
+            fileEdits.computeIfAbsent(declFile, k -> new ArrayList<>())
+                    .add(new Edit(lineStart, lineEnd, ""));
+        }
+
+        // Apply edits (end-to-start within each file)
+        Map<Path, String> changed = new LinkedHashMap<>();
+        for (Map.Entry<Path, List<Edit>> entry : fileEdits.entrySet()) {
+            Path filePath = entry.getKey();
+            List<Edit> edits = entry.getValue();
+            edits.sort((a, b) -> b.start() - a.start());
+            StringBuilder sb = new StringBuilder(sources.get(filePath));
+            for (Edit ed : edits) sb.replace(ed.start(), ed.end(), ed.replacement());
+            changed.put(filePath, sb.toString());
+        }
+        return changed;
+    }
+
+    // =========================================================================
+    // Edit computation
+    // =========================================================================
+
+    private record Edit(int start, int end, String replacement) {
+        String apply(String source) {
+            return source.substring(0, start) + replacement + source.substring(end);
+        }
+    }
+
+    /** Returns an edit that replaces the call-statement line(s) with the inlined body. */
+    private static Edit voidCallEdit(
             ExpressionStatement callStmt,
-            MethodDeclaration decl,
-            List<Statement> stmts,
+            String callSiteSource, String declSource, CompilationUnit declCu,
+            MethodDeclaration decl, List<Statement> stmts,
             Map<String, String> paramMap) {
 
         for (Statement s : stmts) {
@@ -100,38 +209,30 @@ public class JdtInlineMethod {
                         "Cannot inline void method: body contains a return statement.");
             }
         }
-
-        // Call site indentation
         int stmtStart = callStmt.getStartPosition();
-        int lineStart = stmtStart;
-        while (lineStart > 0 && source.charAt(lineStart - 1) != '\n') lineStart--;
-        String indent = source.substring(lineStart, stmtStart);
+        int lineStart  = stmtStart;
+        while (lineStart > 0 && callSiteSource.charAt(lineStart - 1) != '\n') lineStart--;
+        String indent = callSiteSource.substring(lineStart, stmtStart);
 
-        // Generate substituted statement texts
         StringBuilder inlined = new StringBuilder();
         for (Statement s : stmts) {
-            String sText = substituteInRange(source, s.getStartPosition(),
-                    s.getStartPosition() + s.getLength(), paramMap, cu);
+            String sText = substituteInRange(
+                    declSource, s.getStartPosition(), s.getStartPosition() + s.getLength(),
+                    paramMap, declCu);
             inlined.append(indent).append(sText.strip()).append("\n");
         }
-        // Remove trailing newline added by the loop
         if (!inlined.isEmpty() && inlined.charAt(inlined.length() - 1) == '\n') {
             inlined.deleteCharAt(inlined.length() - 1);
         }
-
         int callStmtEnd = callStmt.getStartPosition() + callStmt.getLength();
-        return source.substring(0, lineStart) + inlined + source.substring(callStmtEnd);
+        return new Edit(lineStart, callStmtEnd, inlined.toString());
     }
 
-    // -------------------------------------------------------------------------
-    // Value call (used as an expression)
-    // -------------------------------------------------------------------------
-
-    private static String inlineValueCall(
-            String source, CompilationUnit cu,
+    /** Returns an edit that replaces the call expression with the inlined return expression. */
+    private static Edit valueCallEdit(
             MethodInvocation call,
-            MethodDeclaration decl,
-            List<Statement> stmts,
+            String callSiteSource, String declSource, CompilationUnit declCu,
+            MethodDeclaration decl, List<Statement> stmts,
             Map<String, String> paramMap) {
 
         if (stmts.size() != 1 || !(stmts.get(0) instanceof ReturnStatement rs)) {
@@ -140,34 +241,27 @@ public class JdtInlineMethod {
                     + "has exactly one statement and it is a return statement.");
         }
         Expression returnExpr = rs.getExpression();
-        if (returnExpr == null) {
-            throw new IllegalArgumentException(
-                    "Return statement has no expression.");
-        }
+        if (returnExpr == null) throw new IllegalArgumentException("Return statement has no expression.");
 
         String exprText = substituteInRange(
-                source, returnExpr.getStartPosition(),
+                declSource, returnExpr.getStartPosition(),
                 returnExpr.getStartPosition() + returnExpr.getLength(),
-                paramMap, cu);
+                paramMap, declCu);
 
-        // Wrap in parens when inlining into a complex context
         boolean needsParens = !(call.getParent() instanceof VariableDeclarationFragment
                 || call.getParent() instanceof ReturnStatement
                 || call.getParent() instanceof ExpressionStatement
                 || call.getParent() instanceof Assignment);
         String replacement = needsParens ? "(" + exprText + ")" : exprText;
-
-        int callStart = call.getStartPosition();
-        int callEnd   = callStart + call.getLength();
-        return source.substring(0, callStart) + replacement + source.substring(callEnd);
+        return new Edit(call.getStartPosition(), call.getStartPosition() + call.getLength(), replacement);
     }
 
-    // -------------------------------------------------------------------------
+    // =========================================================================
     // Parameter substitution
-    // -------------------------------------------------------------------------
+    // =========================================================================
 
     private static Map<String, String> buildParamMap(
-            MethodDeclaration decl, MethodInvocation call, String source) {
+            MethodDeclaration decl, MethodInvocation call, String callSiteSource) {
         @SuppressWarnings("unchecked") List<SingleVariableDeclaration> params = decl.parameters();
         @SuppressWarnings("unchecked") List<Expression> args = call.arguments();
         Map<String, String> map = new LinkedHashMap<>();
@@ -175,21 +269,18 @@ public class JdtInlineMethod {
             IVariableBinding b = params.get(i).resolveBinding();
             if (b != null) {
                 Expression arg = args.get(i);
-                map.put(b.getKey(), source.substring(
+                map.put(b.getKey(), callSiteSource.substring(
                         arg.getStartPosition(), arg.getStartPosition() + arg.getLength()));
             }
         }
         return map;
     }
 
-    /** Returns the text of {@code source[start..end)} with parameter names replaced. */
     private static String substituteInRange(
             String source, int start, int end,
             Map<String, String> paramMap, CompilationUnit cu) {
         if (paramMap.isEmpty()) return source.substring(start, end);
-
-        // Collect param usages in [start, end)
-        List<Object[]> reps = new ArrayList<>(); // [absStart, absEnd, argText]
+        List<Object[]> reps = new ArrayList<>();
         cu.accept(new ASTVisitor() {
             @Override
             public boolean visit(SimpleName node) {
@@ -202,45 +293,61 @@ public class JdtInlineMethod {
                 return true;
             }
         });
-
         reps.sort((a, b) -> (int) b[0] - (int) a[0]);
-
         StringBuilder sb = new StringBuilder(source.substring(start, end));
         for (Object[] rep : reps) {
-            int localStart = (int) rep[0] - start;
-            int localEnd   = (int) rep[1] - start;
-            sb.replace(localStart, localEnd, (String) rep[2]);
+            sb.replace((int) rep[0] - start, (int) rep[1] - start, (String) rep[2]);
         }
         return sb.toString();
     }
 
-    // -------------------------------------------------------------------------
+    // =========================================================================
+    // Validation
+    // =========================================================================
+
+    private static void validateDeclaration(
+            MethodDeclaration decl, String name, MethodInvocation call, CompilationUnit callCu) {
+        MethodDeclaration enclosing = findEnclosingMethod(call);
+        if (enclosing != null) {
+            IMethodBinding eb = enclosing.resolveBinding();
+            IMethodBinding db = decl.resolveBinding();
+            if (eb != null && db != null
+                    && eb.getMethodDeclaration().getKey().equals(db.getMethodDeclaration().getKey())) {
+                throw new IllegalArgumentException("Cannot inline a recursive call.");
+            }
+        }
+        Block body = decl.getBody();
+        if (body == null) {
+            throw new IllegalArgumentException("Cannot inline '" + name + "': abstract or native.");
+        }
+        @SuppressWarnings("unchecked") List<Statement> stmts = body.statements();
+        if (stmts.isEmpty()) {
+            throw new IllegalArgumentException("Cannot inline '" + name + "': method body is empty.");
+        }
+    }
+
+    // =========================================================================
     // AST navigation
-    // -------------------------------------------------------------------------
+    // =========================================================================
 
     private static MethodInvocation findMethodInvocation(CompilationUnit cu, int offset) {
         ASTNode node = NodeFinder.perform(cu, offset, 1);
         if (node == null) throw new IllegalArgumentException("No AST node at offset " + offset);
-        // Walk up to MethodInvocation
         while (node != null && !(node instanceof MethodInvocation)) node = node.getParent();
         if (!(node instanceof MethodInvocation mi)) {
-            throw new IllegalArgumentException(
-                    "No method call found at offset " + offset + ".");
+            throw new IllegalArgumentException("No method call found at offset " + offset + ".");
         }
         return mi;
     }
 
-    private static MethodDeclaration findMethodDeclaration(
-            CompilationUnit cu, IMethodBinding binding) {
-        String key = binding.getMethodDeclaration().getKey();
+    private static MethodDeclaration findMethodDeclarationInCu(CompilationUnit cu, String key) {
         MethodDeclaration[] found = {null};
         cu.accept(new ASTVisitor() {
             @Override
             public boolean visit(MethodDeclaration node) {
                 IMethodBinding b = node.resolveBinding();
                 if (b != null && key.equals(b.getMethodDeclaration().getKey())) {
-                    found[0] = node;
-                    return false;
+                    found[0] = node; return false;
                 }
                 return found[0] == null;
             }
@@ -248,16 +355,65 @@ public class JdtInlineMethod {
         return found[0];
     }
 
+    private static List<MethodInvocation> findAllCallSites(CompilationUnit cu, String methodKey) {
+        List<MethodInvocation> result = new ArrayList<>();
+        cu.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(MethodInvocation node) {
+                IMethodBinding b = node.resolveMethodBinding();
+                if (b != null && methodKey.equals(b.getMethodDeclaration().getKey())) result.add(node);
+                return true;
+            }
+        });
+        return result;
+    }
+
     private static MethodDeclaration findEnclosingMethod(ASTNode node) {
         while (node != null && !(node instanceof MethodDeclaration)) node = node.getParent();
         return (MethodDeclaration) node;
     }
 
-    // -------------------------------------------------------------------------
-    // Parsing
-    // -------------------------------------------------------------------------
+    // =========================================================================
+    // Multi-file infrastructure
+    // =========================================================================
 
-    private static CompilationUnit parse(String source, String unitName) {
+    private static List<Path> collectSourceFiles(MavenProject project) throws IOException {
+        List<Path> files = new ArrayList<>();
+        for (Path root : project.sourceRoots()) {
+            if (!Files.isDirectory(root)) continue;
+            try (var stream = Files.walk(root)) {
+                stream.filter(p -> p.toString().endsWith(".java"))
+                        .map(p -> p.toAbsolutePath().normalize())
+                        .sorted().forEach(files::add);
+            }
+        }
+        return files;
+    }
+
+    private static Map<Path, String> readAll(List<Path> files) throws IOException {
+        Map<Path, String> map = new LinkedHashMap<>();
+        for (Path f : files) map.put(f, Files.readString(f));
+        return map;
+    }
+
+    private static Map<Path, CompilationUnit> parseAll(
+            List<Path> sourceFiles, String[] classpath, String[] sourcePaths) {
+        ASTParser parser = ASTParser.newParser(AST.JLS21);
+        parser.setEnvironment(classpath, sourcePaths, null, true);
+        parser.setResolveBindings(true);
+        parser.setBindingsRecovery(true);
+        String[] paths = sourceFiles.stream()
+                .map(p -> p.toAbsolutePath().normalize().toString()).toArray(String[]::new);
+        Map<Path, CompilationUnit> result = new LinkedHashMap<>();
+        parser.createASTs(paths, null, new String[0], new FileASTRequestor() {
+            @Override public void acceptAST(String path, CompilationUnit ast) {
+                result.put(Path.of(path).toAbsolutePath().normalize(), ast);
+            }
+        }, null);
+        return result;
+    }
+
+    private static CompilationUnit parseSingle(String source, String unitName) {
         ASTParser parser = ASTParser.newParser(AST.JLS21);
         parser.setKind(ASTParser.K_COMPILATION_UNIT);
         parser.setSource(source.toCharArray());
