@@ -1,5 +1,6 @@
 package dev.mcp.refactor.mcp;
 
+import dev.mcp.refactor.JdtExtractor;
 import dev.mcp.refactor.JdtRenamer;
 import dev.mcp.refactor.project.MavenProject;
 import io.modelcontextprotocol.json.McpJsonDefaults;
@@ -41,6 +42,7 @@ public class RefactoringServer {
         server.addTool(listRefactorings());
         server.addTool(analyzeRefactoring());
         server.addTool(applyRefactoring());
+        server.addTool(extractMethod());
 
         return server;
     }
@@ -63,6 +65,11 @@ public class RefactoringServer {
                           Rename a local variable, parameter, field, method, or type.
                           Required arguments: project_root, file, line, column, new_name
                           Use analyze_refactoring to preview, apply_refactoring to write.
+
+                        extract_method
+                          Extract selected statements into a new private method.
+                          Required arguments: file, start_line, start_column, end_line, end_column, method_name
+                          Returns the rewritten source; does not write to disk.
                         """))
                 .build();
     }
@@ -114,6 +121,59 @@ public class RefactoringServer {
                     }
                 })
                 .build();
+    }
+
+    // -------------------------------------------------------------------------
+    // Tool: extract_method
+    // -------------------------------------------------------------------------
+
+    static SyncToolSpecification extractMethod() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("extract_method", extractSchema())
+                        .description("""
+                        Extract selected statements into a new private method.
+                        The selection is specified as start/end line+column (1-based).
+                        Returns the rewritten source; does not write to disk.
+                        """)
+                        .build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        String file       = (String) args.get("file");
+                        int startLine     = ((Number) args.get("start_line")).intValue();
+                        int startCol      = ((Number) args.get("start_column")).intValue();
+                        int endLine       = ((Number) args.get("end_line")).intValue();
+                        int endCol        = ((Number) args.get("end_column")).intValue();
+                        String methodName = (String) args.get("method_name");
+
+                        String source  = Files.readString(Path.of(file));
+                        int selStart   = JdtRenamer.toOffset(source, startLine, startCol);
+                        int selEnd     = JdtRenamer.toOffset(source, endLine, endCol);
+                        String result  = JdtExtractor.extractMethod(
+                                source, Path.of(file).getFileName().toString(),
+                                selStart, selEnd - selStart, methodName);
+                        return ok(result);
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
+    }
+
+    private static Map<String, Object> extractSchema() {
+        return Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "file",         Map.of("type", "string",  "description", "Absolute path to the source file."),
+                        "start_line",   Map.of("type", "integer", "description", "1-based start line of the selection."),
+                        "start_column", Map.of("type", "integer", "description", "1-based start column of the selection."),
+                        "end_line",     Map.of("type", "integer", "description", "1-based end line of the selection."),
+                        "end_column",   Map.of("type", "integer", "description", "1-based end column of the selection (exclusive)."),
+                        "method_name",  Map.of("type", "string",  "description", "Name for the extracted method.")
+                ),
+                "required", List.of("file", "start_line", "start_column",
+                        "end_line", "end_column", "method_name")
+        );
     }
 
     // -------------------------------------------------------------------------
