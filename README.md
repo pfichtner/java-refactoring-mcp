@@ -242,6 +242,122 @@ MCP tool: `rename_package` — returns new source and new path for every changed
 
 **Limitation:** fully-qualified type references in source code are not updated.
 
+## Integration
+
+### 1. Build the MCP server jar
+
+```bash
+mvn package -DskipTests
+```
+
+The fat jar is at:
+
+```
+refactor-mcp/target/refactor-mcp-0.1.0-SNAPSHOT.jar
+```
+
+Use the absolute path to this jar in every config below.
+
+---
+
+### 2. Wire it into your AI coding tool
+
+#### Claude Code (CLI / claude.ai/code)
+
+One-liner:
+
+```bash
+claude mcp add java-refactoring -- java -jar /absolute/path/to/refactor-mcp-0.1.0-SNAPSHOT.jar
+```
+
+Or add it manually to `.claude/settings.json` (project-scoped) or `~/.claude/settings.json` (global):
+
+```json
+{
+  "mcpServers": {
+    "java-refactoring": {
+      "command": "java",
+      "args": ["-jar", "/absolute/path/to/refactor-mcp-0.1.0-SNAPSHOT.jar"]
+    }
+  }
+}
+```
+
+#### OpenCode
+
+Add to `~/.config/opencode.json`:
+
+```json
+{
+  "mcp": {
+    "java-refactoring": {
+      "command": "java",
+      "args": ["-jar", "/absolute/path/to/refactor-mcp-0.1.0-SNAPSHOT.jar"]
+    }
+  }
+}
+```
+
+#### Cursor / Windsurf / other MCP-compatible editors
+
+Most editors that support MCP use the same `mcpServers` schema. Add to the editor's MCP config file (e.g. `.cursor/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "java-refactoring": {
+      "command": "java",
+      "args": ["-jar", "/absolute/path/to/refactor-mcp-0.1.0-SNAPSHOT.jar"]
+    }
+  }
+}
+```
+
+---
+
+### 3. How to use it in a conversation
+
+The agent sees three tools once the server is connected:
+
+| Tool | Purpose |
+|------|---------|
+| `list_refactorings` | Enumerate available operations |
+| `analyze_refactoring` | Preview changes — returns new source, writes nothing |
+| `apply_refactoring` | Apply changes and write to disk |
+
+Every call to `analyze_refactoring` / `apply_refactoring` requires:
+
+| Parameter | Example |
+|-----------|---------|
+| `project_root` | `/home/me/myproject` (Maven root — contains `pom.xml`) |
+| `file` | `src/main/java/com/example/Calculator.java` |
+| `line` | `4` |
+| `column` | `16` |
+| `refactoring` | `rename` |
+| `new_name` | `plus` |
+
+**Example prompts you can give the agent:**
+
+```
+Rename the method `add` in Calculator.java at line 4 to `plus`.
+Use the java-refactoring tool. Project root is /home/me/myproject.
+Preview first, then apply.
+```
+
+```
+Extract lines 10–14 of Calculator.java into a private method called `validate`.
+Project root: /home/me/myproject.
+```
+
+```
+Inline the variable `result` declared at line 8 of App.java.
+Project root: /home/me/myproject.
+```
+
+A well-prompted agent will call `analyze_refactoring` first (dry-run), show you the diff, and only call `apply_refactoring` after your confirmation.
+
+---
+
 ## Planned
 
 | Milestone | Description |
