@@ -182,11 +182,21 @@ CLI: `java-refactor extract-const --file F --start-line L --start-column C --end
 
 MCP tool: `extract_constant` — returns rewritten source, does not write to disk.
 
+### M11 — Introduce Parameter
+
+`JdtIntroduceParam.introduceParam(project, sourceFile, selStart, selLen, paramName, paramType?)`
+
+Promotes a selected expression to a new method parameter. Uses the same multi-file `ASTParser.createASTs` engine as rename to find and update all call sites in the project.
+
+CLI: `java-refactor introduce-param --file F --start-line L --start-column C --end-line L2 --end-column C2 --name N [--type T] [--project P] [--dry-run]`
+
+MCP tool: `introduce_param` — returns new source for every changed file.
+
 ## Planned
 
 | Milestone | Description |
 |-----------|-------------|
-| M11+ | Additional JDT refactorings: move, pull up/push down, change signature, extract interface/superclass, … |
+| M12+ | move, pull up/push down, change signature, extract interface/superclass, … |
 
 ## Design Principles
 

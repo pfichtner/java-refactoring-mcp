@@ -1,6 +1,7 @@
 package dev.mcp.refactor.mcp;
 
 import dev.mcp.refactor.JdtExtractConstant;
+import dev.mcp.refactor.JdtIntroduceParam;
 import dev.mcp.refactor.JdtExtractVariable;
 import dev.mcp.refactor.JdtExtractor;
 import dev.mcp.refactor.JdtInlineMethod;
@@ -51,6 +52,7 @@ public class RefactoringServer {
         server.addTool(extractVariable());
         server.addTool(inlineMethod());
         server.addTool(extractConstant());
+        server.addTool(introduceParam());
 
         return server;
     }
@@ -193,6 +195,63 @@ public class RefactoringServer {
                 "required", List.of("file", "start_line", "start_column",
                         "end_line", "end_column", "method_name")
         );
+    }
+
+    // -------------------------------------------------------------------------
+    // Tool: introduce_param
+    // -------------------------------------------------------------------------
+
+    static SyncToolSpecification introduceParam() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("introduce_param", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                                "project_root",  Map.of("type", "string",  "description", "Absolute Maven project root."),
+                                "file",          Map.of("type", "string",  "description", "Absolute path to the source file."),
+                                "start_line",    Map.of("type", "integer", "description", "1-based start line of the expression."),
+                                "start_column",  Map.of("type", "integer", "description", "1-based start column."),
+                                "end_line",      Map.of("type", "integer", "description", "1-based end line."),
+                                "end_column",    Map.of("type", "integer", "description", "1-based end column (exclusive)."),
+                                "param_name",    Map.of("type", "string",  "description", "Name for the new parameter."),
+                                "param_type",    Map.of("type", "string",  "description", "Explicit type (inferred if omitted).")
+                        ),
+                        "required", List.of("project_root", "file", "start_line", "start_column",
+                                "end_line", "end_column", "param_name")))
+                        .description("""
+                        Promote an expression to a method parameter.
+                        Updates the method signature and all call sites in the project.
+                        Returns a map of filename → new source for each changed file.
+                        """)
+                        .build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        String file       = (String) args.get("file");
+                        int startLine     = ((Number) args.get("start_line")).intValue();
+                        int startCol      = ((Number) args.get("start_column")).intValue();
+                        int endLine       = ((Number) args.get("end_line")).intValue();
+                        int endCol        = ((Number) args.get("end_column")).intValue();
+                        String paramName  = (String) args.get("param_name");
+                        String paramType  = (String) args.get("param_type"); // nullable
+
+                        String source  = Files.readString(Path.of(file));
+                        int selStart   = JdtRenamer.toOffset(source, startLine, startCol);
+                        int selEnd     = JdtRenamer.toOffset(source, endLine, endCol);
+
+                        var changed = JdtIntroduceParam.introduceParam(
+                                new dev.mcp.refactor.project.MavenProject(Path.of((String) args.get("project_root"))),
+                                Path.of(file), selStart, selEnd - selStart, paramName, paramType);
+
+                        StringBuilder sb = new StringBuilder();
+                        changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                                .forEach(e -> sb.append("=== ").append(e.getKey().getFileName())
+                                        .append(" ===\n").append(e.getValue().stripTrailing()).append("\n\n"));
+                        return ok(sb.toString().stripTrailing());
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
     }
 
     // -------------------------------------------------------------------------
