@@ -2,6 +2,7 @@ package dev.mcp.refactor.mcp;
 
 import dev.mcp.refactor.JdtExtractConstant;
 import dev.mcp.refactor.JdtIntroduceParam;
+import dev.mcp.refactor.JdtRemoveParam;
 import dev.mcp.refactor.JdtExtractVariable;
 import dev.mcp.refactor.JdtExtractor;
 import dev.mcp.refactor.JdtInlineMethod;
@@ -53,6 +54,7 @@ public class RefactoringServer {
         server.addTool(inlineMethod());
         server.addTool(extractConstant());
         server.addTool(introduceParam());
+        server.addTool(removeParam());
 
         return server;
     }
@@ -195,6 +197,51 @@ public class RefactoringServer {
                 "required", List.of("file", "start_line", "start_column",
                         "end_line", "end_column", "method_name")
         );
+    }
+
+    // -------------------------------------------------------------------------
+    // Tool: remove_param
+    // -------------------------------------------------------------------------
+
+    static SyncToolSpecification removeParam() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("remove_param", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                                "project_root", Map.of("type", "string",  "description", "Absolute Maven project root."),
+                                "file",         Map.of("type", "string",  "description", "Absolute path to the file with the parameter."),
+                                "line",         Map.of("type", "integer", "description", "1-based line of the parameter declaration."),
+                                "column",       Map.of("type", "integer", "description", "1-based column of the parameter name.")
+                        ),
+                        "required", List.of("project_root", "file", "line", "column")))
+                        .description("""
+                        Remove an unused parameter from a method and the corresponding argument
+                        from every call site in the project.
+                        Returns a map of filename → new source for each changed file.
+                        """)
+                        .build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        String file = (String) args.get("file");
+                        int line    = ((Number) args.get("line")).intValue();
+                        int col     = ((Number) args.get("column")).intValue();
+                        String source = Files.readString(Path.of(file));
+                        int offset    = JdtRenamer.toOffset(source, line, col);
+                        var changed = JdtRemoveParam.removeParam(
+                                new dev.mcp.refactor.project.MavenProject(
+                                        Path.of((String) args.get("project_root"))),
+                                Path.of(file), offset);
+                        StringBuilder sb = new StringBuilder();
+                        changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                                .forEach(e -> sb.append("=== ").append(e.getKey().getFileName())
+                                        .append(" ===\n").append(e.getValue().stripTrailing()).append("\n\n"));
+                        return ok(sb.toString().stripTrailing());
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
     }
 
     // -------------------------------------------------------------------------
