@@ -1,6 +1,7 @@
 package dev.mcp.refactor.mcp;
 
 import dev.mcp.refactor.JdtExtractConstant;
+import dev.mcp.refactor.JdtMoveClass;
 import dev.mcp.refactor.JdtExtractInterface;
 import dev.mcp.refactor.JdtExtractSuperclass;
 import dev.mcp.refactor.JdtIntroduceParam;
@@ -59,6 +60,7 @@ public class RefactoringServer {
         server.addTool(removeParam());
         server.addTool(extractInterface());
         server.addTool(extractSuperclass());
+        server.addTool(moveClass());
 
         return server;
     }
@@ -201,6 +203,55 @@ public class RefactoringServer {
                 "required", List.of("file", "start_line", "start_column",
                         "end_line", "end_column", "method_name")
         );
+    }
+
+    // -------------------------------------------------------------------------
+    // Tool: move_class
+    // -------------------------------------------------------------------------
+
+    static SyncToolSpecification moveClass() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("move_class", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                                "project_root", Map.of("type", "string", "description", "Absolute Maven project root."),
+                                "file",         Map.of("type", "string", "description", "Absolute path to the .java file to move."),
+                                "new_package",  Map.of("type", "string", "description", "Target package, e.g. com.example.util.")
+                        ),
+                        "required", List.of("project_root", "file", "new_package")))
+                        .description("""
+                        Move a Java class to a new package.
+                        Updates the package declaration and all explicit imports in the project.
+                        Returns: new class source, new canonical file path, updated import files.
+                        Does not write to disk or delete the original file.
+                        """)
+                        .build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        String file       = (String) args.get("file");
+                        String newPackage = (String) args.get("new_package");
+                        var result = JdtMoveClass.moveClass(
+                                new dev.mcp.refactor.project.MavenProject(
+                                        Path.of((String) args.get("project_root"))),
+                                Path.of(file), newPackage);
+
+                        StringBuilder sb = new StringBuilder();
+                        sb.append("New path: ").append(result.newFilePath()).append("\n\n");
+                        sb.append("=== ").append(result.newFilePath().getFileName())
+                          .append(" (new) ===\n")
+                          .append(result.newClassSource().stripTrailing()).append("\n");
+                        result.changedImports().entrySet().stream()
+                                .sorted(Map.Entry.comparingByKey())
+                                .forEach(e -> sb.append("\n=== ").append(e.getKey().getFileName())
+                                        .append(" (updated import) ===\n")
+                                        .append(e.getValue().stripTrailing()).append("\n"));
+                        return ok(sb.toString().stripTrailing());
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
     }
 
     // -------------------------------------------------------------------------

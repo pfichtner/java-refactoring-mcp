@@ -220,11 +220,21 @@ CLI: `java-refactor extract-superclass --file F --name N --superclass-file PATH 
 
 MCP tool: `extract_superclass` — returns the modified class and the new superclass source.
 
+### M15 — Move Class
+
+`JdtMoveClass.moveClass(project, sourceFile, newPackage)` moves a class to a new package. Updates the `package` declaration, computes the new canonical file path, and updates all explicit single-class imports in the project. Returns `Result(newClassSource, newFilePath, changedImports)` — the caller writes the new file, updates imports, and deletes the original.
+
+CLI: `java-refactor move-class --file F --package com.example.util [--project P] [--dry-run]`
+
+MCP tool: `move_class` — returns new source, new path, and updated import files. Does not write to disk.
+
+**Limitations:** same-package references (no explicit import), wildcard imports, and fully-qualified type references in source code are not updated.
+
 ## Planned
 
 | Milestone | Description |
 |-----------|-------------|
-| M15+ | move class, pull up / push down member, … |
+| M16+ | pull up / push down member, … |
 
 ## Design Principles
 
