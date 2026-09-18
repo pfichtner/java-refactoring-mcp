@@ -210,11 +210,21 @@ CLI: `java-refactor extract-interface --file F --name N --interface-file PATH [-
 
 MCP tool: `extract_interface` — returns both the modified class and the new interface source.
 
+### M14 — Extract Superclass
+
+`JdtExtractSuperclass.extractSuperclass(classSource, unitName, superclassName, methodNames?)`
+
+Moves selected public non-static methods (with their bodies) into a new `public abstract` superclass and makes the original class extend it. Methods are removed from the subclass — they are inherited. Rejects if the class already extends another class.
+
+CLI: `java-refactor extract-superclass --file F --name N --superclass-file PATH [--methods m1,m2] [--dry-run]`
+
+MCP tool: `extract_superclass` — returns the modified class and the new superclass source.
+
 ## Planned
 
 | Milestone | Description |
 |-----------|-------------|
-| M14+ | move, pull up/push down, extract superclass, … |
+| M15+ | move class, pull up / push down member, … |
 
 ## Design Principles
 
