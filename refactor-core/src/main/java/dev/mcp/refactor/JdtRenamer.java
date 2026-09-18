@@ -320,4 +320,26 @@ public class JdtRenamer {
     private static boolean isLocal(IVariableBinding vb) {
         return !vb.isField() && !vb.isEnumConstant();
     }
+
+    /**
+     * Converts a 1-based line and column to a 0-based character offset in {@code source}.
+     * Used by the CLI and MCP layer so the engine only deals with offsets.
+     */
+    public static int toOffset(String source, int line, int col) {
+        int pos = 0;
+        for (int l = 1; l < line; l++) {
+            int nl = source.indexOf('\n', pos);
+            if (nl < 0) {
+                throw new IllegalArgumentException(
+                        "Line " + line + " is out of range (file has fewer lines).");
+            }
+            pos = nl + 1;
+        }
+        int offset = pos + col - 1;
+        if (offset > source.length()) {
+            throw new IllegalArgumentException(
+                    "Column " + col + " is out of range on line " + line + ".");
+        }
+        return offset;
+    }
 }

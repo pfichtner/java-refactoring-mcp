@@ -118,21 +118,7 @@ public class RenameCommand implements Callable<Integer> {
     // -------------------------------------------------------------------------
 
     static int toOffset(String source, int line, int col) {
-        int pos = 0;
-        for (int l = 1; l < line; l++) {
-            int nl = source.indexOf('\n', pos);
-            if (nl < 0) {
-                throw new IllegalArgumentException(
-                        "Line " + line + " is out of range (file has fewer lines).");
-            }
-            pos = nl + 1;
-        }
-        int offset = pos + col - 1;
-        if (offset > source.length()) {
-            throw new IllegalArgumentException(
-                    "Column " + col + " is out of range on line " + line + ".");
-        }
-        return offset;
+        return JdtRenamer.toOffset(source, line, col);
     }
 
     static Path findProjectRoot(Path file) {
