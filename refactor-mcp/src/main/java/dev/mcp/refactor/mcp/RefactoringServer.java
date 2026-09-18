@@ -2,6 +2,7 @@ package dev.mcp.refactor.mcp;
 
 import dev.mcp.refactor.JdtExtractVariable;
 import dev.mcp.refactor.JdtExtractor;
+import dev.mcp.refactor.JdtInlineMethod;
 import dev.mcp.refactor.JdtInliner;
 import dev.mcp.refactor.JdtRenamer;
 import dev.mcp.refactor.project.MavenProject;
@@ -47,6 +48,7 @@ public class RefactoringServer {
         server.addTool(extractMethod());
         server.addTool(inlineVariable());
         server.addTool(extractVariable());
+        server.addTool(inlineMethod());
 
         return server;
     }
@@ -189,6 +191,42 @@ public class RefactoringServer {
                 "required", List.of("file", "start_line", "start_column",
                         "end_line", "end_column", "method_name")
         );
+    }
+
+    // -------------------------------------------------------------------------
+    // Tool: inline_method
+    // -------------------------------------------------------------------------
+
+    static SyncToolSpecification inlineMethod() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("inline_method", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                                "file",   Map.of("type", "string",  "description", "Absolute path to the source file."),
+                                "line",   Map.of("type", "integer", "description", "1-based line of the method call."),
+                                "column", Map.of("type", "integer", "description", "1-based column of the method call name.")
+                        ),
+                        "required", List.of("file", "line", "column")))
+                        .description("""
+                        Inline a method call: replace it with the method body (single file only).
+                        Returns the rewritten source; does not write to disk.
+                        """)
+                        .build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        String file = (String) args.get("file");
+                        int line    = ((Number) args.get("line")).intValue();
+                        int col     = ((Number) args.get("column")).intValue();
+                        String source = Files.readString(Path.of(file));
+                        int offset    = JdtRenamer.toOffset(source, line, col);
+                        return ok(JdtInlineMethod.inlineMethod(
+                                source, Path.of(file).getFileName().toString(), offset));
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
     }
 
     // -------------------------------------------------------------------------
