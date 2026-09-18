@@ -1,6 +1,7 @@
 package dev.mcp.refactor.mcp;
 
 import dev.mcp.refactor.JdtExtractor;
+import dev.mcp.refactor.JdtInliner;
 import dev.mcp.refactor.JdtRenamer;
 import dev.mcp.refactor.project.MavenProject;
 import io.modelcontextprotocol.json.McpJsonDefaults;
@@ -43,6 +44,7 @@ public class RefactoringServer {
         server.addTool(analyzeRefactoring());
         server.addTool(applyRefactoring());
         server.addTool(extractMethod());
+        server.addTool(inlineVariable());
 
         return server;
     }
@@ -69,6 +71,11 @@ public class RefactoringServer {
                         extract_method
                           Extract selected statements into a new private method.
                           Required arguments: file, start_line, start_column, end_line, end_column, method_name
+                          Returns the rewritten source; does not write to disk.
+
+                        inline_variable
+                          Inline a local variable: replace all uses with its initializer, remove the declaration.
+                          Required arguments: file, line, column
                           Returns the rewritten source; does not write to disk.
                         """))
                 .build();
@@ -174,6 +181,44 @@ public class RefactoringServer {
                 "required", List.of("file", "start_line", "start_column",
                         "end_line", "end_column", "method_name")
         );
+    }
+
+    // -------------------------------------------------------------------------
+    // Tool: inline_variable
+    // -------------------------------------------------------------------------
+
+    static SyncToolSpecification inlineVariable() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("inline_variable", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                                "file",   Map.of("type", "string",  "description", "Absolute path to the source file."),
+                                "line",   Map.of("type", "integer", "description", "1-based line number of the variable."),
+                                "column", Map.of("type", "integer", "description", "1-based column number of the variable name.")
+                        ),
+                        "required", List.of("file", "line", "column")))
+                        .description("""
+                        Inline a local variable: replace every use with its initializer expression
+                        and remove the declaration. Returns the rewritten source; does not write to disk.
+                        """)
+                        .build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        String file = (String) args.get("file");
+                        int line    = ((Number) args.get("line")).intValue();
+                        int col     = ((Number) args.get("column")).intValue();
+
+                        String source = Files.readString(Path.of(file));
+                        int offset    = JdtRenamer.toOffset(source, line, col);
+                        String result = JdtInliner.inlineVariable(
+                                source, Path.of(file).getFileName().toString(), offset);
+                        return ok(result);
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
     }
 
     // -------------------------------------------------------------------------
