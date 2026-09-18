@@ -162,11 +162,21 @@ CLI: `java-refactor extract-var --file F --start-line L --start-column C --end-l
 
 MCP tool: `extract_variable` — returns rewritten source, does not write to disk.
 
+### M9 — Inline Method
+
+`JdtInlineMethod.inlineMethod(source, unitName, offset)` replaces a method call with the method's body, substituting formal parameters with actual arguments. Single-file only.
+
+Supported: void methods (body statements replace the call); value-returning methods with a single `return` statement (expression replaces the call). Method declaration is preserved.
+
+CLI: `java-refactor inline-method --file F --line L --column C [--dry-run]`
+
+MCP tool: `inline_method` — returns rewritten source, does not write to disk.
+
 ## Planned
 
 | Milestone | Description |
 |-----------|-------------|
-| M9+ | Additional JDT refactorings: inline method, move, pull up/push down, change signature, … |
+| M10+ | Additional JDT refactorings: move, pull up/push down, change signature, extract interface/superclass, … |
 
 ## Design Principles
 
