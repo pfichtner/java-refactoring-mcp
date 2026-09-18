@@ -2,6 +2,10 @@ package dev.mcp.refactor.support;
 
 import org.approvaltests.MarkdownStoryBoard;
 
+import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.Map;
+
 /**
  * Fluent builder for rename approval storyboards.
  *
@@ -37,6 +41,32 @@ public class RenameStoryBoard {
     public RenameStoryBoard refactoring(String operation, String rename, String detail) {
         board.addCustomMarkdown("\n\n### Refactoring:\n**" + operation + "** "
                 + rename + "  \n" + detail);
+        return this;
+    }
+
+    /**
+     * Adds one {@code ### Input: filename:} java block per entry, sorted by filename.
+     * Use for multi-file project scenarios.
+     */
+    public RenameStoryBoard inputProject(Map<String, String> files) {
+        files.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(e -> board.addCustomMarkdown(
+                        "\n\n### Input: " + e.getKey() + ":\n```java\n"
+                        + e.getValue().stripTrailing() + "\n```"));
+        return this;
+    }
+
+    /**
+     * Adds one {@code ### Output: filename:} java block per changed file, sorted by filename.
+     * Use for multi-file rename results.
+     */
+    public RenameStoryBoard outputProject(Map<Path, String> changedFiles) {
+        changedFiles.entrySet().stream()
+                .sorted(Comparator.comparing(e -> e.getKey().getFileName().toString()))
+                .forEach(e -> board.addCustomMarkdown(
+                        "\n\n### Output: " + e.getKey().getFileName() + ":\n```java\n"
+                        + e.getValue().stripTrailing() + "\n```"));
         return this;
     }
 

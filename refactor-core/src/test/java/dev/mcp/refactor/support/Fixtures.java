@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 
 /**
  * Utilities for loading test fixture files and computing source positions.
@@ -26,6 +27,21 @@ public class Fixtures {
             throw new IllegalStateException("Fixture not found: fixtures/" + relativePath);
         }
         return Path.of(url.toURI());
+    }
+
+    /**
+     * Loads all {@code .java} files under {@code fixtures/<directory>} into a
+     * {@code filename → source} map, sorted by filename.
+     */
+    public Map<String, String> loadProjectSources(String directory) throws Exception {
+        Path dir = projectPath(directory);
+        Map<String, String> map = new java.util.TreeMap<>();
+        try (var stream = Files.walk(dir)) {
+            for (Path p : (Iterable<Path>) stream.filter(f -> f.toString().endsWith(".java"))::iterator) {
+                map.put(p.getFileName().toString(), Files.readString(p));
+            }
+        }
+        return map;
     }
 
     /** Loads a single fixture file from {@code src/test/resources/fixtures/<path>}. */
