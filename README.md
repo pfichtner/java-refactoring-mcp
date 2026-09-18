@@ -19,7 +19,7 @@ MCP ───────┘         │
 |-----------------|------|
 | `refactor-core` | Refactoring engine, JDT integration, Maven project model |
 | `refactor-cli`  | Thin CLI layer (Picocli) — no refactoring logic |
-| `refactor-mcp`  | *(planned)* MCP server — no refactoring logic |
+| `refactor-mcp`  | MCP server (stdio, `io.modelcontextprotocol.sdk`) — no refactoring logic |
 
 ## What Works
 
@@ -103,11 +103,33 @@ public class Calculator {
 }
 ```
 
+### M5 — MCP server
+
+`java -jar refactor-mcp.jar` starts a stdio MCP server.
+
+Three tools are exposed:
+
+| Tool | Description |
+|------|-------------|
+| `list_refactorings` | Lists available refactoring operations |
+| `analyze_refactoring` | Dry-run: returns new source of every changed file |
+| `apply_refactoring` | Applies changes and writes files to disk |
+
+Parameters for `analyze_refactoring` and `apply_refactoring`:
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `project_root` | string | Absolute path to the Maven project root |
+| `file` | string | Source file (absolute or relative to `project_root`) |
+| `line` | integer | 1-based line number |
+| `column` | integer | 1-based column number |
+| `refactoring` | string | `"rename"` (only supported type currently) |
+| `new_name` | string | New name for the symbol |
+
 ## Planned
 
 | Milestone | Description |
 |-----------|-------------|
-| M5 | MCP server — exposes `rename` (and later all refactorings) as MCP tools |
 | M6 | Extract Method — JDT-based extraction with parameter/return-value analysis |
 | M7+ | Additional JDT refactorings: inline, extract variable/constant, move, pull up, push down, change signature, … |
 
