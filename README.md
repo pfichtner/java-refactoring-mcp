@@ -152,11 +152,21 @@ CLI: `java-refactor inline-var --file F --line L --column C [--dry-run]`
 
 MCP tool: `inline_variable` — returns rewritten source, does not write to disk.
 
+### M8 — Extract Variable
+
+`JdtExtractVariable.extractVariable(source, unitName, selStart, selLen, varName, replaceAll)`
+
+Introduces a local variable for the selected expression. With `replaceAll=true`, replaces every textually identical occurrence in the enclosing block.
+
+CLI: `java-refactor extract-var --file F --start-line L --start-column C --end-line L2 --end-column C2 --name N [--replace-all] [--dry-run]`
+
+MCP tool: `extract_variable` — returns rewritten source, does not write to disk.
+
 ## Planned
 
 | Milestone | Description |
 |-----------|-------------|
-| M8+ | Additional JDT refactorings: extract variable/constant, inline method, move, pull up/push down, change signature, … |
+| M9+ | Additional JDT refactorings: inline method, move, pull up/push down, change signature, … |
 
 ## Design Principles
 

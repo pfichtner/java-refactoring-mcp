@@ -1,5 +1,6 @@
 package dev.mcp.refactor.mcp;
 
+import dev.mcp.refactor.JdtExtractVariable;
 import dev.mcp.refactor.JdtExtractor;
 import dev.mcp.refactor.JdtInliner;
 import dev.mcp.refactor.JdtRenamer;
@@ -45,6 +46,7 @@ public class RefactoringServer {
         server.addTool(applyRefactoring());
         server.addTool(extractMethod());
         server.addTool(inlineVariable());
+        server.addTool(extractVariable());
 
         return server;
     }
@@ -76,6 +78,12 @@ public class RefactoringServer {
                         inline_variable
                           Inline a local variable: replace all uses with its initializer, remove the declaration.
                           Required arguments: file, line, column
+                          Returns the rewritten source; does not write to disk.
+
+                        extract_variable
+                          Extract an expression into a new local variable.
+                          Required arguments: file, start_line, start_column, end_line, end_column, var_name
+                          Optional: replace_all (replace all identical occurrences in the block)
                           Returns the rewritten source; does not write to disk.
                         """))
                 .build();
@@ -181,6 +189,55 @@ public class RefactoringServer {
                 "required", List.of("file", "start_line", "start_column",
                         "end_line", "end_column", "method_name")
         );
+    }
+
+    // -------------------------------------------------------------------------
+    // Tool: extract_variable
+    // -------------------------------------------------------------------------
+
+    static SyncToolSpecification extractVariable() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("extract_variable", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                                "file",         Map.of("type", "string",  "description", "Absolute path to the source file."),
+                                "start_line",   Map.of("type", "integer", "description", "1-based start line of the expression."),
+                                "start_column", Map.of("type", "integer", "description", "1-based start column."),
+                                "end_line",     Map.of("type", "integer", "description", "1-based end line of the expression."),
+                                "end_column",   Map.of("type", "integer", "description", "1-based end column (exclusive)."),
+                                "var_name",     Map.of("type", "string",  "description", "Name for the introduced variable."),
+                                "replace_all",  Map.of("type", "boolean", "description", "Replace all identical occurrences in the block.")
+                        ),
+                        "required", List.of("file", "start_line", "start_column",
+                                "end_line", "end_column", "var_name")))
+                        .description("""
+                        Extract an expression into a new local variable.
+                        Returns the rewritten source; does not write to disk.
+                        """)
+                        .build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        String file       = (String) args.get("file");
+                        int startLine     = ((Number) args.get("start_line")).intValue();
+                        int startCol      = ((Number) args.get("start_column")).intValue();
+                        int endLine       = ((Number) args.get("end_line")).intValue();
+                        int endCol        = ((Number) args.get("end_column")).intValue();
+                        String varName    = (String) args.get("var_name");
+                        boolean replaceAll = Boolean.TRUE.equals(args.get("replace_all"));
+
+                        String source  = Files.readString(Path.of(file));
+                        int selStart   = JdtRenamer.toOffset(source, startLine, startCol);
+                        int selEnd     = JdtRenamer.toOffset(source, endLine, endCol);
+                        String result  = JdtExtractVariable.extractVariable(
+                                source, Path.of(file).getFileName().toString(),
+                                selStart, selEnd - selStart, varName, replaceAll);
+                        return ok(result);
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
     }
 
     // -------------------------------------------------------------------------
