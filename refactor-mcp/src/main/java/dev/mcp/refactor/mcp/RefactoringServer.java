@@ -2,6 +2,7 @@ package dev.mcp.refactor.mcp;
 
 import dev.mcp.refactor.JdtExtractConstant;
 import dev.mcp.refactor.JdtExtractInterface;
+import dev.mcp.refactor.JdtExtractSuperclass;
 import dev.mcp.refactor.JdtIntroduceParam;
 import dev.mcp.refactor.JdtRemoveParam;
 import dev.mcp.refactor.JdtExtractVariable;
@@ -57,6 +58,7 @@ public class RefactoringServer {
         server.addTool(introduceParam());
         server.addTool(removeParam());
         server.addTool(extractInterface());
+        server.addTool(extractSuperclass());
 
         return server;
     }
@@ -199,6 +201,50 @@ public class RefactoringServer {
                 "required", List.of("file", "start_line", "start_column",
                         "end_line", "end_column", "method_name")
         );
+    }
+
+    // -------------------------------------------------------------------------
+    // Tool: extract_superclass
+    // -------------------------------------------------------------------------
+
+    static SyncToolSpecification extractSuperclass() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("extract_superclass", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                                "file",            Map.of("type", "string", "description", "Absolute path to the class file."),
+                                "superclass_name", Map.of("type", "string", "description", "Simple name for the new abstract superclass."),
+                                "method_names",    Map.of("type", "array",  "items", Map.of("type", "string"),
+                                                          "description", "Methods to move; empty = all public non-static.")
+                        ),
+                        "required", List.of("file", "superclass_name")))
+                        .description("""
+                        Move public methods into a new abstract superclass and make the class extend it.
+                        Returns the modified class source and the new superclass source.
+                        Does not write to disk.
+                        """)
+                        .build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        String file          = (String) args.get("file");
+                        String superName     = (String) args.get("superclass_name");
+                        @SuppressWarnings("unchecked")
+                        List<String> methods = args.containsKey("method_names")
+                                ? (List<String>) args.get("method_names") : List.of();
+                        String source = Files.readString(Path.of(file));
+                        var result = JdtExtractSuperclass.extractSuperclass(
+                                source, Path.of(file).getFileName().toString(), superName, methods);
+                        String out = "=== " + Path.of(file).getFileName() + " (modified) ===\n"
+                                + result.modifiedClassSource().stripTrailing() + "\n\n"
+                                + "=== " + superName + ".java (new) ===\n"
+                                + result.superclassSource().stripTrailing();
+                        return ok(out);
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
     }
 
     // -------------------------------------------------------------------------
