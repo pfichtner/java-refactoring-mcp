@@ -2,6 +2,7 @@ package dev.mcp.refactor.mcp;
 
 import dev.mcp.refactor.JdtExtractConstant;
 import dev.mcp.refactor.JdtMoveClass;
+import dev.mcp.refactor.JdtRenamePackage;
 import dev.mcp.refactor.JdtExtractInterface;
 import dev.mcp.refactor.JdtExtractSuperclass;
 import dev.mcp.refactor.JdtIntroduceParam;
@@ -61,6 +62,7 @@ public class RefactoringServer {
         server.addTool(extractInterface());
         server.addTool(extractSuperclass());
         server.addTool(moveClass());
+        server.addTool(renamePackage());
 
         return server;
     }
@@ -203,6 +205,49 @@ public class RefactoringServer {
                 "required", List.of("file", "start_line", "start_column",
                         "end_line", "end_column", "method_name")
         );
+    }
+
+    // -------------------------------------------------------------------------
+    // Tool: rename_package
+    // -------------------------------------------------------------------------
+
+    static SyncToolSpecification renamePackage() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("rename_package", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                                "project_root", Map.of("type", "string", "description", "Absolute Maven project root."),
+                                "old_package",  Map.of("type", "string", "description", "Fully-qualified old package, e.g. com.example.service."),
+                                "new_package",  Map.of("type", "string", "description", "Fully-qualified new package, e.g. com.example.util.")
+                        ),
+                        "required", List.of("project_root", "old_package", "new_package")))
+                        .description("""
+                        Rename a package across the project.
+                        Updates package declarations, single-class imports, and wildcard imports.
+                        Returns a list of changed files with their new sources and new paths.
+                        Does not write to disk or delete original files.
+                        """)
+                        .build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        var result = JdtRenamePackage.renamePackage(
+                                new dev.mcp.refactor.project.MavenProject(
+                                        Path.of((String) args.get("project_root"))),
+                                (String) args.get("old_package"),
+                                (String) args.get("new_package"));
+                        StringBuilder sb = new StringBuilder();
+                        for (JdtRenamePackage.FileChange fc : result.changedFiles()) {
+                            sb.append("=== ").append(fc.newPath().getFileName());
+                            if (fc.pathChanged()) sb.append(" (moved from ").append(fc.oldPath().getFileName()).append(")");
+                            sb.append(" ===\n").append(fc.newSource().stripTrailing()).append("\n\n");
+                        }
+                        return ok(sb.toString().stripTrailing());
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
     }
 
     // -------------------------------------------------------------------------
