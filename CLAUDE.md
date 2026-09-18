@@ -15,4 +15,5 @@ AGENTS.md
 	•	Do not introduce speculative abstractions.
 	•	Keep CLI and MCP thin; both use the same refactoring engine.
 	•	Run the full test suite before declaring a milestone complete.
+	•	Update README.md when a milestone completes — move items from Planned to What Works, add usage examples for new commands or tools.
 
