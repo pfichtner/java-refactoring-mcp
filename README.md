@@ -242,6 +242,34 @@ MCP tool: `rename_package` — returns new source and new path for every changed
 
 **Limitation:** fully-qualified type references in source code are not updated.
 
+### M17 — Pull Up / Push Down Method
+
+`JdtPullUpMethod.pullUp(project, sourceFile, offset)` moves a method declaration from a
+subclass to its direct superclass. The superclass is located by simple name within the
+project source roots.
+
+`JdtPushDownMethod.pushDown(project, sourceFile, offset)` moves a method from a class down
+to all direct subclasses found in the project (discovered by scanning for `extends ClassName`).
+Both operations return `Map<Path, String>` — the caller writes the changed files.
+
+CLI:
+```
+java-refactor pull-up  --file Dog.java     --line 9 --column 17 [--project P] [--dry-run]
+java-refactor push-down --file Shape.java  --line 4 --column 19 [--project P] [--dry-run]
+```
+
+MCP tools: `pull_up_method`, `push_down_method` — accept `project_root`, `file`, `line`,
+`column`; return new source for every changed file. Do not write to disk.
+
+**Preconditions checked:**
+- Pull up: class has an explicit `extends` clause; superclass source is in the project;
+  superclass does not already have a method with the same name and parameter count.
+- Push down: at least one direct subclass exists in the project; no subclass already
+  declares the method.
+
+**Limitations:** fully-qualified `extends` clauses (e.g. `extends com.example.Foo`) are not
+matched when scanning for subclasses; `@Override` annotations are copied verbatim.
+
 ## Integration
 
 ### 1. Build the MCP server jar
@@ -362,7 +390,7 @@ A well-prompted agent will call `analyze_refactoring` first (dry-run), show you 
 
 | Milestone | Description |
 |-----------|-------------|
-| M17+ | pull up / push down member, … |
+| M18+ | pull up / push down field, abstract method, … |
 
 ## Design Principles
 
