@@ -126,11 +126,28 @@ Parameters for `analyze_refactoring` and `apply_refactoring`:
 | `refactoring` | string | `"rename"` (only supported type currently) |
 | `new_name` | string | New name for the symbol |
 
+### M6 — Extract Method
+
+`JdtExtractor.extractMethod(source, unitName, selectionStart, selectionLength, methodName)`
+
+Extracts a range of statements into a new private method using JDT AST analysis (headless, no workspace needed).
+
+| Case | Behaviour |
+|------|-----------|
+| No params, no return | `void extracted()` |
+| Pre-declared vars read in selection | added as parameters |
+| Single var declared in selection, used after | returned; call gets `Type var = extracted(...)` |
+| Selection contains `return` | rejected with diagnostic |
+| Multiple vars declared in selection, used after | rejected with diagnostic |
+
+CLI: `java-refactor extract --file F --start-line L --start-column C --end-line L2 --end-column C2 --name methodName [--dry-run]`
+
+MCP tool: `extract_method` — returns the rewritten source, does not write to disk.
+
 ## Planned
 
 | Milestone | Description |
 |-----------|-------------|
-| M6 | Extract Method — JDT-based extraction with parameter/return-value analysis |
 | M7+ | Additional JDT refactorings: inline, extract variable/constant, move, pull up, push down, change signature, … |
 
 ## Design Principles
