@@ -200,11 +200,21 @@ CLI: `java-refactor remove-param --file F --line L --column C [--project P] [--d
 
 MCP tool: `remove_param` — returns changed files.
 
+### M13 — Extract Interface
+
+`JdtExtractInterface.extractInterface(classSource, unitName, interfaceName, methodNames?)`
+
+Generates a new Java interface from the public non-static methods of a class and adds `implements InterfaceName` to the class declaration. Preserves parameter types, throws clauses, and generic type parameters. Returns `Result(modifiedClassSource, interfaceSource)` — the caller decides where to write the new file.
+
+CLI: `java-refactor extract-interface --file F --name N --interface-file PATH [--methods m1,m2] [--dry-run]`
+
+MCP tool: `extract_interface` — returns both the modified class and the new interface source.
+
 ## Planned
 
 | Milestone | Description |
 |-----------|-------------|
-| M13+ | move, pull up/push down, extract interface/superclass, … |
+| M14+ | move, pull up/push down, extract superclass, … |
 
 ## Design Principles
 
