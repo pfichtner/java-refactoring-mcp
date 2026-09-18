@@ -11,6 +11,8 @@ import dev.mcp.refactor.JdtExtractVariable;
 import dev.mcp.refactor.JdtExtractor;
 import dev.mcp.refactor.JdtInlineMethod;
 import dev.mcp.refactor.JdtInliner;
+import dev.mcp.refactor.JdtPullUpMethod;
+import dev.mcp.refactor.JdtPushDownMethod;
 import dev.mcp.refactor.JdtRenamer;
 import dev.mcp.refactor.project.MavenProject;
 import io.modelcontextprotocol.json.McpJsonDefaults;
@@ -63,6 +65,8 @@ public class RefactoringServer {
         server.addTool(extractSuperclass());
         server.addTool(moveClass());
         server.addTool(renamePackage());
+        server.addTool(pullUpMethod());
+        server.addTool(pushDownMethod());
 
         return server;
     }
@@ -759,6 +763,99 @@ public class RefactoringServer {
                 "required", List.of("project_root", "file", "line", "column",
                         "refactoring", "new_name")
         );
+    }
+
+    // -------------------------------------------------------------------------
+    // Tool: pull_up_method
+    // -------------------------------------------------------------------------
+
+    static SyncToolSpecification pullUpMethod() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("pull_up_method", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                                "project_root", Map.of("type", "string", "description", "Absolute Maven project root."),
+                                "file",         Map.of("type", "string", "description", "Absolute path to the .java file containing the subclass."),
+                                "line",         Map.of("type", "integer", "description", "1-based line of the method to pull up."),
+                                "column",       Map.of("type", "integer", "description", "1-based column of the method name.")
+                        ),
+                        "required", List.of("project_root", "file", "line", "column")))
+                        .description("""
+                        Pull a method up from a subclass to its direct superclass.
+                        The superclass must be in the project source roots.
+                        Returns new source for both the subclass and the superclass.
+                        Does not write to disk.
+                        """)
+                        .build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        String file = (String) args.get("file");
+                        int line    = ((Number) args.get("line")).intValue();
+                        int col     = ((Number) args.get("column")).intValue();
+                        String source = java.nio.file.Files.readString(Path.of(file));
+                        int offset    = JdtRenamer.toOffset(source, line, col);
+                        var changed   = JdtPullUpMethod.pullUp(
+                                new dev.mcp.refactor.project.MavenProject(
+                                        Path.of((String) args.get("project_root"))),
+                                Path.of(file), offset);
+                        StringBuilder sb = new StringBuilder();
+                        changed.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(e ->
+                                sb.append("=== ").append(e.getKey().getFileName()).append(" ===\n")
+                                  .append(e.getValue().stripTrailing()).append("\n\n"));
+                        return ok(sb.toString().stripTrailing());
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
+    }
+
+    // -------------------------------------------------------------------------
+    // Tool: push_down_method
+    // -------------------------------------------------------------------------
+
+    static SyncToolSpecification pushDownMethod() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("push_down_method", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                                "project_root", Map.of("type", "string", "description", "Absolute Maven project root."),
+                                "file",         Map.of("type", "string", "description", "Absolute path to the .java file containing the superclass."),
+                                "line",         Map.of("type", "integer", "description", "1-based line of the method to push down."),
+                                "column",       Map.of("type", "integer", "description", "1-based column of the method name.")
+                        ),
+                        "required", List.of("project_root", "file", "line", "column")))
+                        .description("""
+                        Push a method down from a class to all its direct subclasses in the project.
+                        The method is removed from the superclass and added to every subclass found.
+                        Subclasses are discovered by scanning for 'extends ClassName' in source files.
+                        Returns new source for the superclass and all modified subclasses.
+                        Does not write to disk.
+                        """)
+                        .build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        String file = (String) args.get("file");
+                        int line    = ((Number) args.get("line")).intValue();
+                        int col     = ((Number) args.get("column")).intValue();
+                        String source = java.nio.file.Files.readString(Path.of(file));
+                        int offset    = JdtRenamer.toOffset(source, line, col);
+                        var changed   = JdtPushDownMethod.pushDown(
+                                new dev.mcp.refactor.project.MavenProject(
+                                        Path.of((String) args.get("project_root"))),
+                                Path.of(file), offset);
+                        StringBuilder sb = new StringBuilder();
+                        changed.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(e ->
+                                sb.append("=== ").append(e.getKey().getFileName()).append(" ===\n")
+                                  .append(e.getValue().stripTrailing()).append("\n\n"));
+                        return ok(sb.toString().stripTrailing());
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
     }
 
     private static CallToolResult ok(String text) {
