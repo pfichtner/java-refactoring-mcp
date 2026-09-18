@@ -162,15 +162,17 @@ CLI: `java-refactor extract-var --file F --start-line L --start-column C --end-l
 
 MCP tool: `extract_variable` — returns rewritten source, does not write to disk.
 
-### M9 — Inline Method
+### M9 — Inline Method (multi-file)
 
-`JdtInlineMethod.inlineMethod(source, unitName, offset)` replaces a method call with the method's body, substituting formal parameters with actual arguments. Single-file only.
+`JdtInlineMethod.inlineMethod(project, sourceFile, offset, removeDeclaration)` inlines at **all call sites** in the project. Optionally removes the method declaration. Parameter substitution uses binding keys, so it works correctly across file boundaries.
 
-Supported: void methods (body statements replace the call); value-returning methods with a single `return` statement (expression replaces the call). Method declaration is preserved.
+Single-file snippet API (`inlineMethod(String, String, int)`) preserved for backward compatibility.
 
-CLI: `java-refactor inline-method --file F --line L --column C [--dry-run]`
+Supported: void methods (body statements replace each call); value-returning methods with a single `return` statement (expression replaces the call).
 
-MCP tool: `inline_method` — returns rewritten source, does not write to disk.
+CLI: `java-refactor inline-method --file F --line L --column C [--project P] [--remove-declaration] [--dry-run]`
+
+MCP tool: `inline_method` — accepts `project_root` and `remove_declaration`; returns new source for every changed file.
 
 ### M10 — Extract Constant
 
@@ -230,11 +232,21 @@ MCP tool: `move_class` — returns new source, new path, and updated import file
 
 **Limitations:** same-package references (no explicit import), wildcard imports, and fully-qualified type references in source code are not updated.
 
+### M16 — Rename Package
+
+`JdtRenamePackage.renamePackage(project, oldPackage, newPackage)` renames a package across the project. Updates `package` declarations in every file in the old package (including sub-packages), computes new file paths, and updates all single-class and wildcard imports in the whole project. Returns `Result(List<FileChange>)` — caller writes files and deletes originals.
+
+CLI: `java-refactor rename-package --old-package com.example.service --new-package com.example.util [--project P] [--dry-run]`
+
+MCP tool: `rename_package` — returns new source and new path for every changed file. Does not write to disk.
+
+**Limitation:** fully-qualified type references in source code are not updated.
+
 ## Planned
 
 | Milestone | Description |
 |-----------|-------------|
-| M16+ | pull up / push down member, … |
+| M17+ | pull up / push down member, … |
 
 ## Design Principles
 
