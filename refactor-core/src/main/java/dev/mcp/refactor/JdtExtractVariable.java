@@ -150,7 +150,6 @@ public class JdtExtractVariable {
             throw new IllegalArgumentException(
                     "Cannot resolve the type of the selected expression.");
         }
-        if (type.isPrimitive()) return type.getName();
         return type.getName(); // simple name; adequate for non-generic types
     }
 
@@ -209,7 +208,7 @@ public class JdtExtractVariable {
         }
         if (end < source.length()) {
             char after = source.charAt(end);
-            if (Character.isJavaIdentifierPart(after)) return false;
+            return !Character.isJavaIdentifierPart(after);
         }
         return true;
     }

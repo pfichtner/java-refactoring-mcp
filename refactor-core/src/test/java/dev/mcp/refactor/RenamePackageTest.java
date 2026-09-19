@@ -7,6 +7,7 @@ import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -31,8 +32,7 @@ class RenamePackageTest {
         // Build newPath → newSource map for outputProject display
         Map<Path, String> outputs = new LinkedHashMap<>();
         result.changedFiles().stream()
-                .sorted((a, b) -> a.newPath().getFileName().toString()
-                        .compareTo(b.newPath().getFileName().toString()))
+                .sorted(Comparator.comparing(a -> a.newPath().getFileName().toString()))
                 .forEach(fc -> outputs.put(fc.newPath(), fc.newSource()));
 
         Approvals.verify(
