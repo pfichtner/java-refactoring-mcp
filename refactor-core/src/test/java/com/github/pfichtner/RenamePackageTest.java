@@ -88,6 +88,31 @@ class RenamePackageTest {
                         project, "com.example.service", "com.example.service"));
     }
 
+    @Test
+    void rename_package_updates_fqn_code_references() throws Exception {
+        var project = new MavenProject(fixtures.projectPath("projects/rename-package-fqn"));
+        JdtRenamePackage.Result result = JdtRenamePackage.renamePackage(
+                project, "com.example.service", "com.example.util");
+
+        Map<String, String> inputs = fixtures.loadProjectSources(
+                "projects/rename-package-fqn/src/main/java");
+
+        Map<Path, String> outputs = new LinkedHashMap<>();
+        result.changedFiles().stream()
+                .sorted(Comparator.comparing(a -> a.newPath().getFileName().toString()))
+                .forEach(fc -> outputs.put(fc.newPath(), fc.newSource()));
+
+        Approvals.verify(
+            RenameStoryBoard.titled("Rename package with FQN code references: com.example.service → com.example.util")
+                .inputProject(inputs)
+                .refactoring("rename package",
+                        "`com.example.service` → `com.example.util`",
+                        "FQN in field type, local variable, lambda body")
+                .outputProject(outputs)
+                .build()
+        );
+    }
+
     // Unit test for remapPackage helper
     @Test
     void remapPackage_handles_direct_and_subpackage() {

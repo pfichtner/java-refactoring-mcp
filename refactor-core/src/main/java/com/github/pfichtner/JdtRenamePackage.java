@@ -2,11 +2,15 @@ package com.github.pfichtner;
 
 import com.github.pfichtner.project.MavenProject;
 
+import org.eclipse.jdt.core.dom.*;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.TreeSet;
 
 /**
  * Headless Rename Package refactoring.
@@ -25,9 +29,6 @@ import java.util.List;
  *
  * <p>The caller is responsible for writing each {@link FileChange#newSource()}
  * to {@link FileChange#newPath()} and deleting the original file.
- *
- * <p>Known limitation: fully-qualified type references in source code (e.g.
- * {@code com.example.service.Foo foo}) are not updated.
  */
 public class JdtRenamePackage {
 
@@ -109,6 +110,15 @@ public class JdtRenamePackage {
             touched = true;
         }
 
+        // 3. Update fully-qualified type references in code bodies (e.g. in lambdas,
+        //    variable declarations, new-expressions). Uses AST to avoid touching
+        //    string literals and comments.
+        String afterFqn = updateFqnCodeReferences(modified, oldPackage, newPackage);
+        if (!afterFqn.equals(modified)) {
+            modified = afterFqn;
+            touched = true;
+        }
+
         if (!touched) return null;
 
         // Compute new file path (only changes for files IN the old package)
@@ -121,6 +131,59 @@ public class JdtRenamePackage {
         }
 
         return new FileChange(file, newPath, modified);
+    }
+
+    // -------------------------------------------------------------------------
+    // AST-based FQN updater
+    // -------------------------------------------------------------------------
+
+    /**
+     * Replaces the {@code oldPackage} prefix in every fully-qualified
+     * {@link QualifiedName} that appears in a code body (i.e. not inside a
+     * {@code package} or {@code import} declaration, which are already handled
+     * by text replacement).  Uses the JDT AST parser to locate nodes precisely
+     * so that occurrences inside string literals and comments are left alone.
+     */
+    private static String updateFqnCodeReferences(
+            String source, String oldPackage, String newPackage) {
+        ASTParser parser = ASTParser.newParser(AST.JLS21);
+        parser.setKind(ASTParser.K_COMPILATION_UNIT);
+        parser.setSource(source.toCharArray());
+        CompilationUnit cu = (CompilationUnit) parser.createAST(null);
+
+        String fqnPrefix = oldPackage + ".";
+        // Collect start positions in descending order so replacements from the
+        // end of the file don't shift offsets for earlier positions.
+        TreeSet<Integer> positions = new TreeSet<>(Comparator.reverseOrder());
+
+        cu.accept(new ASTVisitor() {
+            int skipDepth = 0; // > 0 when inside a package or import declaration
+
+            @Override public boolean visit(PackageDeclaration n) { skipDepth++; return true; }
+            @Override public void endVisit(PackageDeclaration n) { skipDepth--; }
+            @Override public boolean visit(ImportDeclaration n)  { skipDepth++; return true; }
+            @Override public void endVisit(ImportDeclaration n)  { skipDepth--; }
+
+            @Override
+            public boolean visit(QualifiedName node) {
+                if (skipDepth == 0 && node.getFullyQualifiedName().startsWith(fqnPrefix)) {
+                    positions.add(node.getStartPosition());
+                }
+                return true;
+            }
+        });
+
+        if (positions.isEmpty()) return source;
+
+        StringBuilder sb = new StringBuilder(source);
+        int oldLen = oldPackage.length();
+        for (int pos : positions) {
+            if (pos + oldLen <= sb.length()
+                    && sb.substring(pos, pos + oldLen).equals(oldPackage)) {
+                sb.replace(pos, pos + oldLen, newPackage);
+            }
+        }
+        return sb.toString();
     }
 
     // -------------------------------------------------------------------------
