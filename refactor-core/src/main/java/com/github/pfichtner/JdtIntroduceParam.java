@@ -116,6 +116,10 @@ public class JdtIntroduceParam {
 
         fileEdits.put(absTarget, targetEdits);
 
+        List<String> originalParamNames = params.stream()
+                .map(p -> p.getName().getIdentifier()).toList();
+        String methodSimpleName = enclosingMethod.getName().getIdentifier();
+
         // All files: find call sites and append the expression as a new argument
         for (Map.Entry<Path, CompilationUnit> entry : cus.entrySet()) {
             Path filePath = entry.getKey();
@@ -137,6 +141,44 @@ public class JdtIntroduceParam {
                     String argText = args.isEmpty() ? exprText : ", " + exprText;
                     edits.add(new Object[]{closeParenPos, closeParenPos, argText});
                     return true;
+                }
+
+                @Override
+                public boolean visit(ExpressionMethodReference ref) {
+                    IMethodBinding b = ref.resolveMethodBinding();
+                    if (b == null || !methodKey.equals(b.getMethodDeclaration().getKey())) return true;
+                    Expression receiverExpr = ref.getExpression();
+                    String lambda;
+                    if (!Modifier.isStatic(b.getModifiers()) && isTypeNameExpression(receiverExpr)) {
+                        // JDT sometimes parses Type::instanceMethod as ExpressionMethodReference
+                        String receiverVar = receiverVarName(receiverExpr.toString());
+                        lambda = buildIntroduceUnboundLambda(receiverVar, methodSimpleName, originalParamNames, exprText);
+                    } else {
+                        String receiver = fileSource.substring(receiverExpr.getStartPosition(),
+                                receiverExpr.getStartPosition() + receiverExpr.getLength());
+                        lambda = buildIntroduceBoundLambda(receiver, methodSimpleName, originalParamNames, exprText);
+                    }
+                    edits.add(new Object[]{ref.getStartPosition(), ref.getStartPosition() + ref.getLength(), lambda});
+                    return false;
+                }
+
+                @Override
+                public boolean visit(TypeMethodReference ref) {
+                    IMethodBinding b = ref.resolveMethodBinding();
+                    if (b == null || !methodKey.equals(b.getMethodDeclaration().getKey())) return true;
+                    String receiverVar = receiverVarName(ref.getType().toString());
+                    String lambda = buildIntroduceUnboundLambda(receiverVar, methodSimpleName, originalParamNames, exprText);
+                    edits.add(new Object[]{ref.getStartPosition(), ref.getStartPosition() + ref.getLength(), lambda});
+                    return false;
+                }
+
+                @Override
+                public boolean visit(SuperMethodReference ref) {
+                    IMethodBinding b = ref.resolveMethodBinding();
+                    if (b == null || !methodKey.equals(b.getMethodDeclaration().getKey())) return true;
+                    String lambda = buildIntroduceBoundLambda("super", methodSimpleName, originalParamNames, exprText);
+                    edits.add(new Object[]{ref.getStartPosition(), ref.getStartPosition() + ref.getLength(), lambda});
+                    return false;
                 }
             });
         }
@@ -212,6 +254,48 @@ public class JdtIntroduceParam {
         if (token.endsWith("D") || token.endsWith("d")) return "double";
         if (token.contains(".")) return "double";
         return "int";
+    }
+
+    // -------------------------------------------------------------------------
+    // Lambda builders for method reference → lambda conversion
+    // -------------------------------------------------------------------------
+
+    private static String buildIntroduceBoundLambda(
+            String receiver, String methodName, List<String> paramNames, String defaultArg) {
+        String callArgs = paramNames.isEmpty() ? defaultArg : String.join(", ", paramNames) + ", " + defaultArg;
+        String lhs = lambdaParams(paramNames);
+        return lhs + " -> " + receiver + "." + methodName + "(" + callArgs + ")";
+    }
+
+    private static String buildIntroduceUnboundLambda(
+            String receiverVar, String methodName, List<String> paramNames, String defaultArg) {
+        List<String> allLambdaParams = new ArrayList<>();
+        allLambdaParams.add(receiverVar);
+        allLambdaParams.addAll(paramNames);
+        String callArgs = paramNames.isEmpty() ? defaultArg : String.join(", ", paramNames) + ", " + defaultArg;
+        String lhs = lambdaParams(allLambdaParams);
+        return lhs + " -> " + receiverVar + "." + methodName + "(" + callArgs + ")";
+    }
+
+    static String lambdaParams(List<String> names) {
+        return switch (names.size()) {
+            case 0 -> "()";
+            case 1 -> names.get(0);
+            default -> "(" + String.join(", ", names) + ")";
+        };
+    }
+
+    static boolean isTypeNameExpression(Expression expr) {
+        if (expr instanceof Name name) {
+            IBinding binding = name.resolveBinding();
+            return binding instanceof ITypeBinding;
+        }
+        return false;
+    }
+
+    static String receiverVarName(String typeName) {
+        if (typeName == null || typeName.isEmpty()) return "receiver";
+        return Character.toLowerCase(typeName.charAt(0)) + typeName.substring(1);
     }
 
     private static List<Path> collectSourceFiles(MavenProject project) throws IOException {

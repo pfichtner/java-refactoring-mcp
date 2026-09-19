@@ -56,6 +56,39 @@ class IntroduceParamTest {
     }
 
     // -------------------------------------------------------------------------
+    // Method references: bound and unbound converted to lambdas
+    // -------------------------------------------------------------------------
+
+    @Test
+    void introduce_param_converts_method_references_to_lambdas() throws Exception {
+        Path projectRoot = fixtures.projectPath("projects/introduce-param-method-ref");
+        MavenProject project = new MavenProject(projectRoot);
+
+        Path greeterFile = project.sourceRoots().get(0)
+                .resolve("com/example/Greeter.java");
+        String source = Files.readString(greeterFile);
+
+        int start = source.lastIndexOf("\"World\"");
+        int len   = "\"World\"".length();
+
+        Map<Path, String> changed = JdtIntroduceParam.introduceParam(
+                project, greeterFile, start, len, "name", "String");
+
+        Map<String, String> inputs = fixtures.loadProjectSources(
+                "projects/introduce-param-method-ref/src/main/java");
+
+        Approvals.verify(
+            RenameStoryBoard.titled("Introduce parameter: method references converted to lambdas")
+                .inputProject(inputs)
+                .refactoring("introduce parameter",
+                        "`\"World\"` → parameter `String name`",
+                        "in Greeter.greet(); method references updated to lambda form")
+                .outputProject(changed)
+                .build()
+        );
+    }
+
+    // -------------------------------------------------------------------------
     // Precondition: simple name rejected
     // -------------------------------------------------------------------------
 

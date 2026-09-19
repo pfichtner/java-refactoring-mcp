@@ -48,6 +48,33 @@ class RemoveParamTest {
     }
 
     @Test
+    void remove_param_converts_method_references_to_lambdas() throws Exception {
+        Path projectRoot = fixtures.projectPath("projects/remove-param-method-ref");
+        MavenProject project = new MavenProject(projectRoot);
+
+        Path computationFile = project.sourceRoots().get(0)
+                .resolve("com/example/Computation.java");
+        String source = Files.readString(computationFile);
+
+        // Remove parameter 'b' (unused in body, at index 1)
+        int offset = Fixtures.offsetOf(source, "int b)") + "int ".length();
+
+        Map<Path, String> changed = JdtRemoveParam.removeParam(project, computationFile, offset);
+
+        Map<String, String> inputs = fixtures.loadProjectSources(
+                "projects/remove-param-method-ref/src/main/java");
+
+        Approvals.verify(
+            RenameStoryBoard.titled("Remove parameter: method references converted to lambdas")
+                .inputProject(inputs)
+                .refactoring("remove parameter", "`int b` at index 1 of `add(int a, int b)`",
+                        Fixtures.lineCol(source, offset) + " in Computation.java — b not used in body")
+                .outputProject(changed)
+                .build()
+        );
+    }
+
+    @Test
     void remove_param_rejected_when_used_in_body() throws Exception {
         Path projectRoot = fixtures.projectPath("projects/remove-param");
         MavenProject project = new MavenProject(projectRoot);

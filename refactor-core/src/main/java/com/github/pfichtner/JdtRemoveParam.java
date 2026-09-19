@@ -91,21 +91,25 @@ public class JdtRemoveParam {
         }
         String methodKey = methodBinding.getMethodDeclaration().getKey();
 
+        List<String> originalParamNames = params.stream()
+                .map(p -> p.getName().getIdentifier()).toList();
+        String methodSimpleName = decl.getName().getIdentifier();
+
         // -------------------------------------------------------------------------
-        // Build edits
+        // Build edits: Object[] = [start, end, replacementText], "" means delete
         // -------------------------------------------------------------------------
-        Map<Path, List<int[]>> fileEdits = new LinkedHashMap<>(); // [start, end] to delete
+        Map<Path, List<Object[]>> fileEdits = new LinkedHashMap<>();
 
         // Target file: remove the parameter from the declaration
-        List<int[]> targetEdits = fileEdits.computeIfAbsent(absTarget, k -> new ArrayList<>());
-        targetEdits.add(paramRemoveRange(targetSource, params, paramIndex));
+        List<Object[]> targetEdits = fileEdits.computeIfAbsent(absTarget, k -> new ArrayList<>());
+        targetEdits.add(toDelete(paramRemoveRange(targetSource, params, paramIndex)));
 
         // All files: remove the argument at paramIndex from each matching call site
         for (Map.Entry<Path, CompilationUnit> entry : cus.entrySet()) {
             Path filePath = entry.getKey();
             CompilationUnit cu = entry.getValue();
             String fileSource = sources.get(filePath);
-            List<int[]> edits = fileEdits.computeIfAbsent(filePath, k -> new ArrayList<>());
+            List<Object[]> edits = fileEdits.computeIfAbsent(filePath, k -> new ArrayList<>());
 
             cu.accept(new ASTVisitor() {
                 @Override
@@ -114,24 +118,61 @@ public class JdtRemoveParam {
                     if (b == null) return true;
                     if (!methodKey.equals(b.getMethodDeclaration().getKey())) return true;
                     @SuppressWarnings("unchecked") List<Expression> args = call.arguments();
-                    if (paramIndex >= args.size()) return true; // already removed / mismatch
-                    edits.add(argRemoveRange(fileSource, args, paramIndex));
+                    if (paramIndex >= args.size()) return true;
+                    edits.add(toDelete(argRemoveRange(fileSource, args, paramIndex)));
                     return true;
+                }
+
+                @Override
+                public boolean visit(ExpressionMethodReference ref) {
+                    IMethodBinding b = ref.resolveMethodBinding();
+                    if (b == null || !methodKey.equals(b.getMethodDeclaration().getKey())) return true;
+                    Expression receiverExpr = ref.getExpression();
+                    String lambda;
+                    if (!Modifier.isStatic(b.getModifiers()) && JdtIntroduceParam.isTypeNameExpression(receiverExpr)) {
+                        String receiverVar = JdtIntroduceParam.receiverVarName(receiverExpr.toString());
+                        lambda = buildRemoveUnboundLambda(receiverVar, methodSimpleName, originalParamNames, paramIndex);
+                    } else {
+                        String receiver = fileSource.substring(receiverExpr.getStartPosition(),
+                                receiverExpr.getStartPosition() + receiverExpr.getLength());
+                        lambda = buildRemoveBoundLambda(receiver, methodSimpleName, originalParamNames, paramIndex);
+                    }
+                    edits.add(new Object[]{ref.getStartPosition(), ref.getStartPosition() + ref.getLength(), lambda});
+                    return false;
+                }
+
+                @Override
+                public boolean visit(TypeMethodReference ref) {
+                    IMethodBinding b = ref.resolveMethodBinding();
+                    if (b == null || !methodKey.equals(b.getMethodDeclaration().getKey())) return true;
+                    String receiverVar = JdtIntroduceParam.receiverVarName(ref.getType().toString());
+                    String lambda = buildRemoveUnboundLambda(receiverVar, methodSimpleName, originalParamNames, paramIndex);
+                    edits.add(new Object[]{ref.getStartPosition(), ref.getStartPosition() + ref.getLength(), lambda});
+                    return false;
+                }
+
+                @Override
+                public boolean visit(SuperMethodReference ref) {
+                    IMethodBinding b = ref.resolveMethodBinding();
+                    if (b == null || !methodKey.equals(b.getMethodDeclaration().getKey())) return true;
+                    String lambda = buildRemoveBoundLambda("super", methodSimpleName, originalParamNames, paramIndex);
+                    edits.add(new Object[]{ref.getStartPosition(), ref.getStartPosition() + ref.getLength(), lambda});
+                    return false;
                 }
             });
         }
 
         // Apply edits per file (end-to-start within each file)
         Map<Path, String> changed = new LinkedHashMap<>();
-        for (Map.Entry<Path, List<int[]>> entry : fileEdits.entrySet()) {
+        for (Map.Entry<Path, List<Object[]>> entry : fileEdits.entrySet()) {
             Path filePath = entry.getKey();
-            List<int[]> edits = entry.getValue();
+            List<Object[]> edits = entry.getValue();
             if (edits.isEmpty()) continue;
 
-            edits.sort((a, b) -> b[0] - a[0]);
+            edits.sort((a, b) -> (int) b[0] - (int) a[0]);
             StringBuilder sb = new StringBuilder(sources.get(filePath));
-            for (int[] ed : edits) {
-                sb.delete(ed[0], ed[1]);
+            for (Object[] ed : edits) {
+                sb.replace((int) ed[0], (int) ed[1], (String) ed[2]);
             }
             changed.put(filePath, sb.toString());
         }
@@ -189,6 +230,33 @@ public class JdtRemoveParam {
         } else {
             return new int[]{argStart, argEnd};
         }
+    }
+
+    private static Object[] toDelete(int[] range) {
+        return new Object[]{range[0], range[1], ""};
+    }
+
+    // -------------------------------------------------------------------------
+    // Lambda builders for method reference → lambda conversion
+    // -------------------------------------------------------------------------
+
+    private static String buildRemoveBoundLambda(
+            String receiver, String methodName, List<String> paramNames, int removeIndex) {
+        List<String> callArgs = new ArrayList<>(paramNames);
+        if (removeIndex < callArgs.size()) callArgs.remove(removeIndex);
+        String lhs = JdtIntroduceParam.lambdaParams(paramNames);
+        return lhs + " -> " + receiver + "." + methodName + "(" + String.join(", ", callArgs) + ")";
+    }
+
+    private static String buildRemoveUnboundLambda(
+            String receiverVar, String methodName, List<String> paramNames, int removeIndex) {
+        List<String> allLambdaParams = new ArrayList<>();
+        allLambdaParams.add(receiverVar);
+        allLambdaParams.addAll(paramNames);
+        List<String> callArgs = new ArrayList<>(paramNames);
+        if (removeIndex < callArgs.size()) callArgs.remove(removeIndex);
+        String lhs = JdtIntroduceParam.lambdaParams(allLambdaParams);
+        return lhs + " -> " + receiverVar + "." + methodName + "(" + String.join(", ", callArgs) + ")";
     }
 
     // -------------------------------------------------------------------------
