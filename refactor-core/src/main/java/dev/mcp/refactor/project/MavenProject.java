@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -33,10 +34,12 @@ public class MavenProject {
     }
 
     /**
-     * Returns compile source roots. Defaults to {@code src/main/java}; honours
-     * a custom {@code <sourceDirectory>} in pom.xml when present.
+     * Returns compile and test source roots. Defaults to {@code src/main/java}
+     * and {@code src/test/java} (when present); honours a custom
+     * {@code <sourceDirectory>} in pom.xml for the main root.
      */
     public List<Path> sourceRoots() {
+        List<Path> roots = new ArrayList<>();
         try {
             Document doc = parsePom();
             XPath xpath = XPathFactory.newInstance().newXPath();
@@ -44,11 +47,14 @@ public class MavenProject {
                     "/project/build/sourceDirectory/text()", doc).trim();
             if (!custom.isEmpty()) {
                 Path p = Path.of(custom);
-                return List.of(p.isAbsolute() ? p : root.resolve(p));
+                roots.add(p.isAbsolute() ? p : root.resolve(p));
             }
         } catch (Exception ignored) {
         }
-        return List.of(root.resolve("src/main/java"));
+        if (roots.isEmpty()) roots.add(root.resolve("src/main/java"));
+        Path testRoot = root.resolve("src/test/java");
+        if (Files.isDirectory(testRoot)) roots.add(testRoot);
+        return List.copyOf(roots);
     }
 
     /**
