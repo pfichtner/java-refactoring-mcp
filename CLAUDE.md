@@ -6,6 +6,7 @@ AGENTS.md
 	•	Never implement future milestones without explicit instruction.
 	•	Prefer JDT semantic APIs over custom Java analysis.
 	•	Never use regexes for semantic refactoring.
+	•	Never use raw String operations (replace, indexOf, substring) for source-code transformations — all edits must go through JDT AST node positions.
 	•	Every refactoring requires golden-master tests.
 	•	Every bug becomes a regression fixture.
 	•	Never blindly regenerate approval files.
