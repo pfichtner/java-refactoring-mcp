@@ -443,7 +443,6 @@ public class Calculator {
     public int plus(int a, int b) { return a + b; }
 }
 ```
-```
 
 To update an approved file after an intentional change:
 1. Inspect the diff between the received and approved file.
