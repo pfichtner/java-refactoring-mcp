@@ -11,6 +11,7 @@ import dev.mcp.refactor.JdtExtractVariable;
 import dev.mcp.refactor.JdtExtractor;
 import dev.mcp.refactor.JdtInlineMethod;
 import dev.mcp.refactor.JdtInliner;
+import dev.mcp.refactor.JdtIntroduceParameterObject;
 import dev.mcp.refactor.JdtIntroduceStaticFactory;
 import dev.mcp.refactor.JdtPullUpField;
 import dev.mcp.refactor.JdtPullUpMethod;
@@ -73,6 +74,7 @@ public class RefactoringServer {
         server.addTool(pullUpField());
         server.addTool(pushDownField());
         server.addTool(introduceStaticFactory());
+        server.addTool(introduceParameterObject());
 
         return server;
     }
@@ -978,6 +980,54 @@ public class RefactoringServer {
                                 new dev.mcp.refactor.project.MavenProject(root),
                                 file, offset, name, makePrivate);
 
+                        return ok(formatPreview(changed));
+                    } catch (IllegalArgumentException e) {
+                        return error(e.getMessage());
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
+    }
+
+    // Tool: introduce_parameter_object
+
+    static SyncToolSpecification introduceParameterObject() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("introduce_parameter_object", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                                "project_root",    Map.of("type", "string",  "description", "Absolute path to the Maven project root"),
+                                "file",            Map.of("type", "string",  "description", "Source file path relative to project_root"),
+                                "line",            Map.of("type", "integer", "description", "1-based line of the method declaration"),
+                                "column",          Map.of("type", "integer", "description", "1-based column inside the method declaration"),
+                                "param_names",     Map.of("type", "array", "items", Map.of("type", "string"),
+                                                          "description", "Names of the contiguous parameters to group (>=2)"),
+                                "class_name",      Map.of("type", "string",  "description", "Simple name for the new parameter-object class"),
+                                "param_object_name", Map.of("type", "string", "description", "Name for the new parameter in the method (optional, defaults to lower-camel of class_name)")
+                        ),
+                        "required", List.of("project_root", "file", "line", "column", "param_names", "class_name")
+                )).build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        Path root = Path.of((String) args.get("project_root"));
+                        Path file = root.resolve((String) args.get("file"));
+                        int  line = ((Number) args.get("line")).intValue();
+                        int  col  = ((Number) args.get("column")).intValue();
+                        @SuppressWarnings("unchecked")
+                        List<String> paramNames = (List<String>) args.get("param_names");
+                        String className = (String) args.get("class_name");
+                        String paramObjName = args.containsKey("param_object_name")
+                                ? (String) args.get("param_object_name")
+                                : Character.toLowerCase(className.charAt(0)) + className.substring(1);
+
+                        String source = java.nio.file.Files.readString(file);
+                        int offset    = JdtRenamer.toOffset(source, line, col);
+
+                        var changed = JdtIntroduceParameterObject.introduce(
+                                new dev.mcp.refactor.project.MavenProject(root),
+                                file, offset, paramNames, className, paramObjName);
                         return ok(formatPreview(changed));
                     } catch (IllegalArgumentException e) {
                         return error(e.getMessage());

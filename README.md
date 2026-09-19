@@ -245,6 +245,7 @@ MCP tool: `rename_package` — returns new source and new path for every changed
 ### M17 — Pull Up / Push Down Method
 ### M18 — Introduce Static Factory
 ### M19 — Pull Up / Push Down Field
+### M20 — Introduce Parameter Object
 
 `JdtPullUpMethod.pullUp(project, sourceFile, offset)` moves a method declaration from a
 subclass to its direct superclass. The superclass is located by simple name within the
@@ -321,6 +322,35 @@ MCP tools: `pull_up_field` and `push_down_field` — accept `project_root`, `fil
 
 **Limitations:** multi-fragment declarations (e.g. `int x, y;`) are moved as a unit;
 subclass detection uses simple name matching on the `extends` clause.
+
+### M20 — Introduce Parameter Object
+
+`JdtIntroduceParameterObject.introduce(project, sourceFile, offset, paramNames, className, paramObjectName)`
+groups two or more contiguous method parameters into a new value-object class:
+
+1. Generates `ClassName.java` with private-final fields, an all-args constructor, and getters.
+2. Replaces the grouped parameters in the method signature with `ClassName paramObjectName`.
+3. Rewrites references to the original parameters in the method body to `paramObjectName.getXxx()`.
+4. Wraps the corresponding arguments at every call site: `method(new ClassName(arg1, arg2), rest…)`.
+
+Uses JDT binding resolution for accurate call-site and body-reference matching.
+
+CLI:
+```
+java-refactor introduce-param-object -f FILE -l LINE -c COL -p x,y -n Coordinate [--param-name coord] [--dry-run]
+```
+
+MCP tool: `introduce_parameter_object` — accepts `project_root`, `file`, `line`, `column`,
+`param_names` (array), `class_name`, and optional `param_object_name`.
+
+**Preconditions checked:**
+- At least 2 parameter names must be specified.
+- All named parameters must exist in the method.
+- The named parameters must be contiguous in the signature.
+- `ClassName.java` must not already exist in the same directory.
+
+**Limitations:** only `MethodInvocation` call sites are rewritten (constructor call sites of the
+enclosing class are not); varargs parameters are not supported; unresolvable call sites are skipped.
 
 ## Integration
 
@@ -442,7 +472,7 @@ A well-prompted agent will call `analyze_refactoring` first (dry-run), show you 
 
 | Milestone | Description |
 |-----------|-------------|
-| M20+ | abstract method, introduce parameter object, … |
+| M21+ | abstract method, … |
 
 ## Design Principles
 
