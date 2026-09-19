@@ -390,7 +390,8 @@ A well-prompted agent will call `analyze_refactoring` first (dry-run), show you 
 
 | Milestone | Description |
 |-----------|-------------|
-| M18+ | pull up / push down field, abstract method, … |
+| M18 | Introduce Static Factory — replace constructor calls at call sites with a newly created static factory method; optionally make the now-unused constructor `private` |
+| M19+ | pull up / push down field, abstract method, … |
 
 ## Design Principles
 
