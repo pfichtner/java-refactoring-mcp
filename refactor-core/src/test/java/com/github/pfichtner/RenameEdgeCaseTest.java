@@ -138,6 +138,58 @@ class RenameEdgeCaseTest {
     }
 
     // -------------------------------------------------------------------------
+    // Javadoc cross-references
+    // -------------------------------------------------------------------------
+
+    @Test
+    void rename_type_updates_javadoc_link() throws Exception {
+        Path projectRoot = fixtures.projectPath("projects/rename-javadoc-type");
+        MavenProject project = new MavenProject(projectRoot);
+        Path greeterFile = project.sourceRoots().get(0).resolve("com/example/Greeter.java");
+        String source = Files.readString(greeterFile);
+
+        int offset = Fixtures.offsetOf(source, "Greeter");
+
+        Map<Path, String> changed = JdtRenamer.rename(project, greeterFile, offset, "HelloService");
+
+        Map<String, String> inputs = fixtures.loadProjectSources(
+                "projects/rename-javadoc-type/src/main/java");
+
+        Approvals.verify(
+            RenameStoryBoard.titled("Rename type: Greeter → HelloService ({@link} and @see updated)")
+                .inputProject(inputs)
+                .refactoring("rename type", "`Greeter` → `HelloService`",
+                        "{@link Greeter} and @see Greeter in App.java Javadoc must be updated")
+                .outputProject(changed)
+                .build()
+        );
+    }
+
+    @Test
+    void rename_method_updates_javadoc_link() throws Exception {
+        Path projectRoot = fixtures.projectPath("projects/rename-javadoc-method");
+        MavenProject project = new MavenProject(projectRoot);
+        Path calcFile = project.sourceRoots().get(0).resolve("com/example/Calculator.java");
+        String source = Files.readString(calcFile);
+
+        int offset = Fixtures.offsetOf(source, "compute");
+
+        Map<Path, String> changed = JdtRenamer.rename(project, calcFile, offset, "add");
+
+        Map<String, String> inputs = fixtures.loadProjectSources(
+                "projects/rename-javadoc-method/src/main/java");
+
+        Approvals.verify(
+            RenameStoryBoard.titled("Rename method: Calculator.compute → add ({@link} and @see updated)")
+                .inputProject(inputs)
+                .refactoring("rename method", "`Calculator.compute(int,int)` → `add`",
+                        "{@link Calculator#compute} and @see Calculator#compute in App.java Javadoc must be updated")
+                .outputProject(changed)
+                .build()
+        );
+    }
+
+    // -------------------------------------------------------------------------
     // Anonymous classes
     // -------------------------------------------------------------------------
 

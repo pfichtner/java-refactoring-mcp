@@ -120,4 +120,34 @@ class IntroduceParamTest {
                 .build()
         );
     }
+
+    // -------------------------------------------------------------------------
+    // Javadoc: @param tag inserted
+    // -------------------------------------------------------------------------
+
+    @Test
+    void introduce_param_adds_param_tag_when_javadoc_exists() throws Exception {
+        Path projectRoot = fixtures.projectPath("projects/introduce-param-javadoc");
+        MavenProject project = new MavenProject(projectRoot);
+
+        Path calcFile = project.sourceRoots().get(0).resolve("com/example/Calculator.java");
+        String source = Files.readString(calcFile);
+
+        // Select the literal "a + b" — promote it to a new parameter
+        int start = Fixtures.offsetOf(source, "a + b");
+        int len   = "a + b".length();
+
+        Map<Path, String> changed = JdtIntroduceParam.introduceParam(
+                project, calcFile, start, len, "value", "int");
+
+        Approvals.verify(
+            RenameStoryBoard.titled("Introduce parameter: @param tag inserted after last @param")
+                .javaSection("Input", source)
+                .refactoring("introduce parameter",
+                        "`a + b` → parameter `int value`",
+                        Fixtures.lineCol(source, start) + " — @param value must be added to Javadoc")
+                .outputProject(changed)
+                .build()
+        );
+    }
 }

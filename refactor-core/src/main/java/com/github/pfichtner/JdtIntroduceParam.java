@@ -110,6 +110,9 @@ public class JdtIntroduceParam {
         }
         targetEdits.add(new Object[]{paramInsertPos, paramInsertPos, paramInsertText});
 
+        // (1b) Insert @param tag into the method's Javadoc if one exists
+        addJavadocParamTag(targetSource, enclosingMethod, paramName, targetEdits);
+
         // (2) Expression replacement
         targetEdits.add(new Object[]{
                 expr.getStartPosition(), expr.getStartPosition() + expr.getLength(), paramName});
@@ -258,6 +261,45 @@ public class JdtIntroduceParam {
 
     // -------------------------------------------------------------------------
     // Lambda builders for method reference → lambda conversion
+    // -------------------------------------------------------------------------
+
+    private static void addJavadocParamTag(
+            String source, MethodDeclaration method, String paramName, List<Object[]> edits) {
+        Javadoc javadoc = method.getJavadoc();
+        if (javadoc == null) return;
+
+        int insertPos = -1;
+        String linePrefix = " * ";  // fallback indent
+        int firstNonParamLineStart = -1;
+
+        for (Object tagObj : javadoc.tags()) {
+            if (!(tagObj instanceof TagElement tag)) continue;
+            String tagName = tag.getTagName();
+            if ("@param".equals(tagName)) {
+                int lineStart = source.lastIndexOf('\n', tag.getStartPosition() - 1) + 1;
+                linePrefix = source.substring(lineStart, tag.getStartPosition());
+                int lineEnd = tag.getStartPosition() + tag.getLength();
+                while (lineEnd < source.length() && source.charAt(lineEnd) != '\n') lineEnd++;
+                if (lineEnd < source.length()) lineEnd++;
+                insertPos = lineEnd;
+            } else if (firstNonParamLineStart < 0 && tagName != null && !tagName.isEmpty()) {
+                firstNonParamLineStart = source.lastIndexOf('\n', tag.getStartPosition() - 1) + 1;
+            }
+        }
+
+        if (insertPos < 0) {
+            if (firstNonParamLineStart >= 0) {
+                insertPos = firstNonParamLineStart;
+            } else {
+                // no tags at all: insert before closing */
+                int closePos = javadoc.getStartPosition() + javadoc.getLength() - 2;
+                insertPos = source.lastIndexOf('\n', closePos) + 1;
+            }
+        }
+
+        edits.add(new Object[]{insertPos, insertPos, linePrefix + "@param " + paramName + "\n"});
+    }
+
     // -------------------------------------------------------------------------
 
     private static String buildIntroduceBoundLambda(

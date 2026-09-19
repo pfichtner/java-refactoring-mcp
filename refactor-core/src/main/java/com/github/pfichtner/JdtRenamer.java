@@ -189,11 +189,27 @@ public class JdtRenamer {
     private static List<SimpleName> collectOccurrences(CompilationUnit cu, IBinding target) {
         String key = normalizedKey(target);
         List<SimpleName> result = new ArrayList<>();
-        cu.accept(new ASTVisitor() {
+        cu.accept(new ASTVisitor(true) {
             @Override
             public boolean visit(SimpleName node) {
+                addIfMatch(node);
+                return true;
+            }
+            @Override
+            public boolean visit(MemberRef node) {  // {@link Type#field}
+                addIfMatch(node.getName());
+                if (node.getQualifier() instanceof SimpleName sn) addIfMatch(sn);
+                return false; // don't re-visit children via visit(SimpleName)
+            }
+            @Override
+            public boolean visit(MethodRef node) {  // {@link Type#method()}
+                addIfMatch(node.getName());
+                if (node.getQualifier() instanceof SimpleName sn) addIfMatch(sn);
+                return false; // don't re-visit children via visit(SimpleName)
+            }
+            void addIfMatch(SimpleName node) {
                 IBinding b = node.resolveBinding();
-                if (b == null) return true;
+                if (b == null) return;
                 if (key.equals(normalizedKey(b))) {
                     result.add(node);
                 } else if (target instanceof ITypeBinding
@@ -204,7 +220,6 @@ public class JdtRenamer {
                         result.add(node);
                     }
                 }
-                return true;
             }
         });
         return result;
@@ -213,7 +228,7 @@ public class JdtRenamer {
     /** Collects by exact binding key — used for the single-file snippet path. */
     private static List<SimpleName> collectOccurrencesByKey(CompilationUnit cu, String bindingKey) {
         List<SimpleName> result = new ArrayList<>();
-        cu.accept(new ASTVisitor() {
+        cu.accept(new ASTVisitor(true) {
             @Override
             public boolean visit(SimpleName node) {
                 IBinding b = node.resolveBinding();

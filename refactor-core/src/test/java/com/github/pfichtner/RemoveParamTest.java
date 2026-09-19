@@ -75,6 +75,28 @@ class RemoveParamTest {
     }
 
     @Test
+    void remove_param_removes_orphaned_param_tag() throws Exception {
+        Path projectRoot = fixtures.projectPath("projects/remove-param-javadoc");
+        MavenProject project = new MavenProject(projectRoot);
+
+        Path calcFile = project.sourceRoots().get(0).resolve("com/example/Calculator.java");
+        String source = Files.readString(calcFile);
+
+        int offset = Fixtures.offsetOf(source, "int c)") + "int ".length();
+
+        Map<Path, String> changed = JdtRemoveParam.removeParam(project, calcFile, offset);
+
+        Approvals.verify(
+            RenameStoryBoard.titled("Remove parameter: @param tag removed from Javadoc")
+                .javaSection("Input", source)
+                .refactoring("remove parameter", "`int c` at index 2 of `add(int a, int b, int c)`",
+                        Fixtures.lineCol(source, offset) + " — @param c tag must be removed from Javadoc")
+                .outputProject(changed)
+                .build()
+        );
+    }
+
+    @Test
     void remove_param_rejected_when_used_in_body() throws Exception {
         Path projectRoot = fixtures.projectPath("projects/remove-param");
         MavenProject project = new MavenProject(projectRoot);

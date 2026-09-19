@@ -113,6 +113,31 @@ class RenamePackageTest {
         );
     }
 
+    @Test
+    void rename_package_updates_javadoc_fqn_references() throws Exception {
+        var project = new MavenProject(fixtures.projectPath("projects/rename-package-javadoc"));
+        JdtRenamePackage.Result result = JdtRenamePackage.renamePackage(
+                project, "com.example.service", "com.example.util");
+
+        Map<String, String> inputs = fixtures.loadProjectSources(
+                "projects/rename-package-javadoc/src/main/java");
+
+        Map<Path, String> outputs = new LinkedHashMap<>();
+        result.changedFiles().stream()
+                .sorted(Comparator.comparing(a -> a.newPath().getFileName().toString()))
+                .forEach(fc -> outputs.put(fc.newPath(), fc.newSource()));
+
+        Approvals.verify(
+            RenameStoryBoard.titled("Rename package: {@link} and @see FQN in Javadoc updated")
+                .inputProject(inputs)
+                .refactoring("rename package",
+                        "`com.example.service` → `com.example.util`",
+                        "{@link com.example.service.Calculator} and @see in App.java Javadoc must be updated")
+                .outputProject(outputs)
+                .build()
+        );
+    }
+
     // Unit test for remapPackage helper
     @Test
     void remapPackage_handles_direct_and_subpackage() {

@@ -120,7 +120,7 @@ public class JdtRenamePackage {
 
         // 3. Fully-qualified code references (QualifiedName nodes outside package/import
         //    declarations), e.g. in field types, local variables, lambdas.
-        cu.accept(new ASTVisitor() {
+        cu.accept(new ASTVisitor(true) {
             int skipDepth = 0;
             @Override public boolean visit(PackageDeclaration n) { skipDepth++; return true; }
             @Override public void endVisit(PackageDeclaration n) { skipDepth--; }

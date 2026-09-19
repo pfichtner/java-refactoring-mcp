@@ -104,6 +104,21 @@ public class JdtRemoveParam {
         List<Object[]> targetEdits = fileEdits.computeIfAbsent(absTarget, k -> new ArrayList<>());
         targetEdits.add(toDelete(paramRemoveRange(targetSource, params, paramIndex)));
 
+        // Remove orphaned @param tag from the method's Javadoc
+        Javadoc javadoc = decl.getJavadoc();
+        if (javadoc != null) {
+            String paramName = paramBinding.getName();
+            for (Object tagObj : javadoc.tags()) {
+                if (tagObj instanceof TagElement tag
+                        && "@param".equals(tag.getTagName())
+                        && !tag.fragments().isEmpty()
+                        && tag.fragments().get(0) instanceof SimpleName sn
+                        && sn.getIdentifier().equals(paramName)) {
+                    targetEdits.add(toDelete(tagLineRange(targetSource, tag)));
+                }
+            }
+        }
+
         // All files: remove the argument at paramIndex from each matching call site
         for (Map.Entry<Path, CompilationUnit> entry : cus.entrySet()) {
             Path filePath = entry.getKey();
@@ -234,6 +249,18 @@ public class JdtRemoveParam {
 
     private static Object[] toDelete(int[] range) {
         return new Object[]{range[0], range[1], ""};
+    }
+
+    private static int[] tagLineRange(String source, TagElement tag) {
+        int tagStart = tag.getStartPosition();
+        int tagEnd   = tagStart + tag.getLength();
+        // extend backward to include the " * " prefix (from the preceding newline)
+        int lineStart = source.lastIndexOf('\n', tagStart - 1) + 1;
+        // extend forward to include the trailing newline
+        int lineEnd = tagEnd;
+        while (lineEnd < source.length() && source.charAt(lineEnd) != '\n') lineEnd++;
+        if (lineEnd < source.length()) lineEnd++; // include the '\n' itself
+        return new int[]{lineStart, lineEnd};
     }
 
     // -------------------------------------------------------------------------
