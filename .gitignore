@@ -2,3 +2,4 @@ target/
 *.received.md
 .claude/worktrees/
 *.swp
+dependency-reduced-pom.xml

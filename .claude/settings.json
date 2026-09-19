@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "java-refactoring": {
+      "command": "java",
+      "args": [
+        "-jar",
+        "/home/kasm-user/Projekte/java-refactoring-mcp/refactor-mcp/target/refactor-mcp-0.1.0-SNAPSHOT-fat.jar"
+      ]
+    }
+  }
+}
