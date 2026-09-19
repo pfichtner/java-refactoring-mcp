@@ -38,14 +38,6 @@ class PushDownFieldTest {
         Path absCar     = carFile.toAbsolutePath().normalize();
         Path absTruck   = truckFile.toAbsolutePath().normalize();
 
-        String newVehicle = changed.get(absVehicle);
-        String newCar     = changed.get(absCar);
-        String newTruck   = changed.get(absTruck);
-
-        assertFalse(newVehicle.contains("maxSpeed"), "superclass should no longer contain maxSpeed");
-        assertTrue(newCar.contains("maxSpeed"),      "Car should now contain maxSpeed");
-        assertTrue(newTruck.contains("maxSpeed"),    "Truck should now contain maxSpeed");
-
         Approvals.verify(
             RenameStoryBoard.titled("Push down field: Vehicle.maxSpeed → Car, Truck")
                 .inputProject(Map.of(

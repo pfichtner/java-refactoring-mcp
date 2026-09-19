@@ -37,11 +37,6 @@ class PullUpMethodTest {
         assertTrue(changed.containsKey(absAnimal), "superclass must be in result");
         assertTrue(changed.containsKey(absDog),    "subclass must be in result");
 
-        String newAnimal = changed.get(absAnimal);
-        String newDog    = changed.get(absDog);
-        assertTrue(newAnimal.contains("speak"), "superclass should now contain speak()");
-        assertFalse(newDog.contains("speak"),   "subclass should no longer contain speak()");
-
         Approvals.verify(
             RenameStoryBoard.titled("Pull up method: Dog.speak → Animal")
                 .inputProject(Map.of("Animal.java", animalSource, "Dog.java", dogSource))

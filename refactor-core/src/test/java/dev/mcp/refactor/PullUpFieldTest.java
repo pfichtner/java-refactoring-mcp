@@ -37,11 +37,6 @@ class PullUpFieldTest {
         assertTrue(changed.containsKey(absAnimal), "superclass must be in result");
         assertTrue(changed.containsKey(absDog),    "subclass must be in result");
 
-        String newAnimal = changed.get(absAnimal);
-        String newDog    = changed.get(absDog);
-        assertTrue(newAnimal.contains("breed"),  "superclass should now contain breed");
-        assertFalse(newDog.contains("protected String breed"), "subclass should no longer declare breed");
-
         Approvals.verify(
             RenameStoryBoard.titled("Pull up field: Dog.breed → Animal")
                 .inputProject(Map.of("Animal.java", animalSource, "Dog.java", dogSource))

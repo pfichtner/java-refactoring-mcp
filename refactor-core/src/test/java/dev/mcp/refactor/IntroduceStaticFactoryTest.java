@@ -39,14 +39,6 @@ class IntroduceStaticFactoryTest {
         assertTrue(changed.containsKey(absCounter), "Counter.java must be in result");
         assertTrue(changed.containsKey(absApp),     "App.java must be in result");
 
-        String newCounter = changed.get(absCounter);
-        String newApp     = changed.get(absApp);
-
-        assertTrue(newCounter.contains("public static Counter of("), "factory method must be present");
-        assertTrue(newCounter.contains("return new Counter("), "factory body must use new");
-        assertTrue(newApp.contains("Counter.of("), "App call sites must use factory");
-        assertFalse(newApp.contains("new Counter("), "App must not contain direct new");
-
         Approvals.verify(
             RenameStoryBoard.titled("Introduce static factory: Counter.of (constructor stays public)")
                 .inputProject(Map.of("Counter.java", counterSrc, "App.java", appSrc))
@@ -73,10 +65,6 @@ class IntroduceStaticFactoryTest {
 
         Map<Path, String> changed = JdtIntroduceStaticFactory.introduceStaticFactory(
                 project, counterFile, offset, "create", true);
-
-        String newCounter = changed.get(counterFile.toAbsolutePath().normalize());
-        assertTrue(newCounter.contains("private Counter("), "constructor must become private");
-        assertTrue(newCounter.contains("public static Counter create("), "factory must be public static");
 
         Approvals.verify(
             RenameStoryBoard.titled("Introduce static factory: Counter.create (constructor private)")

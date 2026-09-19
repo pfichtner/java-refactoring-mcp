@@ -32,21 +32,8 @@ class ConvertToRecordTest {
         Path absPoint = pointFile.toAbsolutePath().normalize();
         Path absApp   = appFile.toAbsolutePath().normalize();
 
-        // Point.java: converted to record
-        String newPoint = changed.get(absPoint);
-        assertNotNull(newPoint, "Point.java must be in result");
-        assertTrue(newPoint.contains("record Point(int x, int y)"), "record declaration");
-        assertFalse(newPoint.contains("private final int"), "fields removed");
-        assertFalse(newPoint.contains("public Point("),     "constructor removed");
-        assertFalse(newPoint.contains("getX()"),            "bean getter removed");
-        assertTrue(newPoint.contains("distanceTo"),         "custom method kept");
-
-        // App.java: getter call sites renamed
-        String newApp = changed.get(absApp);
-        assertNotNull(newApp, "App.java must be in result");
-        assertTrue(newApp.contains("p.x()"),    "getX() renamed to x()");
-        assertTrue(newApp.contains("p.y()"),    "getY() renamed to y()");
-        assertFalse(newApp.contains("getX()"),  "old getter gone from App");
+        assertTrue(changed.containsKey(absPoint), "Point.java must be in result");
+        assertTrue(changed.containsKey(absApp),   "App.java must be in result");
 
         Approvals.verify(
             RenameStoryBoard.titled("Convert class to record: Point (getters renamed at call sites)")

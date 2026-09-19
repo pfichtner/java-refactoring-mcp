@@ -39,7 +39,6 @@ class MoveClassTest {
         // Verify App.java import was updated
         assertEquals(1, result.changedImports().size());
         String updatedApp = result.changedImports().values().iterator().next();
-        assertTrue(updatedApp.contains("import com.example.util.Calculator;"));
 
         // Storyboard approval
         Approvals.verify(

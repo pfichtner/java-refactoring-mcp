@@ -38,14 +38,6 @@ class PushDownMethodTest {
         Path absCircle = circleFile.toAbsolutePath().normalize();
         Path absRect   = rectFile.toAbsolutePath().normalize();
 
-        String newShape  = changed.get(absShape);
-        String newCircle = changed.get(absCircle);
-        String newRect   = changed.get(absRect);
-
-        assertFalse(newShape.contains("area"),  "superclass should no longer contain area()");
-        assertTrue(newCircle.contains("area"),  "Circle should now contain area()");
-        assertTrue(newRect.contains("area"),    "Rectangle should now contain area()");
-
         Approvals.verify(
             RenameStoryBoard.titled("Push down method: Shape.area → Circle, Rectangle")
                 .inputProject(Map.of(

@@ -115,8 +115,6 @@ class InlineMethodTest {
 
         assertTrue(changed.containsKey(calcFile.toAbsolutePath().normalize()),
                 "Calculator.java must be changed when removeDeclaration=true");
-        assertFalse(changed.get(calcFile.toAbsolutePath().normalize()).contains("public int add("),
-                "Declaration should be removed");
 
         Approvals.verify(
             RenameStoryBoard.titled("Inline method: add (multi-file, declaration removed)")
