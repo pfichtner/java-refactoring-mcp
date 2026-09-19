@@ -10,7 +10,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.TreeSet;
 
 /**
  * Headless Rename Package refactoring.
@@ -88,38 +87,67 @@ public class JdtRenamePackage {
             String source, Path file, Path sourceRoot,
             String oldPackage, String newPackage) {
 
-        String modified = source;
-        boolean touched = false;
+        ASTParser parser = ASTParser.newParser(AST.JLS21);
+        parser.setKind(ASTParser.K_COMPILATION_UNIT);
+        parser.setSource(source.toCharArray());
+        CompilationUnit cu = (CompilationUnit) parser.createAST(null);
 
-        // 1. Update package declaration if this file belongs to oldPackage (or a sub-package)
-        String declaredPkg = extractDeclaredPackage(source);
+        String fqnPrefix = oldPackage + ".";
+
+        record Edit(int start, int end, String replacement) {}
+        List<Edit> edits = new ArrayList<>();
+
+        // 1. Package declaration
+        PackageDeclaration pkgDecl = cu.getPackage();
+        String declaredPkg = pkgDecl != null ? pkgDecl.getName().getFullyQualifiedName() : null;
         String newDeclaredPkg = remapPackage(declaredPkg, oldPackage, newPackage);
         if (newDeclaredPkg != null) {
-            modified = modified.replace(
-                    "package " + declaredPkg + ";",
-                    "package " + newDeclaredPkg + ";");
-            touched = true;
+            int start = pkgDecl.getStartPosition();
+            edits.add(new Edit(start, start + pkgDecl.getLength(),
+                    "package " + newDeclaredPkg + ";"));
         }
 
-        // 2. Update imports: "import OLD.X" → "import NEW.X"
-        //    Trailing period prevents matching "import OLD_longer.X" (oldPackage = "OLD").
-        String importOld = "import " + oldPackage + ".";
-        String importNew = "import " + newPackage + ".";
-        if (modified.contains(importOld)) {
-            modified = modified.replace(importOld, importNew);
-            touched = true;
+        // 2. Import declarations: replace the package prefix in matching import names
+        for (Object o : cu.imports()) {
+            if (o instanceof ImportDeclaration imp) {
+                String importName = imp.getName().getFullyQualifiedName();
+                if (importName.equals(oldPackage) || importName.startsWith(fqnPrefix)) {
+                    int nameStart = imp.getName().getStartPosition();
+                    edits.add(new Edit(nameStart, nameStart + oldPackage.length(), newPackage));
+                }
+            }
         }
 
-        // 3. Update fully-qualified type references in code bodies (e.g. in lambdas,
-        //    variable declarations, new-expressions). Uses AST to avoid touching
-        //    string literals and comments.
-        String afterFqn = updateFqnCodeReferences(modified, oldPackage, newPackage);
-        if (!afterFqn.equals(modified)) {
-            modified = afterFqn;
-            touched = true;
-        }
+        // 3. Fully-qualified code references (QualifiedName nodes outside package/import
+        //    declarations), e.g. in field types, local variables, lambdas.
+        cu.accept(new ASTVisitor() {
+            int skipDepth = 0;
+            @Override public boolean visit(PackageDeclaration n) { skipDepth++; return true; }
+            @Override public void endVisit(PackageDeclaration n) { skipDepth--; }
+            @Override public boolean visit(ImportDeclaration n)  { skipDepth++; return true; }
+            @Override public void endVisit(ImportDeclaration n)  { skipDepth--; }
 
-        if (!touched) return null;
+            @Override
+            public boolean visit(QualifiedName node) {
+                if (skipDepth == 0 && node.getFullyQualifiedName().startsWith(fqnPrefix)) {
+                    edits.add(new Edit(node.getStartPosition(),
+                            node.getStartPosition() + oldPackage.length(), newPackage));
+                    // returning false avoids visiting nested qualifier nodes that would
+                    // generate duplicate edits at the same start position
+                    return false;
+                }
+                return true;
+            }
+        });
+
+        if (edits.isEmpty()) return null;
+
+        // Apply all edits in reverse position order to preserve offsets
+        edits.sort(Comparator.comparingInt(Edit::start).reversed());
+        StringBuilder sb = new StringBuilder(source);
+        for (Edit e : edits) {
+            sb.replace(e.start(), e.end(), e.replacement());
+        }
 
         // Compute new file path (only changes for files IN the old package)
         Path newPath;
@@ -130,60 +158,7 @@ public class JdtRenamePackage {
             newPath = file; // path unchanged, only imports updated
         }
 
-        return new FileChange(file, newPath, modified);
-    }
-
-    // -------------------------------------------------------------------------
-    // AST-based FQN updater
-    // -------------------------------------------------------------------------
-
-    /**
-     * Replaces the {@code oldPackage} prefix in every fully-qualified
-     * {@link QualifiedName} that appears in a code body (i.e. not inside a
-     * {@code package} or {@code import} declaration, which are already handled
-     * by text replacement).  Uses the JDT AST parser to locate nodes precisely
-     * so that occurrences inside string literals and comments are left alone.
-     */
-    private static String updateFqnCodeReferences(
-            String source, String oldPackage, String newPackage) {
-        ASTParser parser = ASTParser.newParser(AST.JLS21);
-        parser.setKind(ASTParser.K_COMPILATION_UNIT);
-        parser.setSource(source.toCharArray());
-        CompilationUnit cu = (CompilationUnit) parser.createAST(null);
-
-        String fqnPrefix = oldPackage + ".";
-        // Collect start positions in descending order so replacements from the
-        // end of the file don't shift offsets for earlier positions.
-        TreeSet<Integer> positions = new TreeSet<>(Comparator.reverseOrder());
-
-        cu.accept(new ASTVisitor() {
-            int skipDepth = 0; // > 0 when inside a package or import declaration
-
-            @Override public boolean visit(PackageDeclaration n) { skipDepth++; return true; }
-            @Override public void endVisit(PackageDeclaration n) { skipDepth--; }
-            @Override public boolean visit(ImportDeclaration n)  { skipDepth++; return true; }
-            @Override public void endVisit(ImportDeclaration n)  { skipDepth--; }
-
-            @Override
-            public boolean visit(QualifiedName node) {
-                if (skipDepth == 0 && node.getFullyQualifiedName().startsWith(fqnPrefix)) {
-                    positions.add(node.getStartPosition());
-                }
-                return true;
-            }
-        });
-
-        if (positions.isEmpty()) return source;
-
-        StringBuilder sb = new StringBuilder(source);
-        int oldLen = oldPackage.length();
-        for (int pos : positions) {
-            if (pos + oldLen <= sb.length()
-                    && sb.substring(pos, pos + oldLen).equals(oldPackage)) {
-                sb.replace(pos, pos + oldLen, newPackage);
-            }
-        }
-        return sb.toString();
+        return new FileChange(file, newPath, sb.toString());
     }
 
     // -------------------------------------------------------------------------
@@ -195,13 +170,5 @@ public class JdtRenamePackage {
         if (pkg.equals(oldPackage)) return newPackage;
         if (pkg.startsWith(oldPackage + ".")) return newPackage + pkg.substring(oldPackage.length());
         return null;
-    }
-
-    static String extractDeclaredPackage(String source) {
-        int idx = source.indexOf("package ");
-        if (idx < 0) return null;
-        int semi = source.indexOf(';', idx);
-        if (semi < 0) return null;
-        return source.substring(idx + "package ".length(), semi).trim();
     }
 }

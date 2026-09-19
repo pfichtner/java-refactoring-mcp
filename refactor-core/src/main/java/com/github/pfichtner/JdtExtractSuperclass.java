@@ -133,10 +133,12 @@ public class JdtExtractSuperclass {
         StringBuilder sb = new StringBuilder(classSource);
         for (int[] r : removals) sb.delete(r[0], r[1]);
 
-        // Add extends clause before the class body opening brace
+        // Add extends clause before the class body opening brace.
+        // Compute bracePos in the ORIGINAL classSource (before any removals) using safe
+        // AST end positions — method removals only affect content after '{', so the
+        // position is unchanged in `modified`.
         String modified = sb.toString();
-        int bracePos = modified.indexOf('{',
-                modified.indexOf(typeDecl.getName().getIdentifier()));
+        int bracePos = findClassBodyBrace(classSource, typeDecl);
         int wsStart = bracePos;
         while (wsStart > 0 && modified.charAt(wsStart - 1) == ' ') wsStart--;
         sb = new StringBuilder(modified);
@@ -197,6 +199,27 @@ public class JdtExtractSuperclass {
             }
         }
         return isPublic;
+    }
+
+    /**
+     * Finds the class body opening '{' in {@code source} using safe AST end positions,
+     * scanning from after the class name, type parameters, and superinterface types.
+     * This avoids false hits from '{' inside annotations on the class declaration.
+     */
+    @SuppressWarnings("unchecked")
+    private static int findClassBodyBrace(String source, TypeDeclaration typeDecl) {
+        int searchFrom = typeDecl.getName().getStartPosition() + typeDecl.getName().getLength();
+        List<TypeParameter> typeParams = typeDecl.typeParameters();
+        if (!typeParams.isEmpty()) {
+            TypeParameter last = typeParams.get(typeParams.size() - 1);
+            searchFrom = last.getStartPosition() + last.getLength();
+        }
+        List<Type> superInterfaces = typeDecl.superInterfaceTypes();
+        if (!superInterfaces.isEmpty()) {
+            Type last = superInterfaces.get(superInterfaces.size() - 1);
+            searchFrom = last.getStartPosition() + last.getLength();
+        }
+        return source.indexOf('{', searchFrom);
     }
 
     private static TypeDeclaration findPrimaryType(CompilationUnit cu) {

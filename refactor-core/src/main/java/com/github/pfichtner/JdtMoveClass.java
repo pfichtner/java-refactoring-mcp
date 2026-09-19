@@ -107,9 +107,6 @@ public class JdtMoveClass {
         // -------------------------------------------------------------------------
         Map<Path, String> changedImports = new LinkedHashMap<>();
 
-        String oldImport = "import " + oldFqn + ";";
-        String newImport = "import " + newFqn + ";";
-
         for (Path root : project.sourceRoots()) {
             if (!Files.isDirectory(root)) continue;
             try (var stream = Files.walk(root)) {
@@ -119,8 +116,20 @@ public class JdtMoveClass {
                         ::iterator) {
                     if (file.equals(absSource)) continue; // skip the moved file itself
                     String fileSource = Files.readString(file);
-                    if (fileSource.contains(oldImport)) {
-                        changedImports.put(file, fileSource.replace(oldImport, newImport));
+                    CompilationUnit fileCu = parse(fileSource, file.getFileName().toString());
+                    for (Object o : fileCu.imports()) {
+                        if (o instanceof ImportDeclaration imp
+                                && !imp.isOnDemand()
+                                && !imp.isStatic()
+                                && imp.getName().getFullyQualifiedName().equals(oldFqn)) {
+                            Name impName = imp.getName();
+                            StringBuilder sb = new StringBuilder(fileSource);
+                            sb.replace(impName.getStartPosition(),
+                                    impName.getStartPosition() + impName.getLength(),
+                                    newFqn);
+                            changedImports.put(file, sb.toString());
+                            break;
+                        }
                     }
                 }
             }

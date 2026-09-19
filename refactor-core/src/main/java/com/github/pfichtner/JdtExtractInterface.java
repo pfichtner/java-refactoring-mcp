@@ -112,13 +112,22 @@ public class JdtExtractInterface {
         // -------------------------------------------------------------------------
         // Modify class: add implements InterfaceName
         // -------------------------------------------------------------------------
-        int bracePos = classSource.indexOf('{', typeDecl.getStartPosition());
-
         @SuppressWarnings("unchecked")
         List<Type> existingInterfaces = typeDecl.superInterfaceTypes();
 
         StringBuilder sb = new StringBuilder(classSource);
         if (existingInterfaces.isEmpty()) {
+            // Find the class body opening '{' safely from AST end positions, scanning
+            // from after the class name (and optional type parameters) to avoid false
+            // hits from '{' inside annotations on the class declaration.
+            @SuppressWarnings("unchecked")
+            List<TypeParameter> typeParams = typeDecl.typeParameters();
+            int searchFrom = typeDecl.getName().getStartPosition() + typeDecl.getName().getLength();
+            if (!typeParams.isEmpty()) {
+                TypeParameter last = typeParams.get(typeParams.size() - 1);
+                searchFrom = last.getStartPosition() + last.getLength();
+            }
+            int bracePos = classSource.indexOf('{', searchFrom);
             // Replace whitespace immediately before '{' with " implements Name "
             int wsStart = bracePos;
             while (wsStart > 0 && classSource.charAt(wsStart - 1) == ' ') wsStart--;
