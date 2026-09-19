@@ -11,6 +11,7 @@ import dev.mcp.refactor.JdtExtractVariable;
 import dev.mcp.refactor.JdtExtractor;
 import dev.mcp.refactor.JdtInlineMethod;
 import dev.mcp.refactor.JdtInliner;
+import dev.mcp.refactor.JdtIntroduceStaticFactory;
 import dev.mcp.refactor.JdtPullUpMethod;
 import dev.mcp.refactor.JdtPushDownMethod;
 import dev.mcp.refactor.JdtRenamer;
@@ -67,6 +68,7 @@ public class RefactoringServer {
         server.addTool(renamePackage());
         server.addTool(pullUpMethod());
         server.addTool(pushDownMethod());
+        server.addTool(introduceStaticFactory());
 
         return server;
     }
@@ -105,6 +107,13 @@ public class RefactoringServer {
                           Required arguments: file, start_line, start_column, end_line, end_column, var_name
                           Optional: replace_all (replace all identical occurrences in the block)
                           Returns the rewritten source; does not write to disk.
+
+                        introduce_static_factory
+                          Introduce a public static factory method for a constructor and rewrite
+                          every new ClassName(...) call site in the project to use it.
+                          Required arguments: project_root, file, line, column, factory_method_name
+                          Optional: make_constructor_private (default false)
+                          Returns a preview of all changed files.
                         """))
                 .build();
     }
@@ -851,6 +860,49 @@ public class RefactoringServer {
                                 sb.append("=== ").append(e.getKey().getFileName()).append(" ===\n")
                                   .append(e.getValue().stripTrailing()).append("\n\n"));
                         return ok(sb.toString().stripTrailing());
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
+    }
+
+    // Tool: introduce_static_factory
+
+    static SyncToolSpecification introduceStaticFactory() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("introduce_static_factory", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                                "project_root",       Map.of("type", "string",  "description", "Absolute path to the Maven project root"),
+                                "file",               Map.of("type", "string",  "description", "Source file path relative to project_root"),
+                                "line",               Map.of("type", "integer", "description", "1-based line of the constructor"),
+                                "column",             Map.of("type", "integer", "description", "1-based column inside the constructor"),
+                                "factory_method_name",Map.of("type", "string",  "description", "Simple name for the new factory method, e.g. 'of' or 'create'"),
+                                "make_constructor_private", Map.of("type", "boolean", "description", "When true, changes the constructor visibility to private")
+                        ),
+                        "required", List.of("project_root", "file", "line", "column", "factory_method_name")
+                )).build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        Path root   = Path.of((String) args.get("project_root"));
+                        Path file   = root.resolve((String) args.get("file"));
+                        int  line   = ((Number) args.get("line")).intValue();
+                        int  col    = ((Number) args.get("column")).intValue();
+                        String name = (String) args.get("factory_method_name");
+                        boolean makePrivate = args.getOrDefault("make_constructor_private", false) instanceof Boolean b && b;
+
+                        String source = java.nio.file.Files.readString(file);
+                        int offset    = JdtRenamer.toOffset(source, line, col);
+
+                        var changed = JdtIntroduceStaticFactory.introduceStaticFactory(
+                                new dev.mcp.refactor.project.MavenProject(root),
+                                file, offset, name, makePrivate);
+
+                        return ok(formatPreview(changed));
+                    } catch (IllegalArgumentException e) {
+                        return error(e.getMessage());
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }

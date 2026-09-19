@@ -243,6 +243,7 @@ MCP tool: `rename_package` — returns new source and new path for every changed
 **Limitation:** fully-qualified type references in source code are not updated.
 
 ### M17 — Pull Up / Push Down Method
+### M18 — Introduce Static Factory
 
 `JdtPullUpMethod.pullUp(project, sourceFile, offset)` moves a method declaration from a
 subclass to its direct superclass. The superclass is located by simple name within the
@@ -269,6 +270,29 @@ MCP tools: `pull_up_method`, `push_down_method` — accept `project_root`, `file
 
 **Limitations:** fully-qualified `extends` clauses (e.g. `extends com.example.Foo`) are not
 matched when scanning for subclasses; `@Override` annotations are copied verbatim.
+
+### M18 — Introduce Static Factory
+
+`JdtIntroduceStaticFactory.introduceStaticFactory(project, sourceFile, offset, factoryMethodName, makeConstructorPrivate)`
+adds a `public static` factory method to the class and rewrites every `new ClassName(...)` call site
+in the project to use the factory instead. Optionally changes the original constructor to `private`.
+Returns `Map<Path, String>` — the caller writes the changed files.
+
+CLI:
+```
+java-refactor introduce-factory -f Counter.java -l 7 -c 12 -n of [--private-constructor] [--project P] [--dry-run]
+```
+
+MCP tool: `introduce_static_factory` — accepts `project_root`, `file`, `line`, `column`,
+`factory_method_name`, and optional `make_constructor_private`; returns a preview of all changed files.
+
+**Preconditions checked:**
+- A constructor must exist at the given offset.
+- The class must not already have a method with the same name and parameter count.
+
+**Limitations:** call-site matching uses the simple class name, so all `new ClassName(...)` in the
+project are rewritten regardless of which package they resolve to. Qualified constructor calls
+(`new pkg.ClassName(...)`) are not rewritten.
 
 ## Integration
 
@@ -390,7 +414,6 @@ A well-prompted agent will call `analyze_refactoring` first (dry-run), show you 
 
 | Milestone | Description |
 |-----------|-------------|
-| M18 | Introduce Static Factory — replace constructor calls at call sites with a newly created static factory method; optionally make the now-unused constructor `private` |
 | M19+ | pull up / push down field, abstract method, … |
 
 ## Design Principles
