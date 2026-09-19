@@ -61,9 +61,19 @@ class MoveClassTest {
         MavenProject project = new MavenProject(projectRoot);
         Path calcFile = project.sourceRoots().get(0)
                 .resolve("com/example/service/Calculator.java");
+        String calcSource = Files.readString(calcFile);
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> JdtMoveClass.moveClass(project, calcFile, "com.example.service"));
-        assertTrue(ex.getMessage().contains("already in package"), ex.getMessage());
+
+        Approvals.verify(
+            RenameStoryBoard.titled("Move class rejected: already in target package")
+                .javaSection("Input: Calculator.java", calcSource)
+                .refactoring("move class",
+                        "`com.example.service.Calculator` → `com.example.service` (same package)",
+                        "target: com.example.service")
+                .diagnostic(ex.getMessage())
+                .build()
+        );
     }
 }
