@@ -8,10 +8,12 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathFactory;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Minimal Maven project model that provides JDT with what it needs:
@@ -21,6 +23,9 @@ import java.util.List;
  * The result is cached after the first call.
  */
 public class MavenProject {
+
+    /** Shared across the JVM: each unique project root pays mvn startup cost at most once. */
+    private static final ConcurrentHashMap<Path, String[]> CLASSPATH_CACHE = new ConcurrentHashMap<>();
 
     private final Path root;
     private volatile String[] cachedClasspath;
@@ -83,14 +88,26 @@ public class MavenProject {
      */
     public String[] classpath() throws IOException, InterruptedException {
         if (cachedClasspath != null) return cachedClasspath;
-        synchronized (this) {
-            if (cachedClasspath != null) return cachedClasspath;
-            cachedClasspath = resolveClasspath();
+        try {
+            cachedClasspath = CLASSPATH_CACHE.computeIfAbsent(root, k -> {
+                try { return resolveClasspath(); }
+                catch (IOException e)          { throw new UncheckedIOException(e); }
+                catch (InterruptedException e) { Thread.currentThread().interrupt(); throw new RuntimeException(e); }
+            });
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
+        } catch (RuntimeException e) {
+            if (e.getCause() instanceof InterruptedException ie) throw ie;
+            throw e;
         }
         return cachedClasspath;
     }
 
     private String[] resolveClasspath() throws IOException, InterruptedException {
+        // Fast path: if the pom has no parent and no dependencies, the classpath is empty.
+        // This avoids a ~4 s Maven JVM startup for projects with no deps (e.g. test fixtures).
+        if (hasNoDependenciesAndNoParent()) return new String[0];
+
         Path outputFile = Files.createTempFile("jdt-classpath-", ".txt");
         try {
             ProcessBuilder pb = new ProcessBuilder(
@@ -113,6 +130,23 @@ public class MavenProject {
             return cp.isEmpty() ? new String[0] : cp.split(File.pathSeparator);
         } finally {
             Files.deleteIfExists(outputFile);
+        }
+    }
+
+    private boolean hasNoDependenciesAndNoParent() {
+        try {
+            Document doc = parsePom();
+            XPath xpath = XPathFactory.newInstance().newXPath();
+            // Has a parent pom → may inherit deps — must invoke Maven
+            String parent = xpath.evaluate("/project/parent/artifactId/text()", doc).trim();
+            if (!parent.isEmpty()) return false;
+            // Has any <dependency> element — must invoke Maven
+            org.w3c.dom.NodeList deps = (org.w3c.dom.NodeList)
+                    xpath.evaluate("/project/dependencies/dependency", doc,
+                            javax.xml.xpath.XPathConstants.NODESET);
+            return deps.getLength() == 0;
+        } catch (Exception e) {
+            return false; // fall back to running Maven when uncertain
         }
     }
 
