@@ -1,0 +1,85 @@
+package dev.mcp.refactor;
+
+import dev.mcp.refactor.project.MavenProject;
+import dev.mcp.refactor.support.Fixtures;
+import dev.mcp.refactor.support.RenameStoryBoard;
+import org.approvaltests.Approvals;
+import org.junit.jupiter.api.Test;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class PushDownFieldTest {
+
+    private final Fixtures fixtures = new Fixtures(getClass());
+
+    @Test
+    void push_down_copies_field_to_all_subclasses() throws Exception {
+        Path projectRoot  = fixtures.projectPath("projects/push-down-field");
+        MavenProject project = new MavenProject(projectRoot);
+        Path srcRoot      = project.sourceRoots().get(0);
+        Path vehicleFile  = srcRoot.resolve("com/example/Vehicle.java");
+        Path carFile      = srcRoot.resolve("com/example/Car.java");
+        Path truckFile    = srcRoot.resolve("com/example/Truck.java");
+
+        String vehicleSrc = Files.readString(vehicleFile);
+        String carSrc     = Files.readString(carFile);
+        String truckSrc   = Files.readString(truckFile);
+
+        int offset = Fixtures.offsetOf(vehicleSrc, "maxSpeed");
+        Map<Path, String> changed = JdtPushDownField.pushDown(project, vehicleFile, offset);
+
+        assertEquals(3, changed.size());
+
+        Path absVehicle = vehicleFile.toAbsolutePath().normalize();
+        Path absCar     = carFile.toAbsolutePath().normalize();
+        Path absTruck   = truckFile.toAbsolutePath().normalize();
+
+        String newVehicle = changed.get(absVehicle);
+        String newCar     = changed.get(absCar);
+        String newTruck   = changed.get(absTruck);
+
+        assertFalse(newVehicle.contains("maxSpeed"), "superclass should no longer contain maxSpeed");
+        assertTrue(newCar.contains("maxSpeed"),      "Car should now contain maxSpeed");
+        assertTrue(newTruck.contains("maxSpeed"),    "Truck should now contain maxSpeed");
+
+        Approvals.verify(
+            RenameStoryBoard.titled("Push down field: Vehicle.maxSpeed → Car, Truck")
+                .inputProject(Map.of(
+                    "Car.java",     carSrc,
+                    "Truck.java",   truckSrc,
+                    "Vehicle.java", vehicleSrc))
+                .refactoring("push down field",
+                    "`Vehicle.maxSpeed` → subclasses",
+                    Fixtures.lineCol(vehicleSrc, offset))
+                .outputProject(changed)
+                .build()
+        );
+    }
+
+    @Test
+    void reject_no_subclasses_in_project() throws Exception {
+        Path projectRoot = fixtures.projectPath("projects/push-down-field");
+        MavenProject project = new MavenProject(projectRoot);
+        Path srcRoot   = project.sourceRoots().get(0);
+        // Car has no subclasses in the fixture project
+        Path carFile   = srcRoot.resolve("com/example/Car.java");
+        String source  = Files.readString(carFile);
+        int offset     = Fixtures.offsetOf(source, "doors");
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+            () -> JdtPushDownField.pushDown(project, carFile, offset));
+        assertTrue(ex.getMessage().contains("No direct subclasses"), ex.getMessage());
+
+        Approvals.verify(
+            RenameStoryBoard.titled("Push down field rejected: Car has no subclasses")
+                .javaSection("Input: Car.java", source)
+                .refactoring("push down field", "`Car.doors`", Fixtures.lineCol(source, offset))
+                .diagnostic(ex.getMessage())
+                .build()
+        );
+    }
+}

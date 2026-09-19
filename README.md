@@ -244,6 +244,7 @@ MCP tool: `rename_package` — returns new source and new path for every changed
 
 ### M17 — Pull Up / Push Down Method
 ### M18 — Introduce Static Factory
+### M19 — Pull Up / Push Down Field
 
 `JdtPullUpMethod.pullUp(project, sourceFile, offset)` moves a method declaration from a
 subclass to its direct superclass. The superclass is located by simple name within the
@@ -293,6 +294,33 @@ MCP tool: `introduce_static_factory` — accepts `project_root`, `file`, `line`,
 **Limitations:** call-site matching uses the simple class name, so all `new ClassName(...)` in the
 project are rewritten regardless of which package they resolve to. Qualified constructor calls
 (`new pkg.ClassName(...)`) are not rewritten.
+
+### M19 — Pull Up / Push Down Field
+
+`JdtPullUpField.pullUp(project, sourceFile, offset)` moves a field declaration from a subclass
+to its direct superclass. The field is inserted after the last existing field in the superclass
+(or at the top of the body if none), keeping fields grouped above methods.
+
+`JdtPushDownField.pushDown(project, sourceFile, offset)` moves a field from a class to every
+direct subclass found in the project source roots.
+
+CLI:
+```
+java-refactor pull-up-field  -f FILE -l LINE -c COL [--project P] [--dry-run]
+java-refactor push-down-field -f FILE -l LINE -c COL [--project P] [--dry-run]
+```
+
+MCP tools: `pull_up_field` and `push_down_field` — accept `project_root`, `file`, `line`, `column`.
+
+**Preconditions checked:**
+- A field declaration must exist at the given offset.
+- For pull-up: class must have an explicit superclass; superclass source must be in the project;
+  superclass must not already declare a field with the same name.
+- For push-down: at least one direct subclass must exist in the project; no subclass may already
+  declare a field with the same name.
+
+**Limitations:** multi-fragment declarations (e.g. `int x, y;`) are moved as a unit;
+subclass detection uses simple name matching on the `extends` clause.
 
 ## Integration
 
@@ -414,7 +442,7 @@ A well-prompted agent will call `analyze_refactoring` first (dry-run), show you 
 
 | Milestone | Description |
 |-----------|-------------|
-| M19+ | pull up / push down field, abstract method, … |
+| M20+ | abstract method, introduce parameter object, … |
 
 ## Design Principles
 

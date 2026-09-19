@@ -12,7 +12,9 @@ import dev.mcp.refactor.JdtExtractor;
 import dev.mcp.refactor.JdtInlineMethod;
 import dev.mcp.refactor.JdtInliner;
 import dev.mcp.refactor.JdtIntroduceStaticFactory;
+import dev.mcp.refactor.JdtPullUpField;
 import dev.mcp.refactor.JdtPullUpMethod;
+import dev.mcp.refactor.JdtPushDownField;
 import dev.mcp.refactor.JdtPushDownMethod;
 import dev.mcp.refactor.JdtRenamer;
 import dev.mcp.refactor.project.MavenProject;
@@ -68,6 +70,8 @@ public class RefactoringServer {
         server.addTool(renamePackage());
         server.addTool(pullUpMethod());
         server.addTool(pushDownMethod());
+        server.addTool(pullUpField());
+        server.addTool(pushDownField());
         server.addTool(introduceStaticFactory());
 
         return server;
@@ -860,6 +864,80 @@ public class RefactoringServer {
                                 sb.append("=== ").append(e.getKey().getFileName()).append(" ===\n")
                                   .append(e.getValue().stripTrailing()).append("\n\n"));
                         return ok(sb.toString().stripTrailing());
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
+    }
+
+    // Tool: pull_up_field
+
+    static SyncToolSpecification pullUpField() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("pull_up_field", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                                "project_root", Map.of("type", "string",  "description", "Absolute path to the Maven project root"),
+                                "file",         Map.of("type", "string",  "description", "Source file path relative to project_root"),
+                                "line",         Map.of("type", "integer", "description", "1-based line of the field to pull up"),
+                                "column",       Map.of("type", "integer", "description", "1-based column inside the field declaration")
+                        ),
+                        "required", List.of("project_root", "file", "line", "column")
+                )).build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        Path root = Path.of((String) args.get("project_root"));
+                        Path file = root.resolve((String) args.get("file"));
+                        int  line = ((Number) args.get("line")).intValue();
+                        int  col  = ((Number) args.get("column")).intValue();
+
+                        String source = java.nio.file.Files.readString(file);
+                        int offset    = JdtRenamer.toOffset(source, line, col);
+
+                        var changed = JdtPullUpField.pullUp(
+                                new dev.mcp.refactor.project.MavenProject(root), file, offset);
+                        return ok(formatPreview(changed));
+                    } catch (IllegalArgumentException e) {
+                        return error(e.getMessage());
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
+    }
+
+    // Tool: push_down_field
+
+    static SyncToolSpecification pushDownField() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("push_down_field", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                                "project_root", Map.of("type", "string",  "description", "Absolute path to the Maven project root"),
+                                "file",         Map.of("type", "string",  "description", "Source file path relative to project_root"),
+                                "line",         Map.of("type", "integer", "description", "1-based line of the field to push down"),
+                                "column",       Map.of("type", "integer", "description", "1-based column inside the field declaration")
+                        ),
+                        "required", List.of("project_root", "file", "line", "column")
+                )).build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        Path root = Path.of((String) args.get("project_root"));
+                        Path file = root.resolve((String) args.get("file"));
+                        int  line = ((Number) args.get("line")).intValue();
+                        int  col  = ((Number) args.get("column")).intValue();
+
+                        String source = java.nio.file.Files.readString(file);
+                        int offset    = JdtRenamer.toOffset(source, line, col);
+
+                        var changed = JdtPushDownField.pushDown(
+                                new dev.mcp.refactor.project.MavenProject(root), file, offset);
+                        return ok(formatPreview(changed));
+                    } catch (IllegalArgumentException e) {
+                        return error(e.getMessage());
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }
