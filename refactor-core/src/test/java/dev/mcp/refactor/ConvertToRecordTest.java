@@ -1,9 +1,14 @@
 package dev.mcp.refactor;
 
+import dev.mcp.refactor.project.MavenProject;
 import dev.mcp.refactor.support.Fixtures;
 import dev.mcp.refactor.support.RenameStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -12,39 +17,57 @@ class ConvertToRecordTest {
     private final Fixtures fixtures = new Fixtures(getClass());
 
     @Test
-    void convert_class_to_record_removes_fields_ctor_and_simple_getters() throws Exception {
-        String source = fixtures.load("convert-to-record/point/Point.java");
+    void convert_class_to_record_renames_getter_call_sites() throws Exception {
+        Path projectRoot = fixtures.projectPath("projects/convert-to-record");
+        MavenProject project = new MavenProject(projectRoot);
+        Path srcRoot  = project.sourceRoots().get(0);
+        Path pointFile = srcRoot.resolve("com/example/Point.java");
+        Path appFile   = srcRoot.resolve("com/example/App.java");
 
-        String result = JdtConvertToRecord.convertToRecord(source, "Point.java");
+        String pointSrc = Files.readString(pointFile);
+        String appSrc   = Files.readString(appFile);
 
-        assertTrue(result.contains("record Point(int x, int y)"),
-                "record declaration with components");
-        assertFalse(result.contains("private final int x"),
-                "fields should be removed");
-        assertFalse(result.contains("public Point("),
-                "constructor should be removed");
-        assertFalse(result.contains("getX()"),
-                "bean-style getter should be removed");
-        assertTrue(result.contains("distanceTo"),
-                "custom method should be kept");
+        Map<Path, String> changed = JdtConvertToRecord.convertToRecord(project, pointFile);
+
+        Path absPoint = pointFile.toAbsolutePath().normalize();
+        Path absApp   = appFile.toAbsolutePath().normalize();
+
+        // Point.java: converted to record
+        String newPoint = changed.get(absPoint);
+        assertNotNull(newPoint, "Point.java must be in result");
+        assertTrue(newPoint.contains("record Point(int x, int y)"), "record declaration");
+        assertFalse(newPoint.contains("private final int"), "fields removed");
+        assertFalse(newPoint.contains("public Point("),     "constructor removed");
+        assertFalse(newPoint.contains("getX()"),            "bean getter removed");
+        assertTrue(newPoint.contains("distanceTo"),         "custom method kept");
+
+        // App.java: getter call sites renamed
+        String newApp = changed.get(absApp);
+        assertNotNull(newApp, "App.java must be in result");
+        assertTrue(newApp.contains("p.x()"),    "getX() renamed to x()");
+        assertTrue(newApp.contains("p.y()"),    "getY() renamed to y()");
+        assertFalse(newApp.contains("getX()"),  "old getter gone from App");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Convert class to record: Point")
-                .javaSection("Input: Point.java", source)
+            RenameStoryBoard.titled("Convert class to record: Point (getters renamed at call sites)")
+                .inputProject(Map.of("App.java", appSrc, "Point.java", pointSrc))
                 .refactoring("convert to record",
-                    "`class Point` → `record Point(int x, int y)`",
-                    "removes fields, all-args constructor, and simple getters; keeps distanceTo")
-                .javaSection("Output: Point.java", result)
+                    "`class Point` → `record Point(int x, int y)`; `getX()`→`x()`, `getY()`→`y()`",
+                    "fields, constructor, and bean getters removed; App.java call sites renamed")
+                .outputProject(changed)
                 .build()
         );
     }
 
     @Test
     void convert_to_record_rejected_when_class_has_extends() throws Exception {
-        String source = fixtures.load("convert-to-record/with-extends/Derived.java");
+        Path projectRoot  = fixtures.projectPath("projects/convert-to-record");
+        MavenProject project = new MavenProject(projectRoot);
+        Path derivedFile  = project.sourceRoots().get(0).resolve("com/example/Derived.java");
+        String source     = Files.readString(derivedFile);
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> JdtConvertToRecord.convertToRecord(source, "Derived.java"));
+                () -> JdtConvertToRecord.convertToRecord(project, derivedFile));
         assertTrue(ex.getMessage().contains("extends"), ex.getMessage());
 
         Approvals.verify(
@@ -59,10 +82,13 @@ class ConvertToRecordTest {
 
     @Test
     void convert_to_record_rejected_when_no_private_final_fields() throws Exception {
-        String source = fixtures.load("convert-to-record/no-private-final-fields/Mutable.java");
+        Path projectRoot   = fixtures.projectPath("projects/convert-to-record");
+        MavenProject project = new MavenProject(projectRoot);
+        Path mutableFile   = project.sourceRoots().get(0).resolve("com/example/Mutable.java");
+        String source      = Files.readString(mutableFile);
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> JdtConvertToRecord.convertToRecord(source, "Mutable.java"));
+                () -> JdtConvertToRecord.convertToRecord(project, mutableFile));
         assertTrue(ex.getMessage().contains("private final"), ex.getMessage());
 
         Approvals.verify(

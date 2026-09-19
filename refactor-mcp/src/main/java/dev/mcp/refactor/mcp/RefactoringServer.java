@@ -1047,19 +1047,21 @@ public class RefactoringServer {
                 .tool(Tool.builder("convert_to_record", Map.of(
                         "type", "object",
                         "properties", Map.of(
+                                "project_root", Map.of("type", "string",
+                                        "description", "Absolute path to the Maven project root"),
                                 "file", Map.of("type", "string",
-                                        "description", "Absolute path to the Java source file to convert")
+                                        "description", "Source file path relative to project_root")
                         ),
-                        "required", List.of("file")
+                        "required", List.of("project_root", "file")
                 )).build())
                 .callHandler((exchange, request) -> {
                     try {
                         Map<String, Object> args = request.arguments();
-                        Path file = Path.of((String) args.get("file"));
-                        String source = java.nio.file.Files.readString(file);
-                        String result = JdtConvertToRecord.convertToRecord(
-                                source, file.getFileName().toString());
-                        return ok(result);
+                        Path root = Path.of((String) args.get("project_root"));
+                        Path file = root.resolve((String) args.get("file"));
+                        var changed = JdtConvertToRecord.convertToRecord(
+                                new dev.mcp.refactor.project.MavenProject(root), file);
+                        return ok(formatPreview(changed));
                     } catch (IllegalArgumentException e) {
                         return error(e.getMessage());
                     } catch (Exception e) {

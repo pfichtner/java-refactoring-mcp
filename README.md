@@ -361,15 +361,18 @@ record declaration (output requires Java 16+ to compile; the tool itself runs on
 1. `private final` fields become record components in declaration order.
 2. The all-args constructor is removed (records auto-generate it).
 3. Simple accessor methods (`getX()` / `x()` that just `return field;`) are removed.
-4. All other methods (custom logic, `toString`, `equals`, …) are retained in the record body.
-5. `implements` clauses and class-level annotations are preserved.
+4. Bean-style getter call sites (`obj.getX()`) are renamed to the record accessor form (`obj.x()`)
+   across all project files. Binding resolution is used for other-file renames; name-based
+   matching is used within the converted class itself.
+5. All other methods (custom logic, `toString`, `equals`, …) are retained in the record body.
+6. `implements` clauses and class-level annotations are preserved.
 
 CLI:
 ```
-java-refactor convert-to-record -f Point.java [--dry-run]
+java-refactor convert-to-record -f Point.java [--project P] [--dry-run]
 ```
 
-MCP tool: `convert_to_record` — accepts `file` (absolute path); returns the converted source.
+MCP tool: `convert_to_record` — accepts `project_root` and `file`; returns a preview of all changed files.
 
 **Preconditions checked:**
 - Class must not be abstract, an interface, or already a record.

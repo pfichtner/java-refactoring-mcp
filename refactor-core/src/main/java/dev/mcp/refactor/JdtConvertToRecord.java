@@ -1,7 +1,11 @@
 package dev.mcp.refactor;
 
+import dev.mcp.refactor.project.MavenProject;
 import org.eclipse.jdt.core.dom.*;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -12,11 +16,13 @@ import java.util.stream.Collectors;
  * <ol>
  *   <li>The {@code private final} fields become record components.</li>
  *   <li>The all-args constructor is removed (records auto-generate it).</li>
- *   <li>Simple accessor methods (those that just {@code return fieldName;}) are removed
- *       (the record auto-generates {@code fieldName()} accessors).</li>
- *   <li>All other methods (custom logic, {@code toString}, {@code equals}, …) are
- *       retained in the record body.</li>
- *   <li>Any {@code implements} clauses are preserved.</li>
+ *   <li>Simple bean-style accessors ({@code getX()}) and record-style accessors ({@code x()})
+ *       that just {@code return fieldName;} are removed, since records auto-generate
+ *       {@code fieldName()} accessors.</li>
+ *   <li>Bean-style getter call sites ({@code obj.getX()}) are renamed to the record accessor
+ *       form ({@code obj.x()}) across all project files. Binding resolution is used for
+ *       other-file renames; name-based matching is used for the converted class itself.</li>
+ *   <li>All other methods, {@code implements} clauses, and annotations are preserved.</li>
  * </ol>
  *
  * <p>The tool generates valid record syntax; the output requires Java 16+ to compile.
@@ -35,48 +41,116 @@ import java.util.stream.Collectors;
  * <ul>
  *   <li>Multi-fragment field declarations ({@code private final int x, y;}) are supported.</li>
  *   <li>Accessor detection matches bean-style ({@code getX()}) and record-style ({@code x()})
- *       only; other naming conventions are left in the record body.</li>
+ *       naming only; other conventions are left in the record body.</li>
+ *   <li>Call-site renaming in the converted class's own retained methods uses name-based
+ *       matching; false positives are possible if a retained method calls a same-named
+ *       getter on an unrelated type.</li>
  *   <li>Generic type parameters on the class are preserved verbatim.</li>
  * </ul>
  */
 public class JdtConvertToRecord {
 
     /**
-     * Converts the primary class in {@code source} to a record.
+     * Converts the primary class in {@code sourceFile} to a record and renames
+     * bean-style getter call sites across the project.
      *
-     * @param source   full source of the Java file
-     * @param unitName file name used for parsing (e.g. {@code "Point.java"})
-     * @return the rewritten source containing the record declaration
+     * @param project    Maven project for enumerating source roots and classpath
+     * @param sourceFile file containing the class to convert
+     * @return {@code path → new source} for every file that changed
      * @throws IllegalArgumentException if the class does not satisfy the preconditions
      */
-    public static String convertToRecord(String source, String unitName) {
-        CompilationUnit cu = parse(source, unitName);
-        TypeDeclaration type = findPrimaryType(cu);
+    public static Map<Path, String> convertToRecord(MavenProject project, Path sourceFile)
+            throws IOException, InterruptedException {
 
+        String[] classpath   = project.classpath();
+        String[] sourcePaths = project.sourceRoots().stream()
+                .map(Path::toString).toArray(String[]::new);
+        List<Path> allFiles  = collectSourceFiles(project);
+        Map<Path, String> sources = readAll(allFiles);
+
+        Map<Path, CompilationUnit> cus = parseAll(allFiles, classpath, sourcePaths);
+        Path absTarget = sourceFile.toAbsolutePath().normalize();
+
+        CompilationUnit targetCu = cus.get(absTarget);
+        if (targetCu == null) {
+            throw new IllegalArgumentException(
+                    "Source file not found in project: " + sourceFile);
+        }
+
+        String source = sources.get(absTarget);
+        TypeDeclaration type = findPrimaryType(targetCu);
         validatePreconditions(source, type);
 
-        // Collect private final fields (the future record components), in declaration order
         List<FieldComponent> components = collectComponents(source, type);
-
-        // Find the all-args constructor
         MethodDeclaration ctor = findAllArgsConstructor(source, type, components);
         if (ctor == null) {
             throw new IllegalArgumentException(
                     "Class '" + type.getName().getIdentifier()
                     + "' has no all-args constructor that assigns every private final field. "
-                    + "Expected a constructor with " + components.size() + " parameter(s) "
-                    + "setting: " + components.stream().map(c -> c.name).collect(Collectors.joining(", ")) + ".");
+                    + "Expected " + components.size() + " parameter(s) setting: "
+                    + components.stream().map(c -> c.name).collect(Collectors.joining(", ")) + ".");
         }
 
-        // Collect simple accessor methods to drop
         Set<String> fieldNames = components.stream().map(c -> c.name).collect(Collectors.toSet());
         Set<MethodDeclaration> accessors = collectSimpleAccessors(source, type, fieldNames);
 
-        // Build the record text and replace the TypeDeclaration in the original source
+        // For each removed bean-style getter, build:
+        //   methodBindingKey → fieldName  (for binding-based cross-file renaming)
+        //   methodName       → fieldName  (for name-based self-renaming in the converted file)
+        Map<String, String> getterKeyToFieldName  = new LinkedHashMap<>();
+        Map<String, String> beanNameToFieldName   = new LinkedHashMap<>();
+        for (MethodDeclaration getter : accessors) {
+            String methodName = getter.getName().getIdentifier();
+            if (methodName.startsWith("get") && methodName.length() > 3
+                    && Character.isUpperCase(methodName.charAt(3))) {
+                String fieldName = Character.toLowerCase(methodName.charAt(3))
+                        + methodName.substring(4);
+                beanNameToFieldName.put(methodName, fieldName);
+                IMethodBinding b = getter.resolveBinding();
+                if (b != null) {
+                    getterKeyToFieldName.put(b.getMethodDeclaration().getKey(), fieldName);
+                }
+            }
+            // record-style accessors (x()) already match the record name — no rename needed
+        }
+
+        // -------------------------------------------------------------------------
+        // Build new source for the class file
+        // -------------------------------------------------------------------------
         String recordText = buildRecordText(source, type, components, ctor, accessors);
-        int start = type.getStartPosition();
-        int end   = start + type.getLength();
-        return source.substring(0, start) + recordText + source.substring(end);
+        int typeStart = type.getStartPosition();
+        int typeEnd   = typeStart + type.getLength();
+        String newSource = source.substring(0, typeStart) + recordText + source.substring(typeEnd);
+
+        // Rename bean-style getter calls in the converted file using name-based matching
+        // (binding resolution cannot be used here since the getters no longer exist in newSource)
+        if (!beanNameToFieldName.isEmpty()) {
+            newSource = renameByName(newSource, absTarget.getFileName().toString(), beanNameToFieldName);
+        }
+
+        Map<Path, String> result = new LinkedHashMap<>();
+        result.put(absTarget, newSource);
+
+        // -------------------------------------------------------------------------
+        // Rename getter call sites in other project files via binding resolution
+        // -------------------------------------------------------------------------
+        if (!getterKeyToFieldName.isEmpty()) {
+            for (Map.Entry<Path, CompilationUnit> entry : cus.entrySet()) {
+                Path filePath = entry.getKey();
+                if (filePath.equals(absTarget)) continue;
+
+                List<Object[]> edits = collectBindingRenames(
+                        entry.getValue(), getterKeyToFieldName);
+                if (edits.isEmpty()) continue;
+
+                edits.sort((a, b) -> Integer.compare((int) b[0], (int) a[0]));
+                StringBuilder sb = new StringBuilder(sources.get(filePath));
+                for (Object[] ed : edits) sb.replace((int) ed[0], (int) ed[1], (String) ed[2]);
+                result.put(filePath, sb.toString());
+            }
+        }
+
+        return result;
     }
 
     // -------------------------------------------------------------------------
@@ -87,36 +161,25 @@ public class JdtConvertToRecord {
         if (type.isInterface()) {
             throw new IllegalArgumentException("Cannot convert an interface to a record.");
         }
-
         String name = type.getName().getIdentifier();
-
         for (Object mod : type.modifiers()) {
-            if (mod instanceof Modifier m) {
-                if (m.isAbstract()) {
-                    throw new IllegalArgumentException(
-                            "Cannot convert abstract class '" + name + "' to a record.");
-                }
+            if (mod instanceof Modifier m && m.isAbstract()) {
+                throw new IllegalArgumentException(
+                        "Cannot convert abstract class '" + name + "' to a record.");
             }
         }
-
         if (type.getSuperclassType() != null) {
             throw new IllegalArgumentException(
                     "Cannot convert class '" + name + "' to a record: it extends '"
                     + type.getSuperclassType() + "'. Records cannot extend classes.");
         }
-
-        // Check it isn't already a record (JDT TypeDeclaration for records has isRecord() in newer APIs,
-        // but we can detect it by looking for the 'record' keyword in source near the type start)
+        // Detect if already a record by checking for 'record' keyword before first '('
         int typeStart = type.getStartPosition();
         String prefix = source.substring(typeStart, Math.min(typeStart + 200, source.length()));
-        if (prefix.matches("(?s).*?\\brecord\\b.*?\\(.*")) {
-            // Heuristic: if 'record' keyword appears before the opening '('
-            int parenIdx  = prefix.indexOf('(');
-            int recordIdx = prefix.indexOf("record");
-            if (recordIdx >= 0 && (parenIdx < 0 || recordIdx < parenIdx)) {
-                throw new IllegalArgumentException(
-                        "'" + name + "' is already a record.");
-            }
+        int parenIdx  = prefix.indexOf('(');
+        int recordIdx = prefix.indexOf("record");
+        if (recordIdx >= 0 && (parenIdx < 0 || recordIdx < parenIdx)) {
+            throw new IllegalArgumentException("'" + name + "' is already a record.");
         }
     }
 
@@ -169,13 +232,9 @@ public class JdtConvertToRecord {
 
         for (Object bd : type.bodyDeclarations()) {
             if (!(bd instanceof MethodDeclaration md) || !md.isConstructor()) continue;
-            List<SingleVariableDeclaration> params = md.parameters();
-            if (params.size() != fieldCount) continue;
+            if (md.parameters().size() != fieldCount) continue;
             if (md.getBody() == null) continue;
-
-            // Verify the body assigns every field
-            Set<String> assigned = collectAssignedFields(md.getBody());
-            if (assigned.containsAll(fieldNames)) return md;
+            if (collectAssignedFields(md.getBody()).containsAll(fieldNames)) return md;
         }
         return null;
     }
@@ -209,14 +268,11 @@ public class JdtConvertToRecord {
         Set<MethodDeclaration> result = new LinkedHashSet<>();
         for (Object bd : type.bodyDeclarations()) {
             if (!(bd instanceof MethodDeclaration md)) continue;
-            if (md.isConstructor()) continue;
-            if (!md.parameters().isEmpty()) continue;
+            if (md.isConstructor() || !md.parameters().isEmpty()) continue;
             if (md.getBody() == null) continue;
             List<Statement> stmts = md.getBody().statements();
-            if (stmts.size() != 1) continue;
-            if (!(stmts.get(0) instanceof ReturnStatement rs)) continue;
+            if (stmts.size() != 1 || !(stmts.get(0) instanceof ReturnStatement rs)) continue;
 
-            // Return expression must be a simple field reference
             Expression ret = rs.getExpression();
             String returnedName = null;
             if (ret instanceof SimpleName sn) {
@@ -226,7 +282,6 @@ public class JdtConvertToRecord {
             }
             if (returnedName == null || !fieldNames.contains(returnedName)) continue;
 
-            // Method name must be getXxx() or xxx() (matching the field name)
             String methodName = md.getName().getIdentifier();
             boolean isBeanGetter = methodName.startsWith("get")
                     && methodName.length() > 3
@@ -263,16 +318,22 @@ public class JdtConvertToRecord {
             }
         }
 
-        // Type parameters (generics on class, e.g. class Foo<T>)
-        String typeParams = "";
+        // Generic type parameters
         if (!type.typeParameters().isEmpty()) {
             List<TypeParameter> tps = type.typeParameters();
-            typeParams = "<" + tps.stream()
-                    .map(tp -> source.substring(tp.getStartPosition(), tp.getStartPosition() + tp.getLength()))
-                    .collect(Collectors.joining(", ")) + ">";
+            sb.append("<").append(tps.stream()
+                    .map(tp -> source.substring(tp.getStartPosition(),
+                            tp.getStartPosition() + tp.getLength()))
+                    .collect(Collectors.joining(", "))).append(">");
         }
 
-        sb.append("record ").append(type.getName().getIdentifier()).append(typeParams).append("(");
+        sb.append("record ").append(type.getName().getIdentifier());
+
+        if (!type.typeParameters().isEmpty()) {
+            // type params already appended above — do nothing here
+        }
+
+        sb.append("(");
         sb.append(components.stream()
                 .map(c -> c.typeSrc + " " + c.name)
                 .collect(Collectors.joining(", ")));
@@ -283,13 +344,13 @@ public class JdtConvertToRecord {
         if (!ifaces.isEmpty()) {
             sb.append(" implements ");
             sb.append(ifaces.stream()
-                    .map(t -> source.substring(t.getStartPosition(), t.getStartPosition() + t.getLength()))
+                    .map(t -> source.substring(t.getStartPosition(),
+                            t.getStartPosition() + t.getLength()))
                     .collect(Collectors.joining(", ")));
         }
 
         sb.append(" {");
 
-        // Body: keep everything except fields, ctor, and simple accessors
         Set<BodyDeclaration> toRemove = new LinkedHashSet<>();
         for (FieldComponent fc : components) toRemove.add(fc.declaration);
         toRemove.add(ctor);
@@ -297,10 +358,8 @@ public class JdtConvertToRecord {
 
         boolean hadContent = false;
         for (Object bd : type.bodyDeclarations()) {
-            if (!(bd instanceof BodyDeclaration decl)) continue;
-            if (toRemove.contains(decl)) continue;
+            if (!(bd instanceof BodyDeclaration decl) || toRemove.contains(decl)) continue;
             sb.append("\n\n    ");
-            // Re-indent: strip the existing leading indent from first line
             String raw = source.substring(decl.getStartPosition(),
                     decl.getStartPosition() + decl.getLength());
             sb.append(raw.stripLeading());
@@ -313,8 +372,93 @@ public class JdtConvertToRecord {
     }
 
     // -------------------------------------------------------------------------
+    // Getter call-site renaming helpers
+    // -------------------------------------------------------------------------
+
+    /** Name-based rename: replaces every MethodInvocation whose name is in the map. */
+    private static String renameByName(String source, String unitName,
+            Map<String, String> nameToNewName) {
+        CompilationUnit cu = parseSimple(source, unitName);
+        List<int[]> edits = new ArrayList<>();
+        cu.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(MethodInvocation call) {
+                String newName = nameToNewName.get(call.getName().getIdentifier());
+                if (newName == null) return true;
+                SimpleName n = call.getName();
+                edits.add(new int[]{n.getStartPosition(), n.getStartPosition() + n.getLength()});
+                return true;
+            }
+        });
+        if (edits.isEmpty()) return source;
+        edits.sort((a, b) -> b[0] - a[0]);
+        StringBuilder sb = new StringBuilder(source);
+        for (int[] e : edits) {
+            String oldName = source.substring(e[0], e[1]);
+            sb.replace(e[0], e[1], nameToNewName.get(oldName));
+        }
+        return sb.toString();
+    }
+
+    /** Binding-based rename: collects edits from a CU for matching method binding keys. */
+    private static List<Object[]> collectBindingRenames(
+            CompilationUnit cu, Map<String, String> keyToNewName) {
+        List<Object[]> edits = new ArrayList<>();
+        cu.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(MethodInvocation call) {
+                IMethodBinding b = call.resolveMethodBinding();
+                if (b == null) return true;
+                String newName = keyToNewName.get(b.getMethodDeclaration().getKey());
+                if (newName == null) return true;
+                SimpleName n = call.getName();
+                edits.add(new Object[]{n.getStartPosition(), n.getStartPosition() + n.getLength(), newName});
+                return true;
+            }
+        });
+        return edits;
+    }
+
+    // -------------------------------------------------------------------------
     // Infrastructure
     // -------------------------------------------------------------------------
+
+    private static List<Path> collectSourceFiles(MavenProject project) throws IOException {
+        List<Path> files = new ArrayList<>();
+        for (Path root : project.sourceRoots()) {
+            if (!Files.isDirectory(root)) continue;
+            try (var stream = Files.walk(root)) {
+                stream.filter(p -> p.toString().endsWith(".java"))
+                        .map(p -> p.toAbsolutePath().normalize())
+                        .sorted().forEach(files::add);
+            }
+        }
+        return files;
+    }
+
+    private static Map<Path, String> readAll(List<Path> files) throws IOException {
+        Map<Path, String> map = new LinkedHashMap<>();
+        for (Path f : files) map.put(f, Files.readString(f));
+        return map;
+    }
+
+    private static Map<Path, CompilationUnit> parseAll(
+            List<Path> sourceFiles, String[] classpath, String[] sourcePaths) {
+        ASTParser parser = ASTParser.newParser(AST.JLS21);
+        parser.setEnvironment(classpath, sourcePaths, null, true);
+        parser.setResolveBindings(true);
+        parser.setBindingsRecovery(true);
+        String[] paths = sourceFiles.stream()
+                .map(p -> p.toAbsolutePath().normalize().toString()).toArray(String[]::new);
+        Map<Path, CompilationUnit> result = new LinkedHashMap<>();
+        parser.createASTs(paths, null, new String[0], new FileASTRequestor() {
+            @Override
+            public void acceptAST(String path, CompilationUnit ast) {
+                result.put(Path.of(path).toAbsolutePath().normalize(), ast);
+            }
+        }, null);
+        return result;
+    }
 
     private static TypeDeclaration findPrimaryType(CompilationUnit cu) {
         for (Object o : cu.types()) {
@@ -323,7 +467,7 @@ public class JdtConvertToRecord {
         throw new IllegalArgumentException("No class declaration found in source.");
     }
 
-    private static CompilationUnit parse(String source, String unitName) {
+    private static CompilationUnit parseSimple(String source, String unitName) {
         ASTParser parser = ASTParser.newParser(AST.JLS21);
         parser.setKind(ASTParser.K_COMPILATION_UNIT);
         parser.setSource(source.toCharArray());

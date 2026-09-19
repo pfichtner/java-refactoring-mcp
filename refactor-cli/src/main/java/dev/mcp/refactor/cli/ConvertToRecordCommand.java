@@ -1,6 +1,7 @@
 package dev.mcp.refactor.cli;
 
 import dev.mcp.refactor.JdtConvertToRecord;
+import dev.mcp.refactor.project.MavenProject;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
@@ -8,13 +9,15 @@ import picocli.CommandLine.Model.CommandSpec;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 /** CLI subcommand for convert-to-record refactoring. Logic lives in {@link JdtConvertToRecord}. */
 @Command(
     name = "convert-to-record",
     mixinStandardHelpOptions = true,
-    description = "Convert a simple data class to a Java record (requires Java 16+ to compile output)."
+    description = "Convert a simple data class to a Java record and rename bean-style getter " +
+                  "call sites across the project (requires Java 16+ to compile output)."
 )
 public class ConvertToRecordCommand implements Callable<Integer> {
 
@@ -22,8 +25,10 @@ public class ConvertToRecordCommand implements Callable<Integer> {
 
     @Option(names = {"--file", "-f"}, required = true,
             description = "Source file containing the class to convert.") Path file;
+    @Option(names = "--project",
+            description = "Maven project root (auto-detected if omitted).") Path projectRoot;
     @Option(names = "--dry-run",
-            description = "Print the converted source; do not write to disk.") boolean dryRun;
+            description = "Print changed sources; do not write to disk.") boolean dryRun;
 
     @Override
     public Integer call() throws Exception {
@@ -32,18 +37,27 @@ public class ConvertToRecordCommand implements Callable<Integer> {
             spec.commandLine().getErr().println("Error: file not found: " + absFile);
             return 1;
         }
+        Path root = projectRoot != null
+                ? projectRoot.toAbsolutePath().normalize()
+                : RenameCommand.findProjectRoot(absFile);
 
-        String source = Files.readString(absFile);
-        String result = JdtConvertToRecord.convertToRecord(source, absFile.getFileName().toString());
+        Map<Path, String> changed = JdtConvertToRecord.convertToRecord(
+                new MavenProject(root), absFile);
 
         var out = spec.commandLine().getOut();
         if (dryRun) {
             out.println("Dry run — no files written.");
-            out.println("\n=== " + absFile.getFileName() + " ===");
-            out.println(result.stripTrailing());
+            out.println("Changed files (" + changed.size() + "):");
+            changed.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(e -> {
+                out.println("\n=== " + e.getKey().getFileName() + " ===");
+                out.println(e.getValue().stripTrailing());
+            });
         } else {
-            Files.writeString(absFile, result);
-            out.println("Converted to record: " + absFile.getFileName());
+            for (Map.Entry<Path, String> e : changed.entrySet()) {
+                Files.writeString(e.getKey(), e.getValue());
+            }
+            out.println("Converted to record; " + changed.size() + " file(s) changed:");
+            changed.keySet().stream().sorted().forEach(p -> out.println("  " + p.getFileName()));
         }
         return 0;
     }
