@@ -177,8 +177,7 @@ public class JdtExtractConstant {
 
     private static boolean isBoundary(String source, int start, int end) {
         if (start > 0 && Character.isJavaIdentifierPart(source.charAt(start - 1))) return false;
-        if (end < source.length() && Character.isJavaIdentifierPart(source.charAt(end))) return false;
-        return true;
+        return end >= source.length() || !Character.isJavaIdentifierPart(source.charAt(end));
     }
 
     // -------------------------------------------------------------------------

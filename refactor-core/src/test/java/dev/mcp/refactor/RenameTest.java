@@ -10,8 +10,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 /**
  * M3 approval tests: multi-file rename for fields, methods, and types,
  * plus single-file edge cases (shadowing).

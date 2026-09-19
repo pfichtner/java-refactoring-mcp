@@ -1,10 +1,6 @@
 package dev.mcp.refactor;
 
 import org.eclipse.jdt.core.dom.*;
-import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-import org.eclipse.jface.text.Document;
-import org.eclipse.text.edits.InsertEdit;
-import org.eclipse.text.edits.MultiTextEdit;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -245,10 +241,7 @@ public class JdtExtractor {
     private static String buildCall(
             String methodName, List<VariableInfo> params, Optional<VariableInfo> returnVar) {
         StringBuilder sb = new StringBuilder();
-        if (returnVar.isPresent()) {
-            VariableInfo rv = returnVar.get();
-            sb.append(rv.typeName()).append(" ").append(rv.name()).append(" = ");
-        }
+        returnVar.ifPresent(rv -> sb.append(rv.typeName()).append(" ").append(rv.name()).append(" = "));
         sb.append(methodName).append("(");
         sb.append(params.stream().map(VariableInfo::name).collect(Collectors.joining(", ")));
         sb.append(");");
@@ -290,9 +283,7 @@ public class JdtExtractor {
             sb.append(stmtIndent).append(text).append("\n");
         }
 
-        if (returnVar.isPresent()) {
-            sb.append(stmtIndent).append("return ").append(returnVar.get().name()).append(";\n");
-        }
+        returnVar.ifPresent(variableInfo -> sb.append(stmtIndent).append("return ").append(variableInfo.name()).append(";\n"));
         sb.append(methodIndent).append("}");
         return sb.toString();
     }
