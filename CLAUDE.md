@@ -10,6 +10,7 @@ AGENTS.md
 	•	Every bug becomes a regression fixture.
 	•	Never blindly regenerate approval files.
 	•	Inspect approval diffs before accepting them.
+	•	In approval tests, assert structure only — not content. Keep: result map size, which paths are present, exception type and message fragment. Remove: assertTrue/assertFalse on source string contents (the approved file is the spec).
 	•	Analyze/preview must not modify project files.
 	•	Commit to git after each completed step.
 	•	Do not introduce speculative abstractions.
