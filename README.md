@@ -246,6 +246,7 @@ MCP tool: `rename_package` — returns new source and new path for every changed
 ### M18 — Introduce Static Factory
 ### M19 — Pull Up / Push Down Field
 ### M20 — Introduce Parameter Object
+### M21 — Convert Class to Record
 
 `JdtPullUpMethod.pullUp(project, sourceFile, offset)` moves a method declaration from a
 subclass to its direct superclass. The superclass is located by simple name within the
@@ -351,6 +352,33 @@ MCP tool: `introduce_parameter_object` — accepts `project_root`, `file`, `line
 
 **Limitations:** only `MethodInvocation` call sites are rewritten (constructor call sites of the
 enclosing class are not); varargs parameters are not supported; unresolvable call sites are skipped.
+
+### M21 — Convert Class to Record
+
+`JdtConvertToRecord.convertToRecord(source, unitName)` converts a simple data class to a Java
+record declaration (output requires Java 16+ to compile; the tool itself runs on any JVM):
+
+1. `private final` fields become record components in declaration order.
+2. The all-args constructor is removed (records auto-generate it).
+3. Simple accessor methods (`getX()` / `x()` that just `return field;`) are removed.
+4. All other methods (custom logic, `toString`, `equals`, …) are retained in the record body.
+5. `implements` clauses and class-level annotations are preserved.
+
+CLI:
+```
+java-refactor convert-to-record -f Point.java [--dry-run]
+```
+
+MCP tool: `convert_to_record` — accepts `file` (absolute path); returns the converted source.
+
+**Preconditions checked:**
+- Class must not be abstract, an interface, or already a record.
+- Class must not have an explicit `extends` clause (records cannot extend classes).
+- Class must have at least one `private final` field.
+- An all-args constructor covering every `private final` field must exist.
+
+**Limitations:** multi-fragment field declarations (`private final int x, y;`) are supported;
+accessor detection uses bean-style (`getX()`) and record-style (`x()`) naming only.
 
 ## Integration
 
@@ -472,7 +500,7 @@ A well-prompted agent will call `analyze_refactoring` first (dry-run), show you 
 
 | Milestone | Description |
 |-----------|-------------|
-| M21+ | abstract method, … |
+| M22+ | abstract method, … |
 
 ## Design Principles
 

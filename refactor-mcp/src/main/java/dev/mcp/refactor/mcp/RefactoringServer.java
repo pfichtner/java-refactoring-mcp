@@ -11,6 +11,7 @@ import dev.mcp.refactor.JdtExtractVariable;
 import dev.mcp.refactor.JdtExtractor;
 import dev.mcp.refactor.JdtInlineMethod;
 import dev.mcp.refactor.JdtInliner;
+import dev.mcp.refactor.JdtConvertToRecord;
 import dev.mcp.refactor.JdtIntroduceParameterObject;
 import dev.mcp.refactor.JdtIntroduceStaticFactory;
 import dev.mcp.refactor.JdtPullUpField;
@@ -75,6 +76,7 @@ public class RefactoringServer {
         server.addTool(pushDownField());
         server.addTool(introduceStaticFactory());
         server.addTool(introduceParameterObject());
+        server.addTool(convertToRecord());
 
         return server;
     }
@@ -1029,6 +1031,35 @@ public class RefactoringServer {
                                 new dev.mcp.refactor.project.MavenProject(root),
                                 file, offset, paramNames, className, paramObjName);
                         return ok(formatPreview(changed));
+                    } catch (IllegalArgumentException e) {
+                        return error(e.getMessage());
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
+    }
+
+    // Tool: convert_to_record
+
+    static SyncToolSpecification convertToRecord() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("convert_to_record", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                                "file", Map.of("type", "string",
+                                        "description", "Absolute path to the Java source file to convert")
+                        ),
+                        "required", List.of("file")
+                )).build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        Path file = Path.of((String) args.get("file"));
+                        String source = java.nio.file.Files.readString(file);
+                        String result = JdtConvertToRecord.convertToRecord(
+                                source, file.getFileName().toString());
+                        return ok(result);
                     } catch (IllegalArgumentException e) {
                         return error(e.getMessage());
                     } catch (Exception e) {
