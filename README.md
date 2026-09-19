@@ -449,3 +449,40 @@ To update an approved file after an intentional change:
 1. Inspect the diff between the received and approved file.
 2. Verify the new output is actually correct.
 3. Copy `*.received.md` → `*.approved.md`.
+
+---
+
+## Evaluation status (P1 — honest, partial)
+
+| Metric | Value |
+|--------|-------|
+| Full matrix | 3 projects × 6 tasksets × 2 arms × 3 runs = **108 cells** |
+| Cells completed & scored | **1 / 108** (`javapoet/typebox_A_r1`, Approach A, flagship) |
+| Cells pending | 107 |
+
+### The one completed flagship cell — real, archived, scored
+
+**Task:** multi-file semantic rename `TypeName.box` → `boxedType` across 13 files
+in javapoet (live opencode run, contribution-free model; full 123.8 KB event
+stream archived at `eval/cells/javapoet/typebox_A_r1.events.jsonl`).
+
+| Metric | Value |
+|--------|-------|
+| Precision / Recall / F1 (vs committed JDT engine ground truth) | **1.0 / 1.0 / 1.0** |
+| API calls | 23 |
+| Input tokens / output tokens | 111,584 / 2,000 |
+| Cache read / write | 191,105 / 0 |
+| Latency | 831 s |
+
+Changed-file set `R` (13 files) is set-identical to ground truth `G` (13 files),
+verified by `git diff` against the committed `requireArgument`-era baseline —
+no leftover old symbol, no extra/missed files.
+
+### Honest scope note
+
+The full 108-cell matrix is **NOT complete** — 107 cells were not run and are
+not fabricated here. Extrapolating from the flagship (~14 min / cell wall-clock
+at contributor-free latency) the remaining sweep is on the order of **~25 hours
+of wall-clock**, so the matrix is a dedicated follow-up (`harness/run_cell.sh`
++ `harness/score.py`), not something claimed as done in this session. Verdict
+rows for uncompleted cells are marked `PENDING`, never scored-at-random.
