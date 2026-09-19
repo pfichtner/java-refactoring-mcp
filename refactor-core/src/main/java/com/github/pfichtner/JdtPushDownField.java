@@ -128,15 +128,17 @@ public class JdtPushDownField {
     }
 
     private static boolean containsExtends(String source, String superclassName) {
-        String search = "extends " + superclassName;
-        int idx = source.indexOf(search);
-        while (idx >= 0) {
-            int afterIdx = idx + search.length();
-            if (afterIdx >= source.length()
-                    || !Character.isJavaIdentifierPart(source.charAt(afterIdx))) {
-                return true;
+        CompilationUnit cu = JdtPullUpField.parse(source, "Unknown.java");
+        for (Object o : cu.types()) {
+            if (o instanceof TypeDeclaration td) {
+                Type superType = td.getSuperclassType();
+                if (superType != null) {
+                    String typeName = superType.toString();
+                    int dot = typeName.lastIndexOf('.');
+                    String simpleName = dot >= 0 ? typeName.substring(dot + 1) : typeName;
+                    if (simpleName.equals(superclassName)) return true;
+                }
             }
-            idx = source.indexOf(search, idx + 1);
         }
         return false;
     }

@@ -248,7 +248,7 @@ public class JdtIntroduceParam {
             if (expr instanceof CharacterLiteral) return "char";
             throw new IllegalArgumentException("Cannot resolve the type of the selected expression.");
         }
-        return type.isPrimitive() ? type.getName() : type.getName();
+        return type.isPrimitive() ? type.getName() : type.getQualifiedName();
     }
 
     private static String guessNumberType(String token) {

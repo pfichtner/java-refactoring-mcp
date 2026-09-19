@@ -71,6 +71,33 @@ class PullUpMethodTest {
     }
 
     @Test
+    void pull_up_handles_fqn_extends_clause() throws Exception {
+        Path projectRoot = fixtures.projectPath("projects/pull-up-method-fqn");
+        MavenProject project = new MavenProject(projectRoot);
+        Path srcRoot  = project.sourceRoots().get(0);
+        Path dogFile  = srcRoot.resolve("com/example/derived/Dog.java");
+        Path animalFile = srcRoot.resolve("com/example/base/Animal.java");
+
+        String dogSource    = Files.readString(dogFile);
+        String animalSource = Files.readString(animalFile);
+
+        int offset = Fixtures.offsetOf(dogSource, "speak");
+        Map<Path, String> changed = JdtPullUpMethod.pullUp(project, dogFile, offset);
+
+        assertEquals(2, changed.size());
+
+        Approvals.verify(
+            RenameStoryBoard.titled("Pull up method: Dog.speak → Animal (FQN extends clause)")
+                .inputProject(Map.of("Animal.java", animalSource, "Dog.java", dogSource))
+                .refactoring("pull up method",
+                        "`Dog.speak()` → `Animal`",
+                        Fixtures.lineCol(dogSource, offset))
+                .outputProject(changed)
+                .build()
+        );
+    }
+
+    @Test
     void reject_duplicate_method_in_superclass() throws Exception {
         Path projectRoot = fixtures.projectPath("projects/pull-up-method");
         MavenProject project = new MavenProject(projectRoot);

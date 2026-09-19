@@ -98,6 +98,33 @@ class RenameTest {
         );
     }
 
+    // --- type via FQN reference ---
+
+    @Test
+    void rename_type_via_fqn_reference() throws Exception {
+        Path projectRoot = fixtures.projectPath("projects/rename-type-fqn");
+        MavenProject project = new MavenProject(projectRoot);
+
+        Path rectFile = project.sourceRoots().get(0).resolve("com/example/service/Rectangle.java");
+        String source = Files.readString(rectFile);
+        int offset = Fixtures.offsetOf(source, "class Rectangle") + "class ".length();
+
+        Map<Path, String> changed = JdtRenamer.rename(project, rectFile, offset, "Rect");
+
+        Map<String, String> inputs = fixtures.loadProjectSources(
+                "projects/rename-type-fqn/src/main/java");
+
+        Approvals.verify(
+            RenameStoryBoard.titled("Rename type via FQN reference: Rectangle → Rect")
+                .inputProject(inputs)
+                .refactoring("rename type",
+                        "`com.example.service.Rectangle` → `com.example.service.Rect`",
+                        "target: " + Fixtures.lineCol(source, offset) + " in Rectangle.java")
+                .outputProject(changed)
+                .build()
+        );
+    }
+
     // --- shadowing ---
 
     @Test

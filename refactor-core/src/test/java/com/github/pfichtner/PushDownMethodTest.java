@@ -73,4 +73,31 @@ class PushDownMethodTest {
                 .build()
         );
     }
+
+    @Test
+    void push_down_handles_fqn_extends_clause() throws Exception {
+        Path projectRoot = fixtures.projectPath("projects/push-down-method-fqn");
+        MavenProject project = new MavenProject(projectRoot);
+        Path srcRoot    = project.sourceRoots().get(0);
+        Path animalFile = srcRoot.resolve("com/example/base/Animal.java");
+        Path dogFile    = srcRoot.resolve("com/example/derived/Dog.java");
+
+        String animalSource = Files.readString(animalFile);
+        String dogSource    = Files.readString(dogFile);
+
+        int offset = Fixtures.offsetOf(animalSource, "speak");
+        Map<Path, String> changed = JdtPushDownMethod.pushDown(project, animalFile, offset);
+
+        assertEquals(2, changed.size());
+
+        Approvals.verify(
+            RenameStoryBoard.titled("Push down method: Animal.speak → Dog (FQN extends clause)")
+                .inputProject(Map.of("Animal.java", animalSource, "Dog.java", dogSource))
+                .refactoring("push down method",
+                        "`Animal.speak()` → subclasses",
+                        Fixtures.lineCol(animalSource, offset))
+                .outputProject(changed)
+                .build()
+        );
+    }
 }

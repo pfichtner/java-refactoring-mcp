@@ -89,6 +89,40 @@ class IntroduceParamTest {
     }
 
     // -------------------------------------------------------------------------
+    // FQN type: type name inferred as fully-qualified when not imported
+    // -------------------------------------------------------------------------
+
+    @Test
+    void introduce_param_infers_fqn_type_when_not_imported() throws Exception {
+        Path projectRoot = fixtures.projectPath("projects/introduce-param-fqn");
+        MavenProject project = new MavenProject(projectRoot);
+
+        Path appFile = project.sourceRoots().get(0).resolve("com/example/app/App.java");
+        String source = Files.readString(appFile);
+
+        // Select the ClassInstanceCreation expression; type must be auto-detected via FQN
+        int start = source.indexOf("new com.example.service.Calculator()");
+        int len   = "new com.example.service.Calculator()".length();
+
+        Map<Path, String> changed = JdtIntroduceParam.introduceParam(
+                project, appFile, start, len, "calc", null);
+
+        Map<String, String> inputs = fixtures.loadProjectSources(
+                "projects/introduce-param-fqn/src/main/java");
+
+        Approvals.verify(
+            RenameStoryBoard.titled("Introduce parameter: FQN type inferred when Calculator not imported")
+                .inputProject(inputs)
+                .refactoring("introduce parameter",
+                        "`new com.example.service.Calculator()` → parameter `calc`",
+                        Fixtures.lineCol(source, start)
+                        + " — type must be emitted as FQN (no import present)")
+                .outputProject(changed)
+                .build()
+        );
+    }
+
+    // -------------------------------------------------------------------------
     // Precondition: simple name rejected
     // -------------------------------------------------------------------------
 

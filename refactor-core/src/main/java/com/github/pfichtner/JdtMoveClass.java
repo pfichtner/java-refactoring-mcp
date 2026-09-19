@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.Comparator;
 
 /**
  * Headless Move Class refactoring using JDT ASTParser.
@@ -30,8 +31,6 @@ import java.util.*;
  *   <li>Wildcard imports ({@code import com.example.*;}) are not updated but
  *       will require no change on the consumer side if the wildcard now points
  *       to the new package.</li>
- *   <li>Fully-qualified type references in source code (e.g.
- *       {@code com.example.service.Calculator calc}) are not updated.</li>
  * </ul>
  */
 public class JdtMoveClass {
@@ -103,9 +102,11 @@ public class JdtMoveClass {
         Path newFilePath = sourceRoot.resolve(relPath).normalize();
 
         // -------------------------------------------------------------------------
-        // 3. Update explicit imports in all project files
+        // 3. Update imports and FQN code references in all project files
         // -------------------------------------------------------------------------
         Map<Path, String> changedImports = new LinkedHashMap<>();
+
+        record Edit(int start, int end, String replacement) {}
 
         for (Path root : project.sourceRoots()) {
             if (!Files.isDirectory(root)) continue;
@@ -117,19 +118,44 @@ public class JdtMoveClass {
                     if (file.equals(absSource)) continue; // skip the moved file itself
                     String fileSource = Files.readString(file);
                     CompilationUnit fileCu = parse(fileSource, file.getFileName().toString());
+                    List<Edit> edits = new ArrayList<>();
+
+                    // Update explicit single-class import
                     for (Object o : fileCu.imports()) {
                         if (o instanceof ImportDeclaration imp
                                 && !imp.isOnDemand()
                                 && !imp.isStatic()
                                 && imp.getName().getFullyQualifiedName().equals(oldFqn)) {
                             Name impName = imp.getName();
-                            StringBuilder sb = new StringBuilder(fileSource);
-                            sb.replace(impName.getStartPosition(),
-                                    impName.getStartPosition() + impName.getLength(),
-                                    newFqn);
-                            changedImports.put(file, sb.toString());
-                            break;
+                            edits.add(new Edit(impName.getStartPosition(),
+                                    impName.getStartPosition() + impName.getLength(), newFqn));
                         }
+                    }
+
+                    // Update fully-qualified code references (QualifiedName nodes in body)
+                    fileCu.accept(new ASTVisitor(true) {
+                        int skipDepth = 0;
+                        @Override public boolean visit(PackageDeclaration n) { skipDepth++; return true; }
+                        @Override public void endVisit(PackageDeclaration n) { skipDepth--; }
+                        @Override public boolean visit(ImportDeclaration n)  { skipDepth++; return true; }
+                        @Override public void endVisit(ImportDeclaration n)  { skipDepth--; }
+
+                        @Override
+                        public boolean visit(QualifiedName node) {
+                            if (skipDepth == 0 && node.getFullyQualifiedName().equals(oldFqn)) {
+                                edits.add(new Edit(node.getStartPosition(),
+                                        node.getStartPosition() + node.getLength(), newFqn));
+                                return false; // avoid duplicate edits on nested qualifier nodes
+                            }
+                            return true;
+                        }
+                    });
+
+                    if (!edits.isEmpty()) {
+                        edits.sort(Comparator.comparingInt(Edit::start).reversed());
+                        StringBuilder sb = new StringBuilder(fileSource);
+                        for (Edit e : edits) sb.replace(e.start(), e.end(), e.replacement());
+                        changedImports.put(file, sb.toString());
                     }
                 }
             }
