@@ -2,6 +2,7 @@ package com.github.pfichtner.mcp;
 
 import com.github.pfichtner.JdtConvertAnonymousToNested;
 import com.github.pfichtner.JdtConvertNestedToTopLevel;
+import com.github.pfichtner.JdtPromoteToField;
 import com.github.pfichtner.JdtExtractConstant;
 import com.github.pfichtner.JdtMoveClass;
 import com.github.pfichtner.JdtRenamePackage;
@@ -93,7 +94,8 @@ public class RefactoringServer {
                         encapsulateField(),
                         decomposeConditional(),
                         convertAnonymousToNested(),
-                        convertNestedToTopLevel()
+                        convertNestedToTopLevel(),
+                        promoteToField()
                 )
                 .build();
     }
@@ -1419,6 +1421,36 @@ public class RefactoringServer {
                         String nestedName = (String) args.get("nested_class_name");
                         String result     = JdtConvertAnonymousToNested.convert(
                                 source, file.getFileName().toString(), offset, nestedName);
+                        return ok(result);
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
+    }
+
+    // Tool: promote_to_field
+    static SyncToolSpecification promoteToField() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("promote_to_field", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                                "file",   Map.of("type", "string",  "description", "Source file containing the local variable (absolute path)"),
+                                "line",   Map.of("type", "integer", "description", "1-based line of the local variable declaration"),
+                                "column", Map.of("type", "integer", "description", "1-based column of the local variable declaration")
+                        ),
+                        "required", List.of("file", "line", "column")
+                ))
+                .description("Promote a local variable declaration to a private instance field of the enclosing class.")
+                .build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        Path file    = Path.of((String) args.get("file"));
+                        String source = Files.readString(file);
+                        int offset   = resolveOffset(args, source, file.getFileName().toString());
+                        String result = JdtPromoteToField.promote(
+                                source, file.getFileName().toString(), offset);
                         return ok(result);
                     } catch (Exception e) {
                         return error(e.getMessage());
