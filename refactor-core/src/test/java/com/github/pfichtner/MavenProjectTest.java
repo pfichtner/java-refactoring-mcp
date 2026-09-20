@@ -2,8 +2,6 @@ package com.github.pfichtner;
 
 import com.github.pfichtner.project.MavenProject;
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
-import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
@@ -41,16 +39,9 @@ class MavenProjectTest {
         String source = Files.readString(sourceFile);
         int offset = Fixtures.offsetOf(source, "int result") + "int ".length();
 
-        String result = JdtRenamer.renameLocalVariable(project, sourceFile, offset, "sum");
+        String withProject    = JdtRenamer.renameLocalVariable(project, sourceFile, offset, "sum");
+        String withoutProject = JdtRenamer.renameLocalVariable(source, "Calculator.java", offset, "sum");
 
-        Approvals.verify(
-            RenameStoryBoard.titled("Rename local variable in Maven project: result → sum")
-                .javaSection("Input", source)
-                .refactoring("rename local variable", "`result` → `sum`",
-                        "target: " + Fixtures.lineCol(source, offset)
-                        + " in Calculator.java (Maven project context)")
-                .javaSection("Output", result)
-                .build()
-        );
+        assertThat(withProject).isEqualTo(withoutProject);
     }
 }

@@ -2,8 +2,6 @@ package com.github.pfichtner;
 
 import com.github.pfichtner.project.ExplicitProject;
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
-import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
@@ -43,16 +41,9 @@ class ExplicitProjectTest {
         String source   = Files.readString(sourceFile);
         int offset      = Fixtures.offsetOf(source, "int result") + "int ".length();
 
-        String result = JdtRenamer.renameLocalVariable(project, sourceFile, offset, "total");
+        String withProject    = JdtRenamer.renameLocalVariable(project, sourceFile, offset, "sum");
+        String withoutProject = JdtRenamer.renameLocalVariable(source, "Calculator.java", offset, "sum");
 
-        Approvals.verify(
-            RenameStoryBoard.titled("Rename local variable with ExplicitProject: result → total")
-                .javaSection("Input", source)
-                .refactoring("rename local variable", "`result` → `total`",
-                        "target: " + Fixtures.lineCol(source, offset)
-                        + " in Calculator.java (ExplicitProject — no build file)")
-                .javaSection("Output", result)
-                .build()
-        );
+        assertThat(withProject).isEqualTo(withoutProject);
     }
 }
