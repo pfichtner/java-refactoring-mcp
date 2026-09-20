@@ -15,18 +15,14 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Rename constructor directly — expect rejection | [→](refactor-core/src/test/java/com/github/pfichtner/RenameTest.rename_constructor_directly_is_rejected.approved.md) |
 | Rename field: name → fullName (multi-file) | [→](refactor-core/src/test/java/com/github/pfichtner/RenameTest.rename_field_across_files.approved.md) |
 | Rename local variable: x → local (field x must be untouched) | [→](refactor-core/src/test/java/com/github/pfichtner/RenameTest.rename_local_does_not_affect_shadowed_field.approved.md) |
+| Rename local variable: x → answer | [→](refactor-core/src/test/java/com/github/pfichtner/RenameTest.rename_local_variable_from_declaration_site.approved.md) |
+| Rename local variable: x → answer | [→](refactor-core/src/test/java/com/github/pfichtner/RenameTest.rename_local_variable_from_reference_site.approved.md) |
 | Rename method: add → plus (multi-file) | [→](refactor-core/src/test/java/com/github/pfichtner/RenameTest.rename_method_across_files.approved.md) |
+| Rename type name — expect rejection | [→](refactor-core/src/test/java/com/github/pfichtner/RenameTest.rename_non_variable_is_rejected.approved.md) |
+| Rename parameter: n → count | [→](refactor-core/src/test/java/com/github/pfichtner/RenameTest.rename_parameter_n_to_count.approved.md) |
 | Rename type: Rectangle → Rect (multi-file) | [→](refactor-core/src/test/java/com/github/pfichtner/RenameTest.rename_type_across_files.approved.md) |
 | Rename type via FQN reference: Rectangle → Rect | [→](refactor-core/src/test/java/com/github/pfichtner/RenameTest.rename_type_via_fqn_reference.approved.md) |
-
-### Headless jdt rename
-| Test case | Approval |
-|-----------|----------|
-| Rename local variable: x → answer | [→](refactor-core/src/test/java/com/github/pfichtner/HeadlessJdtRenameTest.rename_local_variable_from_declaration_site.approved.md) |
-| Rename local variable: x → answer | [→](refactor-core/src/test/java/com/github/pfichtner/HeadlessJdtRenameTest.rename_local_variable_from_reference_site.approved.md) |
-| Rename type name — expect rejection | [→](refactor-core/src/test/java/com/github/pfichtner/HeadlessJdtRenameTest.rename_non_variable_is_rejected.approved.md) |
-| Rename parameter: n → count | [→](refactor-core/src/test/java/com/github/pfichtner/HeadlessJdtRenameTest.rename_parameter_n_to_count.approved.md) |
-| Rename local variable: y → product (x must be untouched) | [→](refactor-core/src/test/java/com/github/pfichtner/HeadlessJdtRenameTest.rename_y_does_not_affect_x.approved.md) |
+| Rename local variable: y → product (x must be untouched) | [→](refactor-core/src/test/java/com/github/pfichtner/RenameTest.rename_y_does_not_affect_x.approved.md) |
 
 ### Rename edge case
 | Test case | Approval |
