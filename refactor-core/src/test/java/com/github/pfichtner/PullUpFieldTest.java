@@ -2,7 +2,7 @@ package com.github.pfichtner;
 
 import com.github.pfichtner.project.MavenProject;
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -39,7 +39,7 @@ class PullUpFieldTest {
         assertThat(changed.containsKey(absDog)).as("subclass must be in result").isTrue();
 
         Approvals.verify(
-            RenameStoryBoard.titled("Pull up field: Dog.breed → Animal")
+            RefactoringStoryBoard.titled("Pull up field: Dog.breed → Animal")
                 .inputProject(Map.of("Animal.java", animalSource, "Dog.java", dogSource))
                 .refactoring("pull up field",
                     "`Dog.breed` → `Animal`",
@@ -62,7 +62,7 @@ class PullUpFieldTest {
         assertThat(ex.getMessage()).contains("no explicit superclass");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Pull up field rejected: Animal has no superclass")
+            RefactoringStoryBoard.titled("Pull up field rejected: Animal has no superclass")
                 .javaSection("Input: Animal.java", source)
                 .refactoring("pull up field", "`Animal.name`", Fixtures.lineCol(source, offset))
                 .diagnostic(ex.getMessage())
@@ -84,7 +84,7 @@ class PullUpFieldTest {
         assertThat(ex.getMessage()).contains("already declares");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Pull up field rejected: superclass already has name")
+            RefactoringStoryBoard.titled("Pull up field rejected: superclass already has name")
                 .javaSection("Input: Dog.java", source)
                 .refactoring("pull up field", "`Dog.name`", Fixtures.lineCol(source, offset))
                 .diagnostic(ex.getMessage())

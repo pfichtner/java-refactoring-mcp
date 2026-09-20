@@ -2,7 +2,7 @@ package com.github.pfichtner;
 
 import com.github.pfichtner.project.MavenProject;
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -48,7 +48,7 @@ class ChangeMethodSignatureTest {
         assertThat(changed).containsKey(absApp);
 
         Approvals.verify(
-            RenameStoryBoard.titled("Change method signature: reorder params convert(int,String) → convert(String,int)")
+            RefactoringStoryBoard.titled("Change method signature: reorder params convert(int,String) → convert(String,int)")
                 .inputProject(Map.of("App.java", appSrc, "Converter.java", converterSrc))
                 .refactoring("change method signature",
                         "`convert(int value, String prefix)` → `convert(String prefix, int value)`",
@@ -80,7 +80,7 @@ class ChangeMethodSignatureTest {
         assertThat(changed).doesNotContainKey(converterFile.getParent().resolve("App.java").toAbsolutePath().normalize());
 
         Approvals.verify(
-            RenameStoryBoard.titled("Change method signature: change return type String → Object")
+            RefactoringStoryBoard.titled("Change method signature: change return type String → Object")
                 .javaSection("Input: Converter.java", converterSrc)
                 .refactoring("change method signature",
                         "`String convert(...)` → `Object convert(...)`",
@@ -113,7 +113,7 @@ class ChangeMethodSignatureTest {
         assertThat(changed).containsKey(appFile.toAbsolutePath().normalize());
 
         Approvals.verify(
-            RenameStoryBoard.titled("Change method signature: reorder params + return type Object")
+            RefactoringStoryBoard.titled("Change method signature: reorder params + return type Object")
                 .inputProject(Map.of("App.java", appSrc, "Converter.java", converterSrc))
                 .refactoring("change method signature",
                         "`String convert(int value, String prefix)` → `Object convert(String prefix, int value)`",
@@ -143,7 +143,7 @@ class ChangeMethodSignatureTest {
         assertThat(ex.getMessage()).contains("Nothing to change");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Change method signature rejected: nothing to change")
+            RefactoringStoryBoard.titled("Change method signature rejected: nothing to change")
                 .javaSection("Input: Converter.java", source)
                 .refactoring("change method signature",
                         "`convert` — no newReturnType, no paramOrder",
@@ -169,7 +169,7 @@ class ChangeMethodSignatureTest {
         assertThat(ex.getMessage()).contains("does not match parameter count");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Change method signature rejected: wrong paramOrder length")
+            RefactoringStoryBoard.titled("Change method signature rejected: wrong paramOrder length")
                 .javaSection("Input: Converter.java", source)
                 .refactoring("change method signature",
                         "`convert` — paramOrder length 1 but method has 2 params",

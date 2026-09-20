@@ -1,7 +1,7 @@
 package com.github.pfichtner;
 
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -26,7 +26,7 @@ class ExtractConstantTest {
                 source, "Foo.java", start, len, "PI", false);
 
         Approvals.verify(
-            RenameStoryBoard.titled("Extract constant: 3.14159 → PI")
+            RefactoringStoryBoard.titled("Extract constant: 3.14159 → PI")
                 .javaSection("Input", source)
                 .refactoring("extract constant", "`3.14159` → `private static final double PI`",
                         Fixtures.lineCol(source, start))
@@ -45,7 +45,7 @@ class ExtractConstantTest {
                 source, "Foo.java", start, len, "GREETING", true);
 
         Approvals.verify(
-            RenameStoryBoard.titled("Extract constant: \"HELLO\" → GREETING (replace all)")
+            RefactoringStoryBoard.titled("Extract constant: \"HELLO\" → GREETING (replace all)")
                 .javaSection("Input", source)
                 .refactoring("extract constant", "`\"HELLO\"` → `private static final String GREETING` (replaceAll=true)",
                         Fixtures.lineCol(source, start))
@@ -65,7 +65,7 @@ class ExtractConstantTest {
         assertThat(ex.getMessage()).contains("simple name");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Extract constant — rejected: selection is a simple name")
+            RefactoringStoryBoard.titled("Extract constant — rejected: selection is a simple name")
                 .javaSection("Input", source)
                 .refactoring("extract constant", "`x` → `X` (simple name — nothing to extract)",
                         Fixtures.lineCol(source, start))

@@ -2,7 +2,7 @@ package com.github.pfichtner;
 
 import com.github.pfichtner.project.MavenProject;
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -37,7 +37,7 @@ class ConvertToRecordTest {
         assertThat(changed.containsKey(absApp)).as("App.java must be in result").isTrue();
 
         Approvals.verify(
-            RenameStoryBoard.titled("Convert class to record: Point (getters renamed at call sites)")
+            RefactoringStoryBoard.titled("Convert class to record: Point (getters renamed at call sites)")
                 .inputProject(Map.of("App.java", appSrc, "Point.java", pointSrc))
                 .refactoring("convert to record",
                     "`class Point` → `record Point(int x, int y)`; `getX()`→`x()`, `getY()`→`y()`",
@@ -58,7 +58,7 @@ class ConvertToRecordTest {
         assertThat(ex.getMessage()).contains("extends");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Convert to record rejected: class has extends clause")
+            RefactoringStoryBoard.titled("Convert to record rejected: class has extends clause")
                 .javaSection("Input: Derived.java", source)
                 .refactoring("convert to record", "`Derived` extends `Base`",
                     "records cannot extend classes")
@@ -78,7 +78,7 @@ class ConvertToRecordTest {
         assertThat(ex.getMessage()).contains("non-private-final field(s)");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Convert to record rejected: has non-private-final fields")
+            RefactoringStoryBoard.titled("Convert to record rejected: has non-private-final fields")
                 .javaSection("Input: Mutable.java", source)
                 .refactoring("convert to record", "`Mutable` has non-private-final field(s): count", "")
                 .diagnostic(ex.getMessage())

@@ -2,7 +2,7 @@ package com.github.pfichtner;
 
 import com.github.pfichtner.project.MavenProject;
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -38,7 +38,7 @@ class RemoveParamTest {
                 "projects/remove-param/src/main/java");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Remove parameter: c (unused, index 2) — multi-file")
+            RefactoringStoryBoard.titled("Remove parameter: c (unused, index 2) — multi-file")
                 .inputProject(inputs)
                 .refactoring("remove parameter", "`int c` at index 2 of `add(int a, int b, int c)`",
                         Fixtures.lineCol(source, offset) + " in Computation.java — c not used in body")
@@ -65,7 +65,7 @@ class RemoveParamTest {
                 "projects/remove-param-method-ref/src/main/java");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Remove parameter: method references converted to lambdas")
+            RefactoringStoryBoard.titled("Remove parameter: method references converted to lambdas")
                 .inputProject(inputs)
                 .refactoring("remove parameter", "`int b` at index 1 of `add(int a, int b)`",
                         Fixtures.lineCol(source, offset) + " in Computation.java — b not used in body")
@@ -87,7 +87,7 @@ class RemoveParamTest {
         Map<Path, String> changed = JdtRemoveParam.removeParam(project, calcFile, offset);
 
         Approvals.verify(
-            RenameStoryBoard.titled("Remove parameter: @param tag removed from Javadoc")
+            RefactoringStoryBoard.titled("Remove parameter: @param tag removed from Javadoc")
                 .javaSection("Input", source)
                 .refactoring("remove parameter", "`int c` at index 2 of `add(int a, int b, int c)`",
                         Fixtures.lineCol(source, offset) + " — @param c tag must be removed from Javadoc")
@@ -113,7 +113,7 @@ class RemoveParamTest {
         assertThat(ex.getMessage()).contains("referenced in the method body");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Remove parameter — rejected: parameter used in body")
+            RefactoringStoryBoard.titled("Remove parameter — rejected: parameter used in body")
                 .javaSection("Input", source)
                 .refactoring("remove parameter", "`int a` at " + Fixtures.lineCol(source, offset),
                         "a is used in the method body (return a + b)")

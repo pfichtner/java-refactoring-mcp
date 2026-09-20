@@ -2,7 +2,7 @@ package com.github.pfichtner;
 
 import com.github.pfichtner.project.MavenProject;
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -40,7 +40,7 @@ class PushDownFieldTest {
         Path absTruck   = truckFile.toAbsolutePath().normalize();
 
         Approvals.verify(
-            RenameStoryBoard.titled("Push down field: Vehicle.maxSpeed → Car, Truck")
+            RefactoringStoryBoard.titled("Push down field: Vehicle.maxSpeed → Car, Truck")
                 .inputProject(Map.of(
                     "Car.java",     carSrc,
                     "Truck.java",   truckSrc,
@@ -67,7 +67,7 @@ class PushDownFieldTest {
         assertThat(ex.getMessage()).contains("No direct subclasses");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Push down field rejected: Car has no subclasses")
+            RefactoringStoryBoard.titled("Push down field rejected: Car has no subclasses")
                 .javaSection("Input: Car.java", source)
                 .refactoring("push down field", "`Car.doors`", Fixtures.lineCol(source, offset))
                 .diagnostic(ex.getMessage())

@@ -1,7 +1,7 @@
 package com.github.pfichtner;
 
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -27,7 +27,7 @@ class ExtractMethodTest {
                 start, end - start, "greet");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Extract method: greet() — no params, no return")
+            RefactoringStoryBoard.titled("Extract method: greet() — no params, no return")
                 .javaSection("Input", source)
                 .refactoring("extract method", "selection → `greet()`",
                         Fixtures.lineCol(source, start) + " to " + Fixtures.lineCol(source, end - 1))
@@ -48,7 +48,7 @@ class ExtractMethodTest {
                 start, end - start, "compute");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Extract method: compute(n) — with parameter")
+            RefactoringStoryBoard.titled("Extract method: compute(n) — with parameter")
                 .javaSection("Input", source)
                 .refactoring("extract method", "selection → `compute(int n)`",
                         Fixtures.lineCol(source, start) + " to " + Fixtures.lineCol(source, end - 1))
@@ -68,7 +68,7 @@ class ExtractMethodTest {
                 start, end - start, "add");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Extract method: add(a, b) — with return value")
+            RefactoringStoryBoard.titled("Extract method: add(a, b) — with return value")
                 .javaSection("Input", source)
                 .refactoring("extract method", "selection → `int add(int a, int b)`",
                         Fixtures.lineCol(source, start))
@@ -90,7 +90,7 @@ class ExtractMethodTest {
                         start, end - start, "validate")).actual();
 
         Approvals.verify(
-            RenameStoryBoard.titled("Extract method — rejected: selection contains return")
+            RefactoringStoryBoard.titled("Extract method — rejected: selection contains return")
                 .javaSection("Input", source)
                 .refactoring("extract method", "selection containing `return -1;` → `validate()`",
                         Fixtures.lineCol(source, start))
@@ -111,7 +111,7 @@ class ExtractMethodTest {
                         start, end - start, "init")).actual();
 
         Approvals.verify(
-            RenameStoryBoard.titled("Extract method — rejected: multiple variables used after selection")
+            RefactoringStoryBoard.titled("Extract method — rejected: multiple variables used after selection")
                 .javaSection("Input", source)
                 .refactoring("extract method", "selection → `init()` (would need to return a and b)",
                         Fixtures.lineCol(source, start))

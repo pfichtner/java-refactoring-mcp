@@ -1,7 +1,7 @@
 package com.github.pfichtner;
 
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -25,7 +25,7 @@ class InlineConstantTest {
         String result = JdtInliner.inlineConstant(source, "Foo.java", offset, false, false);
 
         Approvals.verify(
-            RenameStoryBoard.titled("Inline constant: MAX — this occurrence only")
+            RefactoringStoryBoard.titled("Inline constant: MAX — this occurrence only")
                 .javaSection("Input", source)
                 .refactoring("inline constant", "`MAX` at " + Fixtures.lineCol(source, offset),
                         "only the first reference replaced; declaration and other uses unchanged")
@@ -42,7 +42,7 @@ class InlineConstantTest {
         String result = JdtInliner.inlineConstant(source, "Foo.java", offset, true, false);
 
         Approvals.verify(
-            RenameStoryBoard.titled("Inline constant: MAX — all occurrences, declaration kept")
+            RefactoringStoryBoard.titled("Inline constant: MAX — all occurrences, declaration kept")
                 .javaSection("Input", source)
                 .refactoring("inline constant", "`MAX` — all occurrences, declaration kept",
                         "both references replaced with 100; MAX declaration stays")
@@ -59,7 +59,7 @@ class InlineConstantTest {
         String result = JdtInliner.inlineConstant(source, "Foo.java", offset, true, true);
 
         Approvals.verify(
-            RenameStoryBoard.titled("Inline constant: MAX — all occurrences, declaration removed")
+            RefactoringStoryBoard.titled("Inline constant: MAX — all occurrences, declaration removed")
                 .javaSection("Input", source)
                 .refactoring("inline constant", "`MAX` — all occurrences, declaration removed",
                         "both references replaced with 100; MAX field declaration deleted")
@@ -76,7 +76,7 @@ class InlineConstantTest {
         String result = JdtInliner.inlineConstant(source, "Foo.java", offset, true, false);
 
         Approvals.verify(
-            RenameStoryBoard.titled("Inline constant: FACTOR — compound initializer needs parens")
+            RefactoringStoryBoard.titled("Inline constant: FACTOR — compound initializer needs parens")
                 .javaSection("Input", source)
                 .refactoring("inline constant", "`FACTOR` — all occurrences, declaration kept",
                         "InfixExpression initializer wrapped in parens to preserve precedence")
@@ -94,7 +94,7 @@ class InlineConstantTest {
         assertThat(ex.getMessage()).contains("allOccurrences=true");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Inline constant — rejected: removeDeclaration without allOccurrences")
+            RefactoringStoryBoard.titled("Inline constant — rejected: removeDeclaration without allOccurrences")
                 .javaSection("Input", source)
                 .refactoring("inline constant", "`MAX` — allOccurrences=false, removeDeclaration=true",
                         "declaration removal requires all occurrences to be inlined")
@@ -112,7 +112,7 @@ class InlineConstantTest {
         assertThat(ex.getMessage()).contains("static final");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Inline constant — rejected: mutable field")
+            RefactoringStoryBoard.titled("Inline constant — rejected: mutable field")
                 .javaSection("Input", source)
                 .refactoring("inline constant", "`count` — not a static final field",
                         "only static final constants can be inlined")
@@ -130,7 +130,7 @@ class InlineConstantTest {
         assertThat(ex.getMessage()).contains("multiple constants");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Inline constant — rejected: multiple constants in one declaration")
+            RefactoringStoryBoard.titled("Inline constant — rejected: multiple constants in one declaration")
                 .javaSection("Input", source)
                 .refactoring("inline constant", "`X` — declaration has multiple fragments",
                         "split the declaration before inlining")

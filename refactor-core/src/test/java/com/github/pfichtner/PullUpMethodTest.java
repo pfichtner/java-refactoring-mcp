@@ -2,7 +2,7 @@ package com.github.pfichtner;
 
 import com.github.pfichtner.project.MavenProject;
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -39,7 +39,7 @@ class PullUpMethodTest {
         assertThat(changed.containsKey(absDog)).as("subclass must be in result").isTrue();
 
         Approvals.verify(
-            RenameStoryBoard.titled("Pull up method: Dog.speak → Animal")
+            RefactoringStoryBoard.titled("Pull up method: Dog.speak → Animal")
                 .inputProject(Map.of("Animal.java", animalSource, "Dog.java", dogSource))
                 .refactoring("pull up method",
                     "`Dog.speak()` → `Animal`",
@@ -62,7 +62,7 @@ class PullUpMethodTest {
         assertThat(ex.getMessage()).contains("no explicit superclass");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Pull up method rejected: Animal has no superclass")
+            RefactoringStoryBoard.titled("Pull up method rejected: Animal has no superclass")
                 .javaSection("Input: Animal.java", source)
                 .refactoring("pull up method", "`Animal.name()`", Fixtures.lineCol(source, offset))
                 .diagnostic(ex.getMessage())
@@ -87,7 +87,7 @@ class PullUpMethodTest {
         assertThat(changed.size()).isEqualTo(2);
 
         Approvals.verify(
-            RenameStoryBoard.titled("Pull up method: Dog.speak → Animal (FQN extends clause)")
+            RefactoringStoryBoard.titled("Pull up method: Dog.speak → Animal (FQN extends clause)")
                 .inputProject(Map.of("Animal.java", animalSource, "Dog.java", dogSource))
                 .refactoring("pull up method",
                         "`Dog.speak()` → `Animal`",
@@ -111,7 +111,7 @@ class PullUpMethodTest {
         assertThat(ex.getMessage()).contains("already declares");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Pull up method rejected: superclass already has name()")
+            RefactoringStoryBoard.titled("Pull up method rejected: superclass already has name()")
                 .javaSection("Input: Dog.java", source)
                 .refactoring("pull up method", "`Dog.name()`", Fixtures.lineCol(source, offset))
                 .diagnostic(ex.getMessage())

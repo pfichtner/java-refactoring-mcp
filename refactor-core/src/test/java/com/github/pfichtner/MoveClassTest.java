@@ -2,7 +2,7 @@ package com.github.pfichtner;
 
 import com.github.pfichtner.project.MavenProject;
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -42,7 +42,7 @@ class MoveClassTest {
 
         // Storyboard approval
         Approvals.verify(
-            RenameStoryBoard.titled("Move class: Calculator → com.example.util")
+            RefactoringStoryBoard.titled("Move class: Calculator → com.example.util")
                 .javaSection("Input: Calculator.java", calcSource)
                 .javaSection("Input: App.java", appSource)
                 .refactoring("move class",
@@ -73,7 +73,7 @@ class MoveClassTest {
         String updatedApp = result.changedImports().values().iterator().next();
 
         Approvals.verify(
-            RenameStoryBoard.titled("Move class: Calculator → com.example.util (FQN code references)")
+            RefactoringStoryBoard.titled("Move class: Calculator → com.example.util (FQN code references)")
                 .javaSection("Input: Calculator.java", calcSource)
                 .javaSection("Input: App.java", appSource)
                 .refactoring("move class",
@@ -97,7 +97,7 @@ class MoveClassTest {
         IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtMoveClass.moveClass(project, calcFile, "com.example.service")).actual();
 
         Approvals.verify(
-            RenameStoryBoard.titled("Move class rejected: already in target package")
+            RefactoringStoryBoard.titled("Move class rejected: already in target package")
                 .javaSection("Input: Calculator.java", calcSource)
                 .refactoring("move class",
                         "`com.example.service.Calculator` → `com.example.service` (same package)",

@@ -2,7 +2,7 @@ package com.github.pfichtner;
 
 import com.github.pfichtner.project.MavenProject;
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -45,7 +45,7 @@ class IntroduceParamTest {
                 "projects/introduce-param/src/main/java");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Introduce parameter: \"World\" → String name (multi-file)")
+            RefactoringStoryBoard.titled("Introduce parameter: \"World\" → String name (multi-file)")
                 .inputProject(inputs)
                 .refactoring("introduce parameter",
                         "`\"World\"` → parameter `String name`",
@@ -78,7 +78,7 @@ class IntroduceParamTest {
                 "projects/introduce-param-method-ref/src/main/java");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Introduce parameter: method references converted to lambdas")
+            RefactoringStoryBoard.titled("Introduce parameter: method references converted to lambdas")
                 .inputProject(inputs)
                 .refactoring("introduce parameter",
                         "`\"World\"` → parameter `String name`",
@@ -111,7 +111,7 @@ class IntroduceParamTest {
                 "projects/introduce-param-fqn/src/main/java");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Introduce parameter: FQN type inferred when Calculator not imported")
+            RefactoringStoryBoard.titled("Introduce parameter: FQN type inferred when Calculator not imported")
                 .inputProject(inputs)
                 .refactoring("introduce parameter",
                         "`new com.example.service.Calculator()` → parameter `calc`",
@@ -144,7 +144,7 @@ class IntroduceParamTest {
         assertThat(ex.getMessage()).contains("simple name");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Introduce parameter — rejected: selection is a simple name")
+            RefactoringStoryBoard.titled("Introduce parameter — rejected: selection is a simple name")
                 .javaSection("Input", source)
                 .refactoring("introduce parameter",
                         "`println` → `printer` (simple name — choose a compound expression)",
@@ -174,7 +174,7 @@ class IntroduceParamTest {
                 project, calcFile, start, len, "value", "int");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Introduce parameter: @param tag inserted after last @param")
+            RefactoringStoryBoard.titled("Introduce parameter: @param tag inserted after last @param")
                 .javaSection("Input", source)
                 .refactoring("introduce parameter",
                         "`a + b` → parameter `int value`",

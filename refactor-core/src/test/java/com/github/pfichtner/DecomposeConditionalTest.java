@@ -1,7 +1,7 @@
 package com.github.pfichtner;
 
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -31,7 +31,7 @@ class DecomposeConditionalTest {
         assertThat(result).contains("return age >= 18 && premium;");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Decompose conditional: if (age >= 18 && premium) → isAdultPremium()")
+            RefactoringStoryBoard.titled("Decompose conditional: if (age >= 18 && premium) → isAdultPremium()")
                 .javaSection("Input", source)
                 .refactoring("decompose conditional",
                         "`if (age >= 18 && premium)` → `if (isAdultPremium())`",
@@ -56,7 +56,7 @@ class DecomposeConditionalTest {
         assertThat(result).contains("return count < max && max > 0;");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Decompose conditional: while (count < max && max > 0) → shouldContinue()")
+            RefactoringStoryBoard.titled("Decompose conditional: while (count < max && max > 0) → shouldContinue()")
                 .javaSection("Input", source)
                 .refactoring("decompose conditional",
                         "`while (count < max && max > 0)` → `while (shouldContinue())`",
@@ -82,7 +82,7 @@ class DecomposeConditionalTest {
         assertThat(ex.getMessage()).contains("too simple");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Decompose conditional rejected: condition is too simple (single name)")
+            RefactoringStoryBoard.titled("Decompose conditional rejected: condition is too simple (single name)")
                 .javaSection("Input", source)
                 .refactoring("decompose conditional", "`if (flag)` — single name, nothing to decompose", "")
                 .diagnostic(ex.getMessage())
@@ -112,7 +112,7 @@ class DecomposeConditionalTest {
         assertThat(ex.getMessage()).contains("isEligible");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Decompose conditional rejected: method already exists")
+            RefactoringStoryBoard.titled("Decompose conditional rejected: method already exists")
                 .javaSection("Input", source)
                 .refactoring("decompose conditional", "`if (age > 18 && age < 65)` → `isEligible()` — method name already taken", "")
                 .diagnostic(ex.getMessage())

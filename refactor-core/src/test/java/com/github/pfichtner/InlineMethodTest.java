@@ -2,7 +2,7 @@ package com.github.pfichtner;
 
 import com.github.pfichtner.project.MavenProject;
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +29,7 @@ class InlineMethodTest {
         String result = JdtInlineMethod.inlineMethod(source, "Foo.java", offset);
 
         Approvals.verify(
-            RenameStoryBoard.titled("Inline method: greet() — void, no parameters")
+            RefactoringStoryBoard.titled("Inline method: greet() — void, no parameters")
                 .javaSection("Input", source)
                 .refactoring("inline method", "`greet()` at " + Fixtures.lineCol(source, offset),
                         "void method — body statements replace the call")
@@ -46,7 +46,7 @@ class InlineMethodTest {
         String result = JdtInlineMethod.inlineMethod(source, "Foo.java", offset);
 
         Approvals.verify(
-            RenameStoryBoard.titled("Inline method: printSum(a, b) — void, parameters substituted")
+            RefactoringStoryBoard.titled("Inline method: printSum(a, b) — void, parameters substituted")
                 .javaSection("Input", source)
                 .refactoring("inline method", "`printSum(a, b)` at " + Fixtures.lineCol(source, offset),
                         "parameters x→a, y→b substituted in body")
@@ -63,7 +63,7 @@ class InlineMethodTest {
         String result = JdtInlineMethod.inlineMethod(source, "Foo.java", offset);
 
         Approvals.verify(
-            RenameStoryBoard.titled("Inline method: add(x, y) → return expression substituted")
+            RefactoringStoryBoard.titled("Inline method: add(x, y) → return expression substituted")
                 .javaSection("Input", source)
                 .refactoring("inline method", "`add(x, y)` at " + Fixtures.lineCol(source, offset),
                         "return expression `a + b` with a→x, b→y replaces call")
@@ -92,7 +92,7 @@ class InlineMethodTest {
         Map<Path, String> changed = JdtInlineMethod.inlineMethod(project, appFile, offset, false);
 
         Approvals.verify(
-            RenameStoryBoard.titled("Inline method: add (multi-file, all call sites, declaration kept)")
+            RefactoringStoryBoard.titled("Inline method: add (multi-file, all call sites, declaration kept)")
                 .inputProject(Map.of("App.java", appSource, "Calculator.java", calcSource))
                 .refactoring("inline method",
                         "`Calculator.add(int a, int b)` → inlined at all call sites",
@@ -117,7 +117,7 @@ class InlineMethodTest {
         assertThat(changed.containsKey(calcFile.toAbsolutePath().normalize())).as("Calculator.java must be changed when removeDeclaration=true").isTrue();
 
         Approvals.verify(
-            RenameStoryBoard.titled("Inline method: add (multi-file, declaration removed)")
+            RefactoringStoryBoard.titled("Inline method: add (multi-file, declaration removed)")
                 .outputProject(changed)
                 .build()
         );
@@ -135,7 +135,7 @@ class InlineMethodTest {
         String result = JdtInlineMethod.inlineMethod(source, "Foo.java", offset, true, false);
 
         Approvals.verify(
-            RenameStoryBoard.titled("Inline method: greet() — all occurrences, declaration kept")
+            RefactoringStoryBoard.titled("Inline method: greet() — all occurrences, declaration kept")
                 .javaSection("Input", source)
                 .refactoring("inline method", "`greet()` — all occurrences in file, declaration kept",
                         "both call sites expanded in-place; greet() declaration stays")
@@ -152,7 +152,7 @@ class InlineMethodTest {
         String result = JdtInlineMethod.inlineMethod(source, "Foo.java", offset, true, false);
 
         Approvals.verify(
-            RenameStoryBoard.titled("Inline method: add() — all occurrences, declaration kept")
+            RefactoringStoryBoard.titled("Inline method: add() — all occurrences, declaration kept")
                 .javaSection("Input", source)
                 .refactoring("inline method", "`add(...)` — all occurrences in file, declaration kept",
                         "both call sites replaced with return expression; add() declaration stays")
@@ -169,7 +169,7 @@ class InlineMethodTest {
         String result = JdtInlineMethod.inlineMethod(source, "Foo.java", offset, true, true);
 
         Approvals.verify(
-            RenameStoryBoard.titled("Inline method: greet() — all occurrences, declaration removed")
+            RefactoringStoryBoard.titled("Inline method: greet() — all occurrences, declaration removed")
                 .javaSection("Input", source)
                 .refactoring("inline method", "`greet()` — all occurrences, declaration removed",
                         "both call sites expanded; greet() declaration deleted")
@@ -187,7 +187,7 @@ class InlineMethodTest {
         assertThat(ex.getMessage()).contains("allOccurrences=true");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Inline method — rejected: removeDeclaration without allOccurrences")
+            RefactoringStoryBoard.titled("Inline method — rejected: removeDeclaration without allOccurrences")
                 .javaSection("Input", source)
                 .refactoring("inline method", "`greet()` — allOccurrences=false, removeDeclaration=true",
                         "declaration removal requires all occurrences to be inlined")
@@ -207,7 +207,7 @@ class InlineMethodTest {
         assertThat(ex.getMessage()).contains("exactly one statement");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Inline method — rejected: multi-statement body in value context")
+            RefactoringStoryBoard.titled("Inline method — rejected: multi-statement body in value context")
                 .javaSection("Input", source)
                 .refactoring("inline method", "`compute(5)` at " + Fixtures.lineCol(source, offset),
                         "method has 2 statements — cannot inline into an expression context")
@@ -226,7 +226,7 @@ class InlineMethodTest {
         assertThat(ex.getMessage()).contains("not declared in this file");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Inline method — rejected: method not in this file")
+            RefactoringStoryBoard.titled("Inline method — rejected: method not in this file")
                 .javaSection("Input", source)
                 .refactoring("inline method", "`println(...)` at " + Fixtures.lineCol(source, offset),
                         "method declared in java.io.PrintStream — only single-file inline supported")

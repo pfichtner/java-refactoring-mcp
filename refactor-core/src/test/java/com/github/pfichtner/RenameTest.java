@@ -2,7 +2,7 @@ package com.github.pfichtner;
 
 import com.github.pfichtner.project.MavenProject;
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +29,7 @@ class RenameTest {
         String result = JdtRenamer.renameLocalVariable(source, "Foo.java", offset, "answer");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Rename local variable: x → answer")
+            RefactoringStoryBoard.titled("Rename local variable: x → answer")
                 .javaSection("Input", source)
                 .refactoring("rename local variable", "`x` → `answer`",
                         "target: declaration site at " + Fixtures.lineCol(source, offset))
@@ -45,7 +45,7 @@ class RenameTest {
         String result = JdtRenamer.renameLocalVariable(source, "Foo.java", offset, "answer");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Rename local variable: x → answer")
+            RefactoringStoryBoard.titled("Rename local variable: x → answer")
                 .javaSection("Input", source)
                 .refactoring("rename local variable", "`x` → `answer`",
                         "target: reference site at " + Fixtures.lineCol(source, offset))
@@ -61,7 +61,7 @@ class RenameTest {
         String result = JdtRenamer.renameLocalVariable(source, "Foo.java", offset, "product");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Rename local variable: y → product (x must be untouched)")
+            RefactoringStoryBoard.titled("Rename local variable: y → product (x must be untouched)")
                 .javaSection("Input", source)
                 .refactoring("rename local variable", "`y` → `product`",
                         "target: declaration site at " + Fixtures.lineCol(source, offset))
@@ -79,7 +79,7 @@ class RenameTest {
         String result = JdtRenamer.renameLocalVariable(source, "Counter.java", offset, "count");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Rename parameter: n → count")
+            RefactoringStoryBoard.titled("Rename parameter: n → count")
                 .javaSection("Input", source)
                 .refactoring("rename parameter", "`n` → `count`",
                         "target: declaration site at " + Fixtures.lineCol(source, offset))
@@ -104,7 +104,7 @@ class RenameTest {
         }
 
         Approvals.verify(
-            RenameStoryBoard.titled("Rename type name — expect rejection")
+            RefactoringStoryBoard.titled("Rename type name — expect rejection")
                 .javaSection("Input", source)
                 .refactoring("rename", "`Foo` → `Bar`",
                         "target: type name at " + Fixtures.lineCol(source, offset)
@@ -131,7 +131,7 @@ class RenameTest {
                 "projects/rename-field/src/main/java");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Rename field: name → fullName (multi-file)")
+            RefactoringStoryBoard.titled("Rename field: name → fullName (multi-file)")
                 .inputProject(inputs)
                 .refactoring("rename field", "`Person.name` → `Person.fullName`",
                         "target: " + Fixtures.lineCol(source, offset) + " in Person.java")
@@ -157,7 +157,7 @@ class RenameTest {
                 "projects/rename-method/src/main/java");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Rename method: add → plus (multi-file)")
+            RefactoringStoryBoard.titled("Rename method: add → plus (multi-file)")
                 .inputProject(inputs)
                 .refactoring("rename method", "`Calculator.add` → `Calculator.plus`",
                         "target: " + Fixtures.lineCol(source, offset) + " in Calculator.java")
@@ -183,7 +183,7 @@ class RenameTest {
                 "projects/rename-type/src/main/java");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Rename type: Rectangle → Rect (multi-file)")
+            RefactoringStoryBoard.titled("Rename type: Rectangle → Rect (multi-file)")
                 .inputProject(inputs)
                 .refactoring("rename type", "`Rectangle` → `Rect`",
                         "target: " + Fixtures.lineCol(source, offset) + " in Rectangle.java")
@@ -209,7 +209,7 @@ class RenameTest {
                 "projects/rename-type-fqn/src/main/java");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Rename type via FQN reference: Rectangle → Rect")
+            RefactoringStoryBoard.titled("Rename type via FQN reference: Rectangle → Rect")
                 .inputProject(inputs)
                 .refactoring("rename type",
                         "`com.example.service.Rectangle` → `com.example.service.Rect`",
@@ -229,7 +229,7 @@ class RenameTest {
         String result = JdtRenamer.renameLocalVariable(source, "Shadow.java", offset, "local");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Rename local variable: x → local (field x must be untouched)")
+            RefactoringStoryBoard.titled("Rename local variable: x → local (field x must be untouched)")
                 .javaSection("Input", source)
                 .refactoring("rename local variable", "`x` → `local`",
                         "target: " + Fixtures.lineCol(source, offset)
@@ -260,7 +260,7 @@ class RenameTest {
         }
 
         Approvals.verify(
-            RenameStoryBoard.titled("Rename constructor directly — expect rejection")
+            RefactoringStoryBoard.titled("Rename constructor directly — expect rejection")
                 .javaSection("Input", source)
                 .refactoring("rename constructor", "`Rectangle` → `Rect`",
                         "target: constructor declaration at " + Fixtures.lineCol(source, offset))

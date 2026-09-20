@@ -4,7 +4,7 @@ import com.github.pfichtner.locator.Locator;
 import com.github.pfichtner.locator.LocatorResolver;
 import com.github.pfichtner.project.MavenProject;
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -98,7 +98,7 @@ class LocatorByNameTest {
         Map<String, String> inputs = fixtures.loadProjectSources("projects/pull-up-method/src/main/java");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Pull up method by name: Dog.speak")
+            RefactoringStoryBoard.titled("Pull up method by name: Dog.speak")
                 .inputProject(inputs)
                 .refactoring("pull up method", "`Dog.speak()`",
                         "target: method 'speak'")
@@ -143,7 +143,7 @@ class LocatorByNameTest {
         Map<String, String> inputs = fixtures.loadProjectSources("projects/pull-up-field/src/main/java");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Pull up field by name: Dog.breed")
+            RefactoringStoryBoard.titled("Pull up field by name: Dog.breed")
                 .inputProject(inputs)
                 .refactoring("pull up field", "`Dog.breed`",
                         "target: field 'breed'")
@@ -172,7 +172,7 @@ class LocatorByNameTest {
         Map<String, String> inputs = fixtures.loadProjectSources("projects/remove-param/src/main/java");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Remove param by name: add.c")
+            RefactoringStoryBoard.titled("Remove param by name: add.c")
                 .inputProject(inputs)
                 .refactoring("remove param", "`c` from `add`",
                         "target: parameter 'c' in method 'add'")
@@ -194,7 +194,7 @@ class LocatorByNameTest {
 
         assertThat(result).isNotEqualTo(source);
         Approvals.verify(
-            RenameStoryBoard.titled("Inline variable by name: x")
+            RefactoringStoryBoard.titled("Inline variable by name: x")
                 .javaSection("Input", source)
                 .refactoring("inline variable", "`x` = `6 * 7`",
                         "target: variable 'x'")
@@ -216,7 +216,7 @@ class LocatorByNameTest {
 
         assertThat(result).isNotEqualTo(source);
         Approvals.verify(
-            RenameStoryBoard.titled("Inline constant by name: MAX")
+            RefactoringStoryBoard.titled("Inline constant by name: MAX")
                 .javaSection("Input", source)
                 .refactoring("inline constant", "`MAX` = `100` (all occurrences)",
                         "target: field 'MAX'")
@@ -243,7 +243,7 @@ class LocatorByNameTest {
 
         assertThat(changed).isNotEmpty();
         Approvals.verify(
-            RenameStoryBoard.titled("Push down method by name: Shape.area")
+            RefactoringStoryBoard.titled("Push down method by name: Shape.area")
                 .inputProject(inputs)
                 .refactoring("push down method", "`Shape.area()` → subclasses",
                         "target: method 'area'")
@@ -270,7 +270,7 @@ class LocatorByNameTest {
 
         assertThat(changed).isNotEmpty();
         Approvals.verify(
-            RenameStoryBoard.titled("Push down field by name: Vehicle.maxSpeed")
+            RefactoringStoryBoard.titled("Push down field by name: Vehicle.maxSpeed")
                 .inputProject(inputs)
                 .refactoring("push down field", "`Vehicle.maxSpeed` → subclasses",
                         "target: field 'maxSpeed'")

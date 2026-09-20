@@ -1,7 +1,7 @@
 package com.github.pfichtner;
 
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -24,7 +24,7 @@ class InlineVariableTest {
         String result = JdtInliner.inlineVariable(source, "Foo.java", offset);
 
         Approvals.verify(
-            RenameStoryBoard.titled("Inline variable: x (initializer is a compound expression)")
+            RefactoringStoryBoard.titled("Inline variable: x (initializer is a compound expression)")
                 .javaSection("Input", source)
                 .refactoring("inline variable", "`x` = `6 * 7`",
                         "declaration at " + Fixtures.lineCol(source, offset))
@@ -41,7 +41,7 @@ class InlineVariableTest {
         String result = JdtInliner.inlineVariable(source, "Foo.java", offset);
 
         Approvals.verify(
-            RenameStoryBoard.titled("Inline variable: sum — parentheses added to preserve precedence")
+            RefactoringStoryBoard.titled("Inline variable: sum — parentheses added to preserve precedence")
                 .javaSection("Input", source)
                 .refactoring("inline variable", "`sum` = `a + b` (used in `sum * 2`)",
                         "declaration at " + Fixtures.lineCol(source, offset))
@@ -58,7 +58,7 @@ class InlineVariableTest {
         String result = JdtInliner.inlineVariable(source, "Foo.java", offset);
 
         Approvals.verify(
-            RenameStoryBoard.titled("Inline variable: msg — replaces all two uses")
+            RefactoringStoryBoard.titled("Inline variable: msg — replaces all two uses")
                 .javaSection("Input", source)
                 .refactoring("inline variable", "`msg` = `\"Hello\"` (2 uses)",
                         "declaration at " + Fixtures.lineCol(source, offset))
@@ -76,7 +76,7 @@ class InlineVariableTest {
         assertThat(ex.getMessage()).contains("no initializer");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Inline variable — rejected: no initializer")
+            RefactoringStoryBoard.titled("Inline variable — rejected: no initializer")
                 .javaSection("Input", source)
                 .refactoring("inline variable", "`x` (no initializer)",
                         "declaration at " + Fixtures.lineCol(source, offset))
@@ -94,7 +94,7 @@ class InlineVariableTest {
         assertThat(ex.getMessage()).contains("multiple variables");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Inline variable — rejected: multiple fragments in declaration")
+            RefactoringStoryBoard.titled("Inline variable — rejected: multiple fragments in declaration")
                 .javaSection("Input", source)
                 .refactoring("inline variable", "`x` from `int x = 1, y = 2`",
                         "declaration at " + Fixtures.lineCol(source, offset))

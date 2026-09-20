@@ -2,7 +2,7 @@ package com.github.pfichtner;
 
 import com.github.pfichtner.project.MavenProject;
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -40,7 +40,7 @@ class PushDownMethodTest {
         Path absRect   = rectFile.toAbsolutePath().normalize();
 
         Approvals.verify(
-            RenameStoryBoard.titled("Push down method: Shape.area → Circle, Rectangle")
+            RefactoringStoryBoard.titled("Push down method: Shape.area → Circle, Rectangle")
                 .inputProject(Map.of(
                     "Circle.java", circleSource,
                     "Rectangle.java", rectSource,
@@ -66,7 +66,7 @@ class PushDownMethodTest {
         assertThat(ex.getMessage()).contains("No direct subclasses");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Push down method rejected: Dog has no subclasses")
+            RefactoringStoryBoard.titled("Push down method rejected: Dog has no subclasses")
                 .javaSection("Input: Dog.java", dogSrc)
                 .refactoring("push down method", "`Dog.speak()`", Fixtures.lineCol(dogSrc, offset))
                 .diagnostic(ex.getMessage())
@@ -91,7 +91,7 @@ class PushDownMethodTest {
         assertThat(changed.size()).isEqualTo(2);
 
         Approvals.verify(
-            RenameStoryBoard.titled("Push down method: Animal.speak → Dog (FQN extends clause)")
+            RefactoringStoryBoard.titled("Push down method: Animal.speak → Dog (FQN extends clause)")
                 .inputProject(Map.of("Animal.java", animalSource, "Dog.java", dogSource))
                 .refactoring("push down method",
                         "`Animal.speak()` → subclasses",

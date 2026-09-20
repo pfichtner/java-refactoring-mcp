@@ -2,7 +2,7 @@ package com.github.pfichtner;
 
 import com.github.pfichtner.project.MavenProject;
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -37,7 +37,7 @@ class RenamePackageTest {
                 .forEach(fc -> outputs.put(fc.newPath(), fc.newSource()));
 
         Approvals.verify(
-            RenameStoryBoard.titled("Rename package: com.example.service → com.example.util")
+            RefactoringStoryBoard.titled("Rename package: com.example.service → com.example.util")
                 .inputProject(inputs)
                 .refactoring("rename package",
                         "`com.example.service` → `com.example.util`",
@@ -99,7 +99,7 @@ class RenamePackageTest {
                 .forEach(fc -> outputs.put(fc.newPath(), fc.newSource()));
 
         Approvals.verify(
-            RenameStoryBoard.titled("Rename package with FQN code references: com.example.service → com.example.util")
+            RefactoringStoryBoard.titled("Rename package with FQN code references: com.example.service → com.example.util")
                 .inputProject(inputs)
                 .refactoring("rename package",
                         "`com.example.service` → `com.example.util`",
@@ -124,7 +124,7 @@ class RenamePackageTest {
                 .forEach(fc -> outputs.put(fc.newPath(), fc.newSource()));
 
         Approvals.verify(
-            RenameStoryBoard.titled("Rename package: {@link} and @see FQN in Javadoc updated")
+            RefactoringStoryBoard.titled("Rename package: {@link} and @see FQN in Javadoc updated")
                 .inputProject(inputs)
                 .refactoring("rename package",
                         "`com.example.service` → `com.example.util`",

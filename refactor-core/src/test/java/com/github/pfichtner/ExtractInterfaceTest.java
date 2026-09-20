@@ -1,7 +1,7 @@
 package com.github.pfichtner;
 
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -26,7 +26,7 @@ class ExtractInterfaceTest {
                 JdtExtractInterface.extractInterface(source, "Calculator.java", "Arithmetic", List.of());
 
         Approvals.verify(
-            RenameStoryBoard.titled("Extract interface: Arithmetic from Calculator")
+            RefactoringStoryBoard.titled("Extract interface: Arithmetic from Calculator")
                 .javaSection("Input: Calculator.java", source)
                 .refactoring("extract interface", "`Calculator` → implements `Arithmetic`",
                         "all public non-static methods: add, subtract (private helper excluded)")
@@ -44,7 +44,7 @@ class ExtractInterfaceTest {
                 source, "Calculator.java", "Addable", List.of("add"));
 
         Approvals.verify(
-            RenameStoryBoard.titled("Extract interface: Addable from Calculator (subset)")
+            RefactoringStoryBoard.titled("Extract interface: Addable from Calculator (subset)")
                 .javaSection("Input: Calculator.java", source)
                 .refactoring("extract interface", "`Calculator` → implements `Addable`",
                         "selected methods: add only")
@@ -62,7 +62,7 @@ class ExtractInterfaceTest {
                 source, "Converter.java", "Transformable", List.of());
 
         Approvals.verify(
-            RenameStoryBoard.titled("Extract interface: Transformable from Converter (generics)")
+            RefactoringStoryBoard.titled("Extract interface: Transformable from Converter (generics)")
                 .javaSection("Input: Converter.java", source)
                 .refactoring("extract interface", "`Converter` → implements `Transformable`",
                         "includes generic method <T> T identity(T value)")
@@ -81,7 +81,7 @@ class ExtractInterfaceTest {
         assertThat(ex.getMessage()).contains("No public non-static methods");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Extract interface — rejected: no public non-static methods")
+            RefactoringStoryBoard.titled("Extract interface — rejected: no public non-static methods")
                 .javaSection("Input: Foo.java", source)
                 .refactoring("extract interface", "`Foo` → `FooInterface`",
                         "all methods are private or static — nothing to extract")

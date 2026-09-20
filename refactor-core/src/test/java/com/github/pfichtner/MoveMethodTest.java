@@ -2,7 +2,7 @@ package com.github.pfichtner;
 
 import com.github.pfichtner.project.MavenProject;
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -36,7 +36,7 @@ class MoveMethodTest {
         assertThat(changed).containsKey(printerFile.toAbsolutePath().normalize());
 
         Approvals.verify(
-            RenameStoryBoard.titled("Move method: Printer.format → Report")
+            RefactoringStoryBoard.titled("Move method: Printer.format → Report")
                 .inputProject(Map.of("Printer.java", printerSource, "Report.java", reportSource))
                 .refactoring("move method", "`Printer.format(Report)` → `Report`",
                         "target: " + Fixtures.lineCol(printerSource, offset) + " in Printer.java")
@@ -66,7 +66,7 @@ class MoveMethodTest {
         assertThat(changed).containsKey(printerFile.toAbsolutePath().normalize());
 
         Approvals.verify(
-            RenameStoryBoard.titled("Move method to named target: Printer.byline(Report, Author) → Report")
+            RefactoringStoryBoard.titled("Move method to named target: Printer.byline(Report, Author) → Report")
                 .inputProject(Map.of("Printer.java", printerSource, "Report.java", reportSource))
                 .refactoring("move method", "`Printer.byline(Report, Author)` → `Report` (not Author)",
                         "target class named explicitly; " + Fixtures.lineCol(printerSource, offset) + " in Printer.java")
@@ -90,7 +90,7 @@ class MoveMethodTest {
         assertThat(ex.getMessage()).contains("not found");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Move method rejected: target class not found")
+            RefactoringStoryBoard.titled("Move method rejected: target class not found")
                 .javaSection("Input: Printer.java", source)
                 .refactoring("move method", "`Printer.format(Report)` → `NonExistent`",
                         Fixtures.lineCol(source, offset))
@@ -115,7 +115,7 @@ class MoveMethodTest {
         assertThat(ex.getMessage()).contains("already declares");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Move method rejected: Report already declares describe(Report)")
+            RefactoringStoryBoard.titled("Move method rejected: Report already declares describe(Report)")
                 .javaSection("Input: Printer.java", source)
                 .refactoring("move method", "`Printer.describe(Report)` → `Report`",
                         Fixtures.lineCol(source, offset))

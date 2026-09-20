@@ -2,7 +2,7 @@ package com.github.pfichtner;
 
 import com.github.pfichtner.project.MavenProject;
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -45,7 +45,7 @@ class IntroduceParameterObjectTest {
                 "App.java", appSrc, "Printer.java", printerSrc);
 
         Approvals.verify(
-            RenameStoryBoard.titled("Introduce parameter object: Printer.print(x,y) → Coordinate")
+            RefactoringStoryBoard.titled("Introduce parameter object: Printer.print(x,y) → Coordinate")
                 .inputProject(inputs)
                 .refactoring("introduce parameter object",
                     "`int x, int y` → `Coordinate coordinate`",
@@ -78,7 +78,7 @@ class IntroduceParameterObjectTest {
         assertThat(changed.containsKey(appFile.toAbsolutePath().normalize())).as("App.java must be in result").isTrue();
 
         Approvals.verify(
-            RenameStoryBoard.titled("Introduce parameter object as record: Printer.print(x,y) → Coordinate")
+            RefactoringStoryBoard.titled("Introduce parameter object as record: Printer.print(x,y) → Coordinate")
                 .inputProject(Map.of("App.java", appSrc, "Printer.java", printerSrc))
                 .refactoring("introduce parameter object (--record)",
                     "`int x, int y` → `Coordinate coordinate`",
@@ -102,7 +102,7 @@ class IntroduceParameterObjectTest {
         assertThat(ex.getMessage()).contains("At least 2");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Introduce parameter object rejected: fewer than 2 params")
+            RefactoringStoryBoard.titled("Introduce parameter object rejected: fewer than 2 params")
                 .javaSection("Input: Printer.java", source)
                 .refactoring("introduce parameter object",
                     "only `x` specified",
@@ -126,7 +126,7 @@ class IntroduceParameterObjectTest {
         assertThat(ex.getMessage()).contains("not found");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Introduce parameter object rejected: unknown param name")
+            RefactoringStoryBoard.titled("Introduce parameter object rejected: unknown param name")
                 .javaSection("Input: Printer.java", source)
                 .refactoring("introduce parameter object",
                     "`x, unknown` (unknown does not exist)",

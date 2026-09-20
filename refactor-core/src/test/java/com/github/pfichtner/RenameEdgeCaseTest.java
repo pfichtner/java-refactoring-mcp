@@ -2,7 +2,7 @@ package com.github.pfichtner;
 
 import com.github.pfichtner.project.MavenProject;
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -43,7 +43,7 @@ class RenameEdgeCaseTest {
                 "projects/rename-overloaded/src/main/java");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Rename method: compute(int,int) → add (sibling overload unchanged)")
+            RefactoringStoryBoard.titled("Rename method: compute(int,int) → add (sibling overload unchanged)")
                 .inputProject(inputs)
                 .refactoring("rename method", "`Overloaded.compute(int,int)` → `add`",
                         "only the 2-arg overload and its call sites are renamed; 3-arg compute unchanged")
@@ -71,7 +71,7 @@ class RenameEdgeCaseTest {
                 "projects/rename-inheritance/src/main/java");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Rename method: Animal.speak → makeSound (override chain limitation)")
+            RefactoringStoryBoard.titled("Rename method: Animal.speak → makeSound (override chain limitation)")
                 .inputProject(inputs)
                 .refactoring("rename method", "`Animal.speak` → `makeSound`",
                         "KNOWN LIMITATION: Dog.speak() override is NOT renamed — "
@@ -100,7 +100,7 @@ class RenameEdgeCaseTest {
                 "projects/rename-generics/src/main/java");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Rename method in generic class: Container<T>.getValue → get")
+            RefactoringStoryBoard.titled("Rename method in generic class: Container<T>.getValue → get")
                 .inputProject(inputs)
                 .refactoring("rename method", "`Container<T>.getValue()` → `get()`",
                         "type parameter T and factory method preserved; return type unaffected")
@@ -128,7 +128,7 @@ class RenameEdgeCaseTest {
                 "projects/rename-lambda/src/main/java");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Rename method referenced in lambda: Calculator.square → squared")
+            RefactoringStoryBoard.titled("Rename method referenced in lambda: Calculator.square → squared")
                 .inputProject(inputs)
                 .refactoring("rename method", "`Calculator.square` → `squared`",
                         "method reference this::square in run() must also be renamed")
@@ -156,7 +156,7 @@ class RenameEdgeCaseTest {
                 "projects/rename-javadoc-type/src/main/java");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Rename type: Greeter → HelloService ({@link} and @see updated)")
+            RefactoringStoryBoard.titled("Rename type: Greeter → HelloService ({@link} and @see updated)")
                 .inputProject(inputs)
                 .refactoring("rename type", "`Greeter` → `HelloService`",
                         "{@link Greeter} and @see Greeter in App.java Javadoc must be updated")
@@ -180,7 +180,7 @@ class RenameEdgeCaseTest {
                 "projects/rename-javadoc-method/src/main/java");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Rename method: Calculator.compute → add ({@link} and @see updated)")
+            RefactoringStoryBoard.titled("Rename method: Calculator.compute → add ({@link} and @see updated)")
                 .inputProject(inputs)
                 .refactoring("rename method", "`Calculator.compute(int,int)` → `add`",
                         "{@link Calculator#compute} and @see Calculator#compute in App.java Javadoc must be updated")
@@ -209,7 +209,7 @@ class RenameEdgeCaseTest {
                 "projects/rename-anonymous/src/main/java");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Rename interface method: Task.execute → perform (anonymous impl)")
+            RefactoringStoryBoard.titled("Rename interface method: Task.execute → perform (anonymous impl)")
                 .inputProject(inputs)
                 .refactoring("rename method", "`Task.execute()` → `perform()`",
                         "interface declaration and call site renamed; "

@@ -1,7 +1,7 @@
 package com.github.pfichtner;
 
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -26,7 +26,7 @@ class ExtractSuperclassTest {
                 source, "Animal.java", "Living", List.of("breathe", "eat"));
 
         Approvals.verify(
-            RenameStoryBoard.titled("Extract superclass: Living from Animal")
+            RefactoringStoryBoard.titled("Extract superclass: Living from Animal")
                 .javaSection("Input: Animal.java", source)
                 .refactoring("extract superclass", "`Animal` → extends `Living`",
                         "moves breathe() and eat() to abstract superclass; name() stays in Animal")
@@ -44,7 +44,7 @@ class ExtractSuperclassTest {
                 source, "Animal.java", "BaseAnimal", List.of());
 
         Approvals.verify(
-            RenameStoryBoard.titled("Extract superclass: BaseAnimal (all public methods)")
+            RefactoringStoryBoard.titled("Extract superclass: BaseAnimal (all public methods)")
                 .javaSection("Input: Animal.java", source)
                 .refactoring("extract superclass", "`Animal` → extends `BaseAnimal`",
                         "all public methods moved: breathe, eat, name")
@@ -63,7 +63,7 @@ class ExtractSuperclassTest {
         assertThat(ex.getMessage()).contains("already extends");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Extract superclass — rejected: class already extends")
+            RefactoringStoryBoard.titled("Extract superclass — rejected: class already extends")
                 .javaSection("Input: Dog.java", source)
                 .refactoring("extract superclass", "`Dog` → extends `Canine`",
                         "Dog already extends Animal — chaining not supported")

@@ -2,7 +2,7 @@ package com.github.pfichtner;
 
 import com.github.pfichtner.project.MavenProject;
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -44,7 +44,7 @@ class EncapsulateFieldTest {
         assertThat(changed).containsKey(absPerson);
 
         Approvals.verify(
-            RenameStoryBoard.titled("Encapsulate field: Person.name — getter only")
+            RefactoringStoryBoard.titled("Encapsulate field: Person.name — getter only")
                 .inputProject(Map.of("App.java", appSrc, "Person.java", personSrc))
                 .refactoring("encapsulate field",
                         "`public String name` → `private String name` + `getName()`",
@@ -78,7 +78,7 @@ class EncapsulateFieldTest {
         assertThat(changed).containsKey(absApp);
 
         Approvals.verify(
-            RenameStoryBoard.titled("Encapsulate field: Person.name — getter + setter")
+            RefactoringStoryBoard.titled("Encapsulate field: Person.name — getter + setter")
                 .inputProject(Map.of("App.java", appSrc, "Person.java", personSrc))
                 .refactoring("encapsulate field",
                         "`public String name` → `private String name` + `getName()` + `setName(String)`",
@@ -113,7 +113,7 @@ class EncapsulateFieldTest {
         assertThat(newSource).contains("private int age");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Encapsulate field: Person.age — getter only (verify private result)")
+            RefactoringStoryBoard.titled("Encapsulate field: Person.age — getter only (verify private result)")
                 .javaSection("Input: Person.java", source)
                 .refactoring("encapsulate field",
                         "`public int age` → `private int age` + `getAge()`",

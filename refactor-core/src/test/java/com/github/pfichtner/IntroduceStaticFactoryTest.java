@@ -2,7 +2,7 @@ package com.github.pfichtner;
 
 import com.github.pfichtner.project.MavenProject;
 import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RenameStoryBoard;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -41,7 +41,7 @@ class IntroduceStaticFactoryTest {
         assertThat(changed.containsKey(absApp)).as("App.java must be in result").isTrue();
 
         Approvals.verify(
-            RenameStoryBoard.titled("Introduce static factory: Counter.of (constructor stays public)")
+            RefactoringStoryBoard.titled("Introduce static factory: Counter.of (constructor stays public)")
                 .inputProject(Map.of("Counter.java", counterSrc, "App.java", appSrc))
                 .refactoring("introduce static factory",
                     "`Counter(int,String)` → `Counter.of`",
@@ -68,7 +68,7 @@ class IntroduceStaticFactoryTest {
                 project, counterFile, offset, "create", true);
 
         Approvals.verify(
-            RenameStoryBoard.titled("Introduce static factory: Counter.create (constructor private)")
+            RefactoringStoryBoard.titled("Introduce static factory: Counter.create (constructor private)")
                 .inputProject(Map.of("Counter.java", counterSrc, "App.java", appSrc))
                 .refactoring("introduce static factory",
                     "`Counter(int,String)` → `Counter.create` + private constructor",
@@ -93,7 +93,7 @@ class IntroduceStaticFactoryTest {
         assertThat(ex.getMessage()).contains("No constructor");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Introduce static factory rejected: no constructor at offset")
+            RefactoringStoryBoard.titled("Introduce static factory rejected: no constructor at offset")
                 .javaSection("Input: Counter.java", source)
                 .refactoring("introduce static factory", "`Counter.of`",
                     Fixtures.lineCol(source, offset))
@@ -129,7 +129,7 @@ class IntroduceStaticFactoryTest {
         Files.deleteIfExists(tmp);
 
         Approvals.verify(
-            RenameStoryBoard.titled("Introduce static factory rejected: factory method already exists")
+            RefactoringStoryBoard.titled("Introduce static factory rejected: factory method already exists")
                 .javaSection("Input: Counter.java (already has 'of')", modifiedSource)
                 .refactoring("introduce static factory", "duplicate `Counter.of`",
                     Fixtures.lineCol(modifiedSource, offset2))
