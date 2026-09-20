@@ -74,7 +74,7 @@ public class RenameCommand implements Callable<Integer> {
                 .map(p -> p.getFileName().toString())
                 .sorted()
                 .reduce((a, b) -> a + ", " + b).orElse("");
-        out.println("Changed files (" + changed.size() + "): " + names);
+        out.println("Would change (" + changed.size() + "): " + names);
         changed.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
                 .forEach(e -> {

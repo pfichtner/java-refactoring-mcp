@@ -53,7 +53,7 @@ public class ChangeMethodSignatureCommand implements Callable<Integer> {
         var out = spec.commandLine().getOut();
         if (dryRun) {
             out.println("Dry run — no files written.");
-            out.println("Changed files (" + changed.size() + "):");
+            out.println("Would change (" + changed.size() + "):");
             changed.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(e -> {
                 out.println("\n=== " + e.getKey().getFileName() + " ===");
                 out.println(e.getValue().stripTrailing());

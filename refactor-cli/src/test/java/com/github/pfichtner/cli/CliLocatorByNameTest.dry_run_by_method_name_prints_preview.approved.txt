@@ -1,5 +1,5 @@
 Dry run — no files written.
-Changed files (2): App.java, Calculator.java
+Would change (2): App.java, Calculator.java
 
 === App.java ===
 package com.example;
