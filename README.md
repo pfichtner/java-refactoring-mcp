@@ -17,18 +17,25 @@ AI coding agents are great at reading and generating Java — but they edit sour
 | Inline method | Project-wide |
 | Extract / inline variable | Single file |
 | Extract constant | Single file |
+| Inline constant | Single file (one reference, all references, or also drop the declaration) |
 | Introduce / remove parameter | Project-wide (all call sites) |
 | Extract interface | Single file |
 | Extract superclass | Single file |
 | Move class to new package | Project-wide (imports updated) |
+| Move method to another class | Project source + target file (call sites are not rewritten) |
+| Move static member to another class | Project-wide (all call sites updated) |
 | Pull up / push down method | Superclass ↔ subclasses |
 | Pull up / push down field | Superclass ↔ subclasses |
+| Promote local to field | Single file |
 | Introduce static factory | Project-wide (all `new` call sites) |
 | Introduce parameter object | Project-wide |
 | Convert class to record | Project-wide (accessor call sites renamed) |
+| Convert nested type to top level | Single file (emit a new `.java` file) |
+| Convert anonymous class to nested | Single file |
 | Change method signature (reorder params / return type) | Project-wide for param reorder; declaration-only for return type |
 | Encapsulate field (getter + optional setter) | Project-wide (all read/write access sites rewritten) |
 | Decompose conditional | Single file (extracts condition into named boolean method) |
+| Introduce indirection | Single file (adds a static wrapper method that delegates to the wrapped method) |
 
 All operations follow **analyze → apply**: the agent can preview the exact diff before writing anything to disk.
 
