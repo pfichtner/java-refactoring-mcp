@@ -2,6 +2,7 @@ package com.github.pfichtner.mcp;
 
 import com.github.pfichtner.JdtConvertAnonymousToNested;
 import com.github.pfichtner.JdtConvertNestedToTopLevel;
+import com.github.pfichtner.JdtIntroduceIndirection;
 import com.github.pfichtner.JdtMoveStaticMember;
 import com.github.pfichtner.JdtPromoteToField;
 import com.github.pfichtner.JdtExtractConstant;
@@ -97,7 +98,8 @@ public class RefactoringServer {
                         convertAnonymousToNested(),
                         convertNestedToTopLevel(),
                         promoteToField(),
-                        moveStaticMember()
+                        moveStaticMember(),
+                        introduceIndirection()
                 )
                 .build();
     }
@@ -1423,6 +1425,38 @@ public class RefactoringServer {
                         String nestedName = (String) args.get("nested_class_name");
                         String result     = JdtConvertAnonymousToNested.convert(
                                 source, file.getFileName().toString(), offset, nestedName);
+                        return ok(result);
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
+    }
+
+    // Tool: introduce_indirection
+    static SyncToolSpecification introduceIndirection() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("introduce_indirection", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                                "file",                   Map.of("type", "string",  "description", "Source file containing the method (absolute path)"),
+                                "line",                   Map.of("type", "integer", "description", "1-based line inside the method"),
+                                "column",                 Map.of("type", "integer", "description", "1-based column inside the method"),
+                                "indirection_method_name", Map.of("type", "string", "description", "Name for the new static wrapper method")
+                        ),
+                        "required", List.of("file", "line", "column", "indirection_method_name")
+                ))
+                .description("Add a public static indirection (wrapper) method that delegates to the method at the given position.")
+                .build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        Path file    = Path.of((String) args.get("file"));
+                        String source = Files.readString(file);
+                        int offset   = resolveOffset(args, source, file.getFileName().toString());
+                        String name  = (String) args.get("indirection_method_name");
+                        String result = JdtIntroduceIndirection.introduceIndirection(
+                                source, file.getFileName().toString(), offset, name);
                         return ok(result);
                     } catch (Exception e) {
                         return error(e.getMessage());
