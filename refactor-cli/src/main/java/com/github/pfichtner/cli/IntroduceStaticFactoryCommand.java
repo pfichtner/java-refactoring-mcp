@@ -1,7 +1,6 @@
 package com.github.pfichtner.cli;
 
 import com.github.pfichtner.JdtIntroduceStaticFactory;
-import com.github.pfichtner.JdtRenamer;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
@@ -25,10 +24,7 @@ public class IntroduceStaticFactoryCommand implements Callable<Integer> {
 
     @Option(names = {"--file", "-f"}, required = true,
             description = "Source file containing the class.") Path file;
-    @Option(names = {"--line", "-l"}, required = true,
-            description = "1-based line of the constructor.") int line;
-    @Option(names = {"--column", "-c"}, required = true,
-            description = "1-based column inside the constructor.") int column;
+    @Mixin LocatorOptions locator;
     @Option(names = {"--name", "-n"}, required = true,
             description = "Simple name for the factory method (e.g. 'of', 'create').") String factoryName;
     @Option(names = "--private-constructor",
@@ -46,7 +42,7 @@ public class IntroduceStaticFactoryCommand implements Callable<Integer> {
             return 1;
         }
         String source = Files.readString(absFile);
-        int offset    = JdtRenamer.toOffset(source, line, column);
+        int offset    = locator.resolveOffset(source, absFile.getFileName().toString());
 
         Map<Path, String> changed = JdtIntroduceStaticFactory.introduceStaticFactory(
                 project.resolve(absFile), absFile, offset, factoryName, makePrivate);

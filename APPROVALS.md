@@ -259,3 +259,25 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 
 ---
 
+## Other
+
+### Cli locator by name
+| Test case | Approval |
+|-----------|----------|
+| Dry run by method name prints preview | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliLocatorByNameTest.dry_run_by_method_name_prints_preview.approved.txt) |
+
+### Locator by name
+| Test case | Approval |
+|-----------|----------|
+| Pull up field by name: Dog.breed | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.pull_up_field_by_name.approved.md) |
+| Pull up method by name: Dog.speak | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.pull_up_method_by_name.approved.md) |
+| Remove param by name: add.c | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.remove_param_by_name.approved.md) |
+| Rename field by name: name → fullName | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.rename_field_by_name.approved.md) |
+| Rename method by name: add → plus | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.rename_method_by_name.approved.md) |
+| Rename type by name: Rectangle → Rect | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.rename_type_by_name.approved.md) |
+
+### Refactoring server by name
+| Test case | Approval |
+|-----------|----------|
+| Analyze rename by method name preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerByNameTest.analyze_rename_by_method_name_preview.approved.txt) |
+

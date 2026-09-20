@@ -29,13 +29,7 @@ public class RenameCommand implements Callable<Integer> {
             description = "Source file containing the symbol to rename.")
     Path file;
 
-    @Option(names = {"--line", "-l"}, required = true,
-            description = "1-based line number of the symbol.")
-    int line;
-
-    @Option(names = {"--column", "-c"}, required = true,
-            description = "1-based column number of the symbol.")
-    int column;
+    @Mixin LocatorOptions locator;
 
     @Option(names = {"--name", "-n"}, required = true,
             description = "New name for the symbol.")
@@ -56,7 +50,7 @@ public class RenameCommand implements Callable<Integer> {
         }
 
         String source = Files.readString(absFile);
-        int offset = JdtRenamer.toOffset(source, line, column);
+        int offset = locator.resolveOffset(source, absFile.getFileName().toString());
 
         Map<Path, String> changed = JdtRenamer.rename(
                 project.resolve(absFile), absFile, offset, newName);

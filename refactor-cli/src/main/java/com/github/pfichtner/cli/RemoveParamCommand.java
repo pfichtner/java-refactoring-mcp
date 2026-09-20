@@ -1,7 +1,6 @@
 package com.github.pfichtner.cli;
 
 import com.github.pfichtner.JdtRemoveParam;
-import com.github.pfichtner.JdtRenamer;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
@@ -24,8 +23,7 @@ public class RemoveParamCommand implements Callable<Integer> {
     @Spec CommandSpec spec;
 
     @Option(names = {"--file", "-f"}, required = true) Path file;
-    @Option(names = {"--line", "-l"}, required = true) int line;
-    @Option(names = {"--column", "-c"}, required = true) int column;
+    @Mixin LocatorOptions locator;
     @Option(names = "--dry-run") boolean dryRun;
 
     @Mixin ProjectOptions project;
@@ -38,7 +36,7 @@ public class RemoveParamCommand implements Callable<Integer> {
             return 1;
         }
         String source = Files.readString(absFile);
-        int offset    = JdtRenamer.toOffset(source, line, column);
+        int offset    = locator.resolveOffset(source, absFile.getFileName().toString());
 
         Map<Path, String> changed = JdtRemoveParam.removeParam(project.resolve(absFile), absFile, offset);
 

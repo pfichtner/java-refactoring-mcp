@@ -1,8 +1,8 @@
 package com.github.pfichtner.cli;
 
 import com.github.pfichtner.JdtInliner;
-import com.github.pfichtner.JdtRenamer;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
 import picocli.CommandLine.Model.CommandSpec;
@@ -28,13 +28,7 @@ public class InlineVarCommand implements Callable<Integer> {
             description = "Source file containing the variable.")
     Path file;
 
-    @Option(names = {"--line", "-l"}, required = true,
-            description = "1-based line number of the variable declaration or use.")
-    int line;
-
-    @Option(names = {"--column", "-c"}, required = true,
-            description = "1-based column number of the variable name.")
-    int column;
+    @Mixin LocatorOptions locator;
 
     @Option(names = "--dry-run",
             description = "Print the result without writing to disk.")
@@ -49,7 +43,7 @@ public class InlineVarCommand implements Callable<Integer> {
         }
 
         String source = Files.readString(absFile);
-        int offset    = JdtRenamer.toOffset(source, line, column);
+        int offset    = locator.resolveOffset(source, absFile.getFileName().toString());
         String result = JdtInliner.inlineVariable(source, absFile.getFileName().toString(), offset);
 
         var out = spec.commandLine().getOut();

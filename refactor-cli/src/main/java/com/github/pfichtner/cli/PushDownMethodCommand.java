@@ -1,7 +1,6 @@
 package com.github.pfichtner.cli;
 
 import com.github.pfichtner.JdtPushDownMethod;
-import com.github.pfichtner.JdtRenamer;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
@@ -25,10 +24,7 @@ public class PushDownMethodCommand implements Callable<Integer> {
 
     @Option(names = {"--file", "-f"}, required = true,
             description = "Source file containing the superclass.") Path file;
-    @Option(names = {"--line", "-l"}, required = true,
-            description = "1-based line of the method to push down.") int line;
-    @Option(names = {"--column", "-c"}, required = true,
-            description = "1-based column of the method name.") int column;
+    @Mixin LocatorOptions locator;
     @Option(names = "--dry-run",
             description = "Print changed sources; do not write to disk.") boolean dryRun;
 
@@ -42,7 +38,7 @@ public class PushDownMethodCommand implements Callable<Integer> {
             return 1;
         }
         String source = Files.readString(absFile);
-        int offset    = JdtRenamer.toOffset(source, line, column);
+        int offset    = locator.resolveOffset(source, absFile.getFileName().toString());
 
         Map<Path, String> changed = JdtPushDownMethod.pushDown(project.resolve(absFile), absFile, offset);
 

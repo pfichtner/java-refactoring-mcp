@@ -19,6 +19,8 @@ import com.github.pfichtner.JdtPullUpMethod;
 import com.github.pfichtner.JdtPushDownField;
 import com.github.pfichtner.JdtPushDownMethod;
 import com.github.pfichtner.JdtRenamer;
+import com.github.pfichtner.locator.Locator;
+import com.github.pfichtner.locator.LocatorResolver;
 import com.github.pfichtner.project.ProjectDetector;
 import io.modelcontextprotocol.json.McpJsonDefaults;
 import io.modelcontextprotocol.server.McpServer;
@@ -420,13 +422,16 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("remove_param", Map.of(
                         "type", "object",
-                        "properties", Map.of(
-                                "project_root", Map.of("type", "string",  "description", "Absolute project root (Maven or Gradle)."),
-                                "file",         Map.of("type", "string",  "description", "Absolute path to the file with the parameter."),
-                                "line",         Map.of("type", "integer", "description", "1-based line of the parameter declaration."),
-                                "column",       Map.of("type", "integer", "description", "1-based column of the parameter name.")
+                        "properties", Map.ofEntries(
+                                Map.entry("project_root", Map.of("type", "string",  "description", "Absolute project root (Maven or Gradle).")),
+                                Map.entry("file",         Map.of("type", "string",  "description", "Absolute path to the file with the parameter.")),
+                                Map.entry("line",         Map.of("type", "integer", "description", "1-based line of the parameter. Use with 'column' OR use method+parameter name-based locators.")),
+                                Map.entry("column",       Map.of("type", "integer", "description", "1-based column of the parameter name. Use with 'line'.")),
+                                Map.entry("method",       Map.of("type", "string",  "description", "Name-based: method containing the parameter, e.g. \"setName\" or \"setName(String)\".")),
+                                Map.entry("parameter",    Map.of("type", "string",  "description", "Name-based: identifier of the parameter to remove, e.g. \"unused\". Requires 'method'.")),
+                                Map.entry("class",        Map.of("type", "string",  "description", "Optional: scope to a specific class when the file contains multiple types."))
                         ),
-                        "required", List.of("project_root", "file", "line", "column")))
+                        "required", List.of("project_root", "file")))
                         .description("""
                         Remove an unused parameter from a method and the corresponding argument
                         from every call site in the project.
@@ -437,10 +442,8 @@ public class RefactoringServer {
                     try {
                         Map<String, Object> args = request.arguments();
                         String file = (String) args.get("file");
-                        int line    = ((Number) args.get("line")).intValue();
-                        int col     = ((Number) args.get("column")).intValue();
                         String source = Files.readString(Path.of(file));
-                        int offset    = JdtRenamer.toOffset(source, line, col);
+                        int offset    = resolveOffset(args, source, Path.of(file).getFileName().toString());
                         var changed = JdtRemoveParam.removeParam(
                                 ProjectDetector.detect(
                                         Path.of((String) args.get("project_root"))),
@@ -570,14 +573,16 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("inline_method", Map.of(
                         "type", "object",
-                        "properties", Map.of(
-                                "project_root",       Map.of("type", "string",  "description", "Absolute project root (Maven or Gradle; enables multi-file inline)."),
-                                "file",               Map.of("type", "string",  "description", "Absolute path to the file containing the call."),
-                                "line",               Map.of("type", "integer", "description", "1-based line of the method call."),
-                                "column",             Map.of("type", "integer", "description", "1-based column of the method call name."),
-                                "remove_declaration", Map.of("type", "boolean", "description", "Also remove the method declaration (default false).")
+                        "properties", Map.ofEntries(
+                                Map.entry("project_root",       Map.of("type", "string",  "description", "Absolute project root (Maven or Gradle; enables multi-file inline).")),
+                                Map.entry("file",               Map.of("type", "string",  "description", "Absolute path to the file containing the call.")),
+                                Map.entry("line",               Map.of("type", "integer", "description", "1-based line of the method call. Use with 'column' OR use 'method' name-based locator.")),
+                                Map.entry("column",             Map.of("type", "integer", "description", "1-based column of the method call name. Use with 'line'.")),
+                                Map.entry("method",             Map.of("type", "string",  "description", "Name-based locator: method name, e.g. \"helper\" or \"helper(int)\".")),
+                                Map.entry("class",              Map.of("type", "string",  "description", "Optional: scope to a specific class when the file contains multiple types.")),
+                                Map.entry("remove_declaration", Map.of("type", "boolean", "description", "Also remove the method declaration (default false)."))
                         ),
-                        "required", List.of("project_root", "file", "line", "column")))
+                        "required", List.of("project_root", "file")))
                         .description("""
                         Inline a method call at all call sites in the project.
                         Optionally removes the method declaration.
@@ -588,11 +593,9 @@ public class RefactoringServer {
                     try {
                         Map<String, Object> args = request.arguments();
                         String file = (String) args.get("file");
-                        int line    = ((Number) args.get("line")).intValue();
-                        int col     = ((Number) args.get("column")).intValue();
                         boolean removeDel = Boolean.TRUE.equals(args.get("remove_declaration"));
                         String source = Files.readString(Path.of(file));
-                        int offset    = JdtRenamer.toOffset(source, line, col);
+                        int offset    = resolveOffset(args, source, Path.of(file).getFileName().toString());
                         var changed = JdtInlineMethod.inlineMethod(
                                 ProjectDetector.detect(
                                         Path.of((String) args.get("project_root"))),
@@ -667,11 +670,12 @@ public class RefactoringServer {
                 .tool(Tool.builder("inline_variable", Map.of(
                         "type", "object",
                         "properties", Map.of(
-                                "file",   Map.of("type", "string",  "description", "Absolute path to the source file."),
-                                "line",   Map.of("type", "integer", "description", "1-based line number of the variable."),
-                                "column", Map.of("type", "integer", "description", "1-based column number of the variable name.")
+                                "file",     Map.of("type", "string",  "description", "Absolute path to the source file."),
+                                "line",     Map.of("type", "integer", "description", "1-based line number. Use with 'column' OR use 'variable' name-based locator."),
+                                "column",   Map.of("type", "integer", "description", "1-based column number. Use with 'line'."),
+                                "variable", Map.of("type", "string",  "description", "Name-based locator: local variable name, e.g. \"result\".")
                         ),
-                        "required", List.of("file", "line", "column")))
+                        "required", List.of("file")))
                         .description("""
                         Inline a local variable: replace every use with its initializer expression
                         and remove the declaration. Returns the rewritten source; does not write to disk.
@@ -681,11 +685,9 @@ public class RefactoringServer {
                     try {
                         Map<String, Object> args = request.arguments();
                         String file = (String) args.get("file");
-                        int line    = ((Number) args.get("line")).intValue();
-                        int col     = ((Number) args.get("column")).intValue();
 
                         String source = Files.readString(Path.of(file));
-                        int offset    = JdtRenamer.toOffset(source, line, col);
+                        int offset    = resolveOffset(args, source, Path.of(file).getFileName().toString());
                         String result = JdtInliner.inlineVariable(
                                 source, Path.of(file).getFileName().toString(), offset);
                         return ok(result);
@@ -704,14 +706,16 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("inline_constant", Map.of(
                         "type", "object",
-                        "properties", Map.of(
-                                "file",               Map.of("type", "string",  "description", "Absolute path to the source file."),
-                                "line",               Map.of("type", "integer", "description", "1-based line number of the constant reference or declaration."),
-                                "column",             Map.of("type", "integer", "description", "1-based column number of the constant name."),
-                                "all_occurrences",    Map.of("type", "boolean", "description", "Replace all references in the file (default: only the reference at line/column)."),
-                                "remove_declaration", Map.of("type", "boolean", "description", "Also delete the field declaration (requires all_occurrences=true).")
+                        "properties", Map.ofEntries(
+                                Map.entry("file",               Map.of("type", "string",  "description", "Absolute path to the source file.")),
+                                Map.entry("line",               Map.of("type", "integer", "description", "1-based line of the constant. Use with 'column' OR use 'field' name-based locator.")),
+                                Map.entry("column",             Map.of("type", "integer", "description", "1-based column of the constant name. Use with 'line'.")),
+                                Map.entry("field",              Map.of("type", "string",  "description", "Name-based locator: constant field name, e.g. \"MAX_SIZE\".")),
+                                Map.entry("class",              Map.of("type", "string",  "description", "Optional: scope to a specific class when the file contains multiple types.")),
+                                Map.entry("all_occurrences",    Map.of("type", "boolean", "description", "Replace all references in the file (default: only the reference at line/column).")),
+                                Map.entry("remove_declaration", Map.of("type", "boolean", "description", "Also delete the field declaration (requires all_occurrences=true)."))
                         ),
-                        "required", List.of("file", "line", "column")))
+                        "required", List.of("file")))
                         .description("""
                         Inline a static final constant: replace one or all references with its
                         initializer expression, and optionally remove the field declaration.
@@ -722,13 +726,11 @@ public class RefactoringServer {
                     try {
                         Map<String, Object> args = request.arguments();
                         String file    = (String) args.get("file");
-                        int line       = ((Number) args.get("line")).intValue();
-                        int col        = ((Number) args.get("column")).intValue();
                         boolean allOcc = Boolean.TRUE.equals(args.get("all_occurrences"));
                         boolean removeDecl = Boolean.TRUE.equals(args.get("remove_declaration"));
 
                         String source = Files.readString(Path.of(file));
-                        int offset    = JdtRenamer.toOffset(source, line, col);
+                        int offset    = resolveOffset(args, source, Path.of(file).getFileName().toString());
                         String result = JdtInliner.inlineConstant(
                                 source, Path.of(file).getFileName().toString(), offset, allOcc, removeDecl);
                         return ok(result);
@@ -747,8 +749,6 @@ public class RefactoringServer {
             throws Exception {
         String projectRoot = (String) args.get("project_root");
         String file        = (String) args.get("file");
-        int line           = ((Number) args.get("line")).intValue();
-        int col            = ((Number) args.get("column")).intValue();
         String newName     = (String) args.get("new_name");
         String refactoring = (String) args.getOrDefault("refactoring", "rename");
 
@@ -764,9 +764,71 @@ public class RefactoringServer {
                 : root.resolve(file);
 
         String source = Files.readString(sourceFile);
-        int offset    = JdtRenamer.toOffset(source, line, col);
+        int offset    = resolveOffset(args, source, sourceFile.getFileName().toString());
 
         return JdtRenamer.rename(ProjectDetector.detect(root), sourceFile, offset, newName);
+    }
+
+    /**
+     * Resolves a position or name-based locator from MCP args to a char offset.
+     * Accepts {@code line}+{@code column} (classic) or name fields:
+     * {@code method}, {@code field}, {@code type}, {@code variable}, {@code parameter}
+     * (with optional {@code class} scope qualifier).
+     */
+    static int resolveOffset(Map<String, Object> args, String source, String unitName) {
+        return LocatorResolver.resolve(buildLocatorFromArgs(args), source, unitName);
+    }
+
+    private static Locator buildLocatorFromArgs(Map<String, Object> args) {
+        boolean hasLine      = args.containsKey("line");
+        boolean hasCol       = args.containsKey("column");
+        boolean hasMethod    = args.containsKey("method");
+        boolean hasField     = args.containsKey("field");
+        boolean hasType      = args.containsKey("type");
+        boolean hasParameter = args.containsKey("parameter");
+        boolean hasVariable  = args.containsKey("variable");
+
+        boolean hasPosition = hasLine || hasCol;
+        boolean hasName     = hasMethod || hasField || hasType || hasParameter || hasVariable;
+
+        if (hasPosition && hasName) {
+            throw new IllegalArgumentException(
+                    "Specify either (line + column) OR a name-based locator (method/field/type/variable/parameter), not both.");
+        }
+        if (!hasPosition && !hasName) {
+            throw new IllegalArgumentException(
+                    "Specify either (line + column) or a name-based locator (method, field, type, variable, or parameter).");
+        }
+
+        if (hasPosition) {
+            if (!hasLine || !hasCol) {
+                throw new IllegalArgumentException("Both 'line' and 'column' are required together.");
+            }
+            return new Locator.Position(
+                    ((Number) args.get("line")).intValue(),
+                    ((Number) args.get("column")).intValue());
+        }
+
+        String className = (String) args.get("class");
+
+        if (hasParameter) {
+            if (!hasMethod) {
+                throw new IllegalArgumentException("'parameter' requires 'method' to also be specified.");
+            }
+            return new Locator.ParameterInMethod((String) args.get("method"), (String) args.get("parameter"));
+        }
+
+        int kindCount = (hasMethod ? 1 : 0) + (hasField ? 1 : 0) + (hasType ? 1 : 0) + (hasVariable ? 1 : 0);
+        if (kindCount > 1) {
+            throw new IllegalArgumentException("Specify only one of: method, field, type, or variable.");
+        }
+
+        if (hasMethod)   return new Locator.MethodName((String) args.get("method"), className);
+        if (hasField)    return new Locator.FieldName((String) args.get("field"), className);
+        if (hasType)     return new Locator.TypeName((String) args.get("type"));
+        if (hasVariable) return new Locator.VariableName((String) args.get("variable"));
+
+        throw new IllegalArgumentException("No valid locator found in arguments.");
     }
 
     // -------------------------------------------------------------------------
@@ -807,22 +869,29 @@ public class RefactoringServer {
     private static Map<String, Object> renameSchema() {
         return Map.of(
                 "type", "object",
-                "properties", Map.of(
-                        "project_root", Map.of("type", "string",
-                                "description", "Absolute path to the project root (Maven or Gradle)."),
-                        "file", Map.of("type", "string",
-                                "description", "Source file — absolute or relative to project_root."),
-                        "line", Map.of("type", "integer",
-                                "description", "1-based line number of the symbol to rename."),
-                        "column", Map.of("type", "integer",
-                                "description", "1-based column number of the symbol to rename."),
-                        "refactoring", Map.of("type", "string",
-                                "description", "Refactoring type. Currently supported: \"rename\"."),
-                        "new_name", Map.of("type", "string",
-                                "description", "New name for the symbol.")
+                "properties", Map.ofEntries(
+                        Map.entry("project_root", Map.of("type", "string",
+                                "description", "Absolute path to the project root (Maven or Gradle).")),
+                        Map.entry("file", Map.of("type", "string",
+                                "description", "Source file — absolute or relative to project_root.")),
+                        Map.entry("line", Map.of("type", "integer",
+                                "description", "1-based line number. Use with 'column' OR use a name-based locator instead.")),
+                        Map.entry("column", Map.of("type", "integer",
+                                "description", "1-based column number. Use with 'line' OR use a name-based locator instead.")),
+                        Map.entry("method", Map.of("type", "string",
+                                "description", "Name-based locator for a method, e.g. \"add\" or \"add(int,int)\" for overloads.")),
+                        Map.entry("field", Map.of("type", "string",
+                                "description", "Name-based locator for a field, e.g. \"amount\".")),
+                        Map.entry("type", Map.of("type", "string",
+                                "description", "Name-based locator for a type (class/interface/enum), e.g. \"OrderService\".")),
+                        Map.entry("class", Map.of("type", "string",
+                                "description", "Optional: scope name-based locator to a specific class when the file contains multiple types.")),
+                        Map.entry("refactoring", Map.of("type", "string",
+                                "description", "Refactoring type. Currently supported: \"rename\".")),
+                        Map.entry("new_name", Map.of("type", "string",
+                                "description", "New name for the symbol."))
                 ),
-                "required", List.of("project_root", "file", "line", "column",
-                        "refactoring", "new_name")
+                "required", List.of("project_root", "file", "refactoring", "new_name")
         );
     }
 
@@ -834,13 +903,15 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("pull_up_method", Map.of(
                         "type", "object",
-                        "properties", Map.of(
-                                "project_root", Map.of("type", "string", "description", "Absolute project root (Maven or Gradle)."),
-                                "file",         Map.of("type", "string", "description", "Absolute path to the .java file containing the subclass."),
-                                "line",         Map.of("type", "integer", "description", "1-based line of the method to pull up."),
-                                "column",       Map.of("type", "integer", "description", "1-based column of the method name.")
+                        "properties", Map.ofEntries(
+                                Map.entry("project_root", Map.of("type", "string", "description", "Absolute project root (Maven or Gradle).")),
+                                Map.entry("file",         Map.of("type", "string", "description", "Absolute path to the .java file containing the subclass.")),
+                                Map.entry("line",         Map.of("type", "integer", "description", "1-based line of the method to pull up. Use with 'column' OR use 'method' name-based locator.")),
+                                Map.entry("column",       Map.of("type", "integer", "description", "1-based column of the method name. Use with 'line'.")),
+                                Map.entry("method",       Map.of("type", "string",  "description", "Name-based locator: method name, e.g. \"speak\" or \"speak(int)\".")),
+                                Map.entry("class",        Map.of("type", "string",  "description", "Optional: scope to a specific class when the file contains multiple types."))
                         ),
-                        "required", List.of("project_root", "file", "line", "column")))
+                        "required", List.of("project_root", "file")))
                         .description("""
                         Pull a method up from a subclass to its direct superclass.
                         The superclass must be in the project source roots.
@@ -852,10 +923,8 @@ public class RefactoringServer {
                     try {
                         Map<String, Object> args = request.arguments();
                         String file = (String) args.get("file");
-                        int line    = ((Number) args.get("line")).intValue();
-                        int col     = ((Number) args.get("column")).intValue();
                         String source = java.nio.file.Files.readString(Path.of(file));
-                        int offset    = JdtRenamer.toOffset(source, line, col);
+                        int offset    = resolveOffset(args, source, Path.of(file).getFileName().toString());
                         var changed   = JdtPullUpMethod.pullUp(
                                 ProjectDetector.detect(
                                         Path.of((String) args.get("project_root"))),
@@ -880,13 +949,15 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("push_down_method", Map.of(
                         "type", "object",
-                        "properties", Map.of(
-                                "project_root", Map.of("type", "string", "description", "Absolute project root (Maven or Gradle)."),
-                                "file",         Map.of("type", "string", "description", "Absolute path to the .java file containing the superclass."),
-                                "line",         Map.of("type", "integer", "description", "1-based line of the method to push down."),
-                                "column",       Map.of("type", "integer", "description", "1-based column of the method name.")
+                        "properties", Map.ofEntries(
+                                Map.entry("project_root", Map.of("type", "string", "description", "Absolute project root (Maven or Gradle).")),
+                                Map.entry("file",         Map.of("type", "string", "description", "Absolute path to the .java file containing the superclass.")),
+                                Map.entry("line",         Map.of("type", "integer", "description", "1-based line of the method to push down. Use with 'column' OR use 'method' name-based locator.")),
+                                Map.entry("column",       Map.of("type", "integer", "description", "1-based column of the method name. Use with 'line'.")),
+                                Map.entry("method",       Map.of("type", "string",  "description", "Name-based locator: method name, e.g. \"speak\" or \"speak(int)\".")),
+                                Map.entry("class",        Map.of("type", "string",  "description", "Optional: scope to a specific class when the file contains multiple types."))
                         ),
-                        "required", List.of("project_root", "file", "line", "column")))
+                        "required", List.of("project_root", "file")))
                         .description("""
                         Push a method down from a class to all its direct subclasses in the project.
                         The method is removed from the superclass and added to every subclass found.
@@ -899,10 +970,8 @@ public class RefactoringServer {
                     try {
                         Map<String, Object> args = request.arguments();
                         String file = (String) args.get("file");
-                        int line    = ((Number) args.get("line")).intValue();
-                        int col     = ((Number) args.get("column")).intValue();
                         String source = java.nio.file.Files.readString(Path.of(file));
-                        int offset    = JdtRenamer.toOffset(source, line, col);
+                        int offset    = resolveOffset(args, source, Path.of(file).getFileName().toString());
                         var changed   = JdtPushDownMethod.pushDown(
                                 ProjectDetector.detect(
                                         Path.of((String) args.get("project_root"))),
@@ -925,24 +994,24 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("pull_up_field", Map.of(
                         "type", "object",
-                        "properties", Map.of(
-                                "project_root", Map.of("type", "string",  "description", "Absolute path to the project root (Maven or Gradle)."),
-                                "file",         Map.of("type", "string",  "description", "Source file path relative to project_root"),
-                                "line",         Map.of("type", "integer", "description", "1-based line of the field to pull up"),
-                                "column",       Map.of("type", "integer", "description", "1-based column inside the field declaration")
+                        "properties", Map.ofEntries(
+                                Map.entry("project_root", Map.of("type", "string",  "description", "Absolute path to the project root (Maven or Gradle).")),
+                                Map.entry("file",         Map.of("type", "string",  "description", "Source file path relative to project_root")),
+                                Map.entry("line",         Map.of("type", "integer", "description", "1-based line of the field to pull up. Use with 'column' OR use 'field' name-based locator.")),
+                                Map.entry("column",       Map.of("type", "integer", "description", "1-based column inside the field declaration. Use with 'line'.")),
+                                Map.entry("field",        Map.of("type", "string",  "description", "Name-based locator: field name, e.g. \"amount\".")),
+                                Map.entry("class",        Map.of("type", "string",  "description", "Optional: scope to a specific class when the file contains multiple types."))
                         ),
-                        "required", List.of("project_root", "file", "line", "column")
+                        "required", List.of("project_root", "file")
                 )).build())
                 .callHandler((exchange, request) -> {
                     try {
                         Map<String, Object> args = request.arguments();
                         Path root = Path.of((String) args.get("project_root"));
                         Path file = root.resolve((String) args.get("file"));
-                        int  line = ((Number) args.get("line")).intValue();
-                        int  col  = ((Number) args.get("column")).intValue();
 
                         String source = java.nio.file.Files.readString(file);
-                        int offset    = JdtRenamer.toOffset(source, line, col);
+                        int offset    = resolveOffset(args, source, file.getFileName().toString());
 
                         var changed = JdtPullUpField.pullUp(
                                 ProjectDetector.detect(root), file, offset);
@@ -962,24 +1031,24 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("push_down_field", Map.of(
                         "type", "object",
-                        "properties", Map.of(
-                                "project_root", Map.of("type", "string",  "description", "Absolute path to the project root (Maven or Gradle)."),
-                                "file",         Map.of("type", "string",  "description", "Source file path relative to project_root"),
-                                "line",         Map.of("type", "integer", "description", "1-based line of the field to push down"),
-                                "column",       Map.of("type", "integer", "description", "1-based column inside the field declaration")
+                        "properties", Map.ofEntries(
+                                Map.entry("project_root", Map.of("type", "string",  "description", "Absolute path to the project root (Maven or Gradle).")),
+                                Map.entry("file",         Map.of("type", "string",  "description", "Source file path relative to project_root")),
+                                Map.entry("line",         Map.of("type", "integer", "description", "1-based line of the field to push down. Use with 'column' OR use 'field' name-based locator.")),
+                                Map.entry("column",       Map.of("type", "integer", "description", "1-based column inside the field declaration. Use with 'line'.")),
+                                Map.entry("field",        Map.of("type", "string",  "description", "Name-based locator: field name, e.g. \"amount\".")),
+                                Map.entry("class",        Map.of("type", "string",  "description", "Optional: scope to a specific class when the file contains multiple types."))
                         ),
-                        "required", List.of("project_root", "file", "line", "column")
+                        "required", List.of("project_root", "file")
                 )).build())
                 .callHandler((exchange, request) -> {
                     try {
                         Map<String, Object> args = request.arguments();
                         Path root = Path.of((String) args.get("project_root"));
                         Path file = root.resolve((String) args.get("file"));
-                        int  line = ((Number) args.get("line")).intValue();
-                        int  col  = ((Number) args.get("column")).intValue();
 
                         String source = java.nio.file.Files.readString(file);
-                        int offset    = JdtRenamer.toOffset(source, line, col);
+                        int offset    = resolveOffset(args, source, file.getFileName().toString());
 
                         var changed = JdtPushDownField.pushDown(
                                 ProjectDetector.detect(root), file, offset);
@@ -999,28 +1068,27 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("introduce_static_factory", Map.of(
                         "type", "object",
-                        "properties", Map.of(
-                                "project_root",       Map.of("type", "string",  "description", "Absolute path to the project root (Maven or Gradle)."),
-                                "file",               Map.of("type", "string",  "description", "Source file path relative to project_root"),
-                                "line",               Map.of("type", "integer", "description", "1-based line of the constructor"),
-                                "column",             Map.of("type", "integer", "description", "1-based column inside the constructor"),
-                                "factory_method_name",Map.of("type", "string",  "description", "Simple name for the new factory method, e.g. 'of' or 'create'"),
-                                "make_constructor_private", Map.of("type", "boolean", "description", "When true, changes the constructor visibility to private")
+                        "properties", Map.ofEntries(
+                                Map.entry("project_root",            Map.of("type", "string",  "description", "Absolute path to the project root (Maven or Gradle).")),
+                                Map.entry("file",                    Map.of("type", "string",  "description", "Source file path relative to project_root")),
+                                Map.entry("line",                    Map.of("type", "integer", "description", "1-based line of the constructor. Use with 'column' OR use 'method' name-based locator.")),
+                                Map.entry("column",                  Map.of("type", "integer", "description", "1-based column inside the constructor. Use with 'line'.")),
+                                Map.entry("method",                  Map.of("type", "string",  "description", "Name-based locator: constructor class name, e.g. \"Calculator\" or \"Calculator(int,int)\".")),
+                                Map.entry("factory_method_name",     Map.of("type", "string",  "description", "Simple name for the new factory method, e.g. 'of' or 'create'")),
+                                Map.entry("make_constructor_private",Map.of("type", "boolean", "description", "When true, changes the constructor visibility to private"))
                         ),
-                        "required", List.of("project_root", "file", "line", "column", "factory_method_name")
+                        "required", List.of("project_root", "file", "factory_method_name")
                 )).build())
                 .callHandler((exchange, request) -> {
                     try {
                         Map<String, Object> args = request.arguments();
                         Path root   = Path.of((String) args.get("project_root"));
                         Path file   = root.resolve((String) args.get("file"));
-                        int  line   = ((Number) args.get("line")).intValue();
-                        int  col    = ((Number) args.get("column")).intValue();
                         String name = (String) args.get("factory_method_name");
                         boolean makePrivate = args.getOrDefault("make_constructor_private", false) instanceof Boolean b && b;
 
                         String source = java.nio.file.Files.readString(file);
-                        int offset    = JdtRenamer.toOffset(source, line, col);
+                        int offset    = resolveOffset(args, source, file.getFileName().toString());
 
                         var changed = JdtIntroduceStaticFactory.introduceStaticFactory(
                                 ProjectDetector.detect(root),
@@ -1042,25 +1110,25 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("introduce_parameter_object", Map.of(
                         "type", "object",
-                        "properties", Map.of(
-                                "project_root",    Map.of("type", "string",  "description", "Absolute path to the project root (Maven or Gradle)."),
-                                "file",            Map.of("type", "string",  "description", "Source file path relative to project_root"),
-                                "line",            Map.of("type", "integer", "description", "1-based line of the method declaration"),
-                                "column",          Map.of("type", "integer", "description", "1-based column inside the method declaration"),
-                                "param_names",     Map.of("type", "array", "items", Map.of("type", "string"),
-                                                          "description", "Names of the contiguous parameters to group (>=2)"),
-                                "class_name",      Map.of("type", "string",  "description", "Simple name for the new parameter-object class"),
-                                "param_object_name", Map.of("type", "string", "description", "Name for the new parameter in the method (optional, defaults to lower-camel of class_name)")
+                        "properties", Map.ofEntries(
+                                Map.entry("project_root",      Map.of("type", "string",  "description", "Absolute path to the project root (Maven or Gradle).")),
+                                Map.entry("file",              Map.of("type", "string",  "description", "Source file path relative to project_root")),
+                                Map.entry("line",              Map.of("type", "integer", "description", "1-based line of the method declaration. Use with 'column' OR use 'method' name-based locator.")),
+                                Map.entry("column",            Map.of("type", "integer", "description", "1-based column inside the method declaration. Use with 'line'.")),
+                                Map.entry("method",            Map.of("type", "string",  "description", "Name-based locator: method name, e.g. \"process\" or \"process(String,int)\".")),
+                                Map.entry("class",             Map.of("type", "string",  "description", "Optional: scope to a specific class when the file contains multiple types.")),
+                                Map.entry("param_names",       Map.of("type", "array", "items", Map.of("type", "string"),
+                                                                      "description", "Names of the contiguous parameters to group (>=2)")),
+                                Map.entry("class_name",        Map.of("type", "string",  "description", "Simple name for the new parameter-object class")),
+                                Map.entry("param_object_name", Map.of("type", "string",  "description", "Name for the new parameter in the method (optional, defaults to lower-camel of class_name)"))
                         ),
-                        "required", List.of("project_root", "file", "line", "column", "param_names", "class_name")
+                        "required", List.of("project_root", "file", "param_names", "class_name")
                 )).build())
                 .callHandler((exchange, request) -> {
                     try {
                         Map<String, Object> args = request.arguments();
                         Path root = Path.of((String) args.get("project_root"));
                         Path file = root.resolve((String) args.get("file"));
-                        int  line = ((Number) args.get("line")).intValue();
-                        int  col  = ((Number) args.get("column")).intValue();
                         @SuppressWarnings("unchecked")
                         List<String> paramNames = (List<String>) args.get("param_names");
                         String className = (String) args.get("class_name");
@@ -1069,7 +1137,7 @@ public class RefactoringServer {
                                 : Character.toLowerCase(className.charAt(0)) + className.substring(1);
 
                         String source = java.nio.file.Files.readString(file);
-                        int offset    = JdtRenamer.toOffset(source, line, col);
+                        int offset    = resolveOffset(args, source, file.getFileName().toString());
 
                         var changed = JdtIntroduceParameterObject.introduce(
                                 ProjectDetector.detect(root),

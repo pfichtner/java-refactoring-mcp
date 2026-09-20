@@ -153,10 +153,36 @@ Every tool call requires:
 |-----------|---------|
 | `project_root` | `/home/me/myproject` — project root (auto-detects Maven `pom.xml` or Gradle `build.gradle`/`build.gradle.kts`) |
 | `file` | `src/main/java/com/example/Calculator.java` |
-| `line` | `4` |
-| `column` | `16` |
 | `refactoring` | `rename` |
+| locator (see below) | identifies the target element |
 | additional params | depend on the refactoring (e.g. `new_name`, `method_name`) |
+
+### Locating elements — position or name
+
+All point-based operations accept **either** a position-based locator **or** a name-based locator:
+
+**Position (classic)** — supply `line` + `column`:
+```json
+{ "line": 4, "column": 16 }
+```
+
+**By name (preferred for agents)** — no prior file read needed; stable across edits:
+```json
+{ "method": "add" }
+{ "method": "add(int, int)" }
+{ "field":  "amount" }
+{ "type":   "OrderService" }
+```
+
+For overloaded methods, include param types in parentheses: `"add(int, int)"`.
+When a file contains multiple types, add `"class": "TypeName"` to scope the search.
+For `remove_param`, combine `"method"` + `"parameter"`:
+```json
+{ "method": "process", "parameter": "unused" }
+```
+
+Range-based operations (`extract_method`, `extract_variable`, etc.) continue to use
+`start_line`/`start_column`/`end_line`/`end_column` — a selection range cannot be expressed as a name.
 
 ---
 
@@ -176,12 +202,29 @@ Every tool call requires:
 The same engine is also available as a standalone command-line tool — useful for scripting or CI:
 
 ```bash
+# By position (classic)
 java-refactor rename \
   --file src/main/java/com/example/Calculator.java \
   --line 4 --column 16 \
   --name plus \
   --dry-run
+
+# By name (no prior line lookup needed)
+java-refactor rename \
+  --file src/main/java/com/example/Calculator.java \
+  --method add \
+  --name plus \
+  --dry-run
+
+# Overloaded method — disambiguate with param types
+java-refactor rename \
+  --file src/main/java/com/example/Calculator.java \
+  "--method" "add(int,int)" \
+  --name plus
 ```
+
+All point-based subcommands accept `--method`, `--field`, `--type` as alternatives to `--line`/`--column`.
+For `remove-param`, use `--method <name> --parameter <paramName>`.
 
 Run `java-refactor --help` for the full list of subcommands.
 

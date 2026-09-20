@@ -1,8 +1,8 @@
 package com.github.pfichtner.cli;
 
 import com.github.pfichtner.JdtInliner;
-import com.github.pfichtner.JdtRenamer;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
 import picocli.CommandLine.Model.CommandSpec;
@@ -25,13 +25,7 @@ public class InlineConstantCommand implements Callable<Integer> {
             description = "Source file containing the constant.")
     Path file;
 
-    @Option(names = {"--line", "-l"}, required = true,
-            description = "1-based line number of the constant reference or declaration.")
-    int line;
-
-    @Option(names = {"--column", "-c"}, required = true,
-            description = "1-based column number of the constant name.")
-    int column;
+    @Mixin LocatorOptions locator;
 
     @Option(names = "--all-occurrences",
             description = "Replace all references in the file (default: only this reference).")
@@ -54,7 +48,7 @@ public class InlineConstantCommand implements Callable<Integer> {
         }
 
         String source = Files.readString(absFile);
-        int offset    = JdtRenamer.toOffset(source, line, column);
+        int offset    = locator.resolveOffset(source, absFile.getFileName().toString());
         String result = JdtInliner.inlineConstant(
                 source, absFile.getFileName().toString(), offset, allOccurrences, removeDeclaration);
 

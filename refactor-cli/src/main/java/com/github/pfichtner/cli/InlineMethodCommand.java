@@ -1,7 +1,6 @@
 package com.github.pfichtner.cli;
 
 import com.github.pfichtner.JdtInlineMethod;
-import com.github.pfichtner.JdtRenamer;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
@@ -24,8 +23,7 @@ public class InlineMethodCommand implements Callable<Integer> {
     @Spec CommandSpec spec;
 
     @Option(names = {"--file", "-f"}, required = true) Path file;
-    @Option(names = {"--line", "-l"}, required = true) int line;
-    @Option(names = {"--column", "-c"}, required = true) int column;
+    @Mixin LocatorOptions locator;
     @Option(names = "--remove-declaration",
             description = "Also delete the method declaration after inlining.") boolean removeDeclaration;
     @Option(names = "--dry-run") boolean dryRun;
@@ -40,7 +38,7 @@ public class InlineMethodCommand implements Callable<Integer> {
             return 1;
         }
         String source = Files.readString(absFile);
-        int offset    = JdtRenamer.toOffset(source, line, column);
+        int offset    = locator.resolveOffset(source, absFile.getFileName().toString());
         var out = spec.commandLine().getOut();
 
         Map<Path, String> changed = JdtInlineMethod.inlineMethod(
