@@ -1,8 +1,8 @@
 package com.github.pfichtner.cli;
 
 import com.github.pfichtner.JdtRenamer;
-import com.github.pfichtner.project.MavenProject;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
 import picocli.CommandLine.Model.CommandSpec;
@@ -14,10 +14,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 /**
- * CLI subcommand for rename refactoring.
- *
- * All refactoring logic lives in {@link JdtRenamer} and {@link MavenProject}.
- * This class is thin: parse args → call engine → report results.
+ * CLI subcommand for rename refactoring. Logic lives in {@link JdtRenamer}.
  */
 @Command(
     name = "rename",
@@ -48,9 +45,7 @@ public class RenameCommand implements Callable<Integer> {
             description = "Preview changes without writing to disk.")
     boolean dryRun;
 
-    @Option(names = "--project",
-            description = "Maven project root (auto-detected from --file if omitted).")
-    Path projectRoot;
+    @Mixin ProjectOptions project;
 
     @Override
     public Integer call() throws Exception {
@@ -61,13 +56,10 @@ public class RenameCommand implements Callable<Integer> {
         }
 
         String source = Files.readString(absFile);
-        int offset = toOffset(source, line, column);
+        int offset = JdtRenamer.toOffset(source, line, column);
 
-        Path root = projectRoot != null
-                ? projectRoot.toAbsolutePath().normalize()
-                : findProjectRoot(absFile);
-
-        Map<Path, String> changed = JdtRenamer.rename(new MavenProject(root), absFile, offset, newName);
+        Map<Path, String> changed = JdtRenamer.rename(
+                project.resolve(absFile), absFile, offset, newName);
 
         if (dryRun) {
             printDryRun(changed);
@@ -111,23 +103,5 @@ public class RenameCommand implements Callable<Integer> {
         changed.keySet().stream()
                 .sorted()
                 .forEach(p -> out.println("  " + p.getFileName()));
-    }
-
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
-
-    static int toOffset(String source, int line, int col) {
-        return JdtRenamer.toOffset(source, line, col);
-    }
-
-    static Path findProjectRoot(Path file) {
-        Path dir = file.getParent();
-        while (dir != null) {
-            if (Files.exists(dir.resolve("pom.xml"))) return dir;
-            dir = dir.getParent();
-        }
-        throw new IllegalStateException(
-                "No pom.xml found by walking up from: " + file);
     }
 }

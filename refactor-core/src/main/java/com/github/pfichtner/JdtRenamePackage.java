@@ -1,6 +1,6 @@
 package com.github.pfichtner;
 
-import com.github.pfichtner.project.MavenProject;
+import com.github.pfichtner.project.JavaProject;
 
 import org.eclipse.jdt.core.dom.*;
 
@@ -47,7 +47,7 @@ public class JdtRenamePackage {
      * @param newPackage fully-qualified new package, e.g. {@code com.example.util}
      */
     public static Result renamePackage(
-            MavenProject project, String oldPackage, String newPackage)
+            JavaProject project, String oldPackage, String newPackage)
             throws IOException, InterruptedException {
 
         if (oldPackage.equals(newPackage)) {

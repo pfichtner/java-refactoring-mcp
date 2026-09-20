@@ -2,8 +2,8 @@ package com.github.pfichtner.cli;
 
 import com.github.pfichtner.JdtRemoveParam;
 import com.github.pfichtner.JdtRenamer;
-import com.github.pfichtner.project.MavenProject;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
 import picocli.CommandLine.Model.CommandSpec;
@@ -26,8 +26,9 @@ public class RemoveParamCommand implements Callable<Integer> {
     @Option(names = {"--file", "-f"}, required = true) Path file;
     @Option(names = {"--line", "-l"}, required = true) int line;
     @Option(names = {"--column", "-c"}, required = true) int column;
-    @Option(names = "--project") Path projectRoot;
     @Option(names = "--dry-run") boolean dryRun;
+
+    @Mixin ProjectOptions project;
 
     @Override
     public Integer call() throws Exception {
@@ -38,11 +39,8 @@ public class RemoveParamCommand implements Callable<Integer> {
         }
         String source = Files.readString(absFile);
         int offset    = JdtRenamer.toOffset(source, line, column);
-        Path root     = projectRoot != null
-                ? projectRoot.toAbsolutePath().normalize()
-                : RenameCommand.findProjectRoot(absFile);
 
-        Map<Path, String> changed = JdtRemoveParam.removeParam(new MavenProject(root), absFile, offset);
+        Map<Path, String> changed = JdtRemoveParam.removeParam(project.resolve(absFile), absFile, offset);
 
         var out = spec.commandLine().getOut();
         if (dryRun) {

@@ -1,6 +1,6 @@
 package com.github.pfichtner;
 
-import com.github.pfichtner.project.MavenProject;
+import com.github.pfichtner.project.JavaProject;
 import org.eclipse.jdt.core.dom.*;
 
 import java.io.IOException;
@@ -59,7 +59,7 @@ public class JdtConvertToRecord {
      * @return {@code path → new source} for every file that changed
      * @throws IllegalArgumentException if the class does not satisfy the preconditions
      */
-    public static Map<Path, String> convertToRecord(MavenProject project, Path sourceFile)
+    public static Map<Path, String> convertToRecord(JavaProject project, Path sourceFile)
             throws IOException, InterruptedException {
 
         String[] classpath   = project.classpath();
@@ -423,7 +423,7 @@ public class JdtConvertToRecord {
     // Infrastructure
     // -------------------------------------------------------------------------
 
-    private static List<Path> collectSourceFiles(MavenProject project) throws IOException {
+    private static List<Path> collectSourceFiles(JavaProject project) throws IOException {
         List<Path> files = new ArrayList<>();
         for (Path root : project.sourceRoots()) {
             if (!Files.isDirectory(root)) continue;

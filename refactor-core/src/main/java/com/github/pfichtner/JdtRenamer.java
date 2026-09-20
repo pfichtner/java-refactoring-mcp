@@ -1,6 +1,6 @@
 package com.github.pfichtner;
 
-import com.github.pfichtner.project.MavenProject;
+import com.github.pfichtner.project.JavaProject;
 import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jface.text.Document;
@@ -42,7 +42,7 @@ public class JdtRenamer {
      *                                  element type is not supported
      */
     public static Map<Path, String> rename(
-            MavenProject project, Path sourceFile, int offset, String newName)
+            JavaProject project, Path sourceFile, int offset, String newName)
             throws IOException, InterruptedException {
 
         String[] classpath = project.classpath();
@@ -101,7 +101,7 @@ public class JdtRenamer {
      * Returns the rewritten source (file is not modified on disk).
      */
     public static String renameLocalVariable(
-            MavenProject project, Path sourceFile, int offset, String newName)
+            JavaProject project, Path sourceFile, int offset, String newName)
             throws IOException, InterruptedException {
         Map<Path, String> changed = rename(project, sourceFile, offset, newName);
         Path abs = sourceFile.toAbsolutePath().normalize();
@@ -298,7 +298,7 @@ public class JdtRenamer {
     // Helpers
     // -------------------------------------------------------------------------
 
-    private static List<Path> collectSourceFiles(MavenProject project) throws IOException {
+    private static List<Path> collectSourceFiles(JavaProject project) throws IOException {
         List<Path> files = new ArrayList<>();
         for (Path root : project.sourceRoots()) {
             if (!Files.isDirectory(root)) continue;

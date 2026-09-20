@@ -1,6 +1,6 @@
 package com.github.pfichtner;
 
-import com.github.pfichtner.project.MavenProject;
+import com.github.pfichtner.project.JavaProject;
 import org.eclipse.jdt.core.dom.*;
 
 import java.io.IOException;
@@ -42,7 +42,7 @@ public class JdtIntroduceStaticFactory {
      * @return {@code path → new source} for every file that changed
      */
     public static Map<Path, String> introduceStaticFactory(
-            MavenProject project,
+            JavaProject project,
             Path sourceFile,
             int offset,
             String factoryMethodName,

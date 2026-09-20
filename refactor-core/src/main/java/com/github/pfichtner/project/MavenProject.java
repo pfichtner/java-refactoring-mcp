@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Dependency resolution delegates to {@code mvn dependency:build-classpath}.
  * The result is cached after the first call.
  */
-public class MavenProject {
+public class MavenProject implements JavaProject {
 
     /** Shared across the JVM: each unique project root pays mvn startup cost at most once. */
     private static final ConcurrentHashMap<Path, String[]> CLASSPATH_CACHE = new ConcurrentHashMap<>();

@@ -1,6 +1,6 @@
 package com.github.pfichtner;
 
-import com.github.pfichtner.project.MavenProject;
+import com.github.pfichtner.project.JavaProject;
 import org.eclipse.jdt.core.dom.*;
 
 import java.io.IOException;
@@ -57,7 +57,7 @@ public class JdtIntroduceParameterObject {
      * @return {@code path → new source} for every changed file, plus the newly created class
      */
     public static Map<Path, String> introduce(
-            MavenProject project,
+            JavaProject project,
             Path sourceFile,
             int offset,
             List<String> paramNames,
@@ -352,7 +352,7 @@ public class JdtIntroduceParameterObject {
     // Infrastructure (mirrors JdtIntroduceParam / JdtRemoveParam)
     // -------------------------------------------------------------------------
 
-    private static List<Path> collectSourceFiles(MavenProject project) throws IOException {
+    private static List<Path> collectSourceFiles(JavaProject project) throws IOException {
         List<Path> files = new ArrayList<>();
         for (Path root : project.sourceRoots()) {
             if (!Files.isDirectory(root)) continue;

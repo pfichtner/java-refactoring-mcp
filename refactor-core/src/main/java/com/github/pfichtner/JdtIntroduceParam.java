@@ -1,6 +1,6 @@
 package com.github.pfichtner;
 
-import com.github.pfichtner.project.MavenProject;
+import com.github.pfichtner.project.JavaProject;
 import org.eclipse.jdt.core.dom.*;
 
 import java.io.IOException;
@@ -46,7 +46,7 @@ public class JdtIntroduceParam {
      * @return map of {@code path → new source} for every changed file
      */
     public static Map<Path, String> introduceParam(
-            MavenProject project, Path sourceFile,
+            JavaProject project, Path sourceFile,
             int selectionStart, int selectionLength,
             String paramName, String paramType)
             throws IOException, InterruptedException {
@@ -340,7 +340,7 @@ public class JdtIntroduceParam {
         return Character.toLowerCase(typeName.charAt(0)) + typeName.substring(1);
     }
 
-    private static List<Path> collectSourceFiles(MavenProject project) throws IOException {
+    private static List<Path> collectSourceFiles(JavaProject project) throws IOException {
         List<Path> files = new ArrayList<>();
         for (Path root : project.sourceRoots()) {
             if (!Files.isDirectory(root)) continue;

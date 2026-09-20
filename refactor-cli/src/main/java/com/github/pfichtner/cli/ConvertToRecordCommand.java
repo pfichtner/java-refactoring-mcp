@@ -1,8 +1,8 @@
 package com.github.pfichtner.cli;
 
 import com.github.pfichtner.JdtConvertToRecord;
-import com.github.pfichtner.project.MavenProject;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
 import picocli.CommandLine.Model.CommandSpec;
@@ -25,10 +25,10 @@ public class ConvertToRecordCommand implements Callable<Integer> {
 
     @Option(names = {"--file", "-f"}, required = true,
             description = "Source file containing the class to convert.") Path file;
-    @Option(names = "--project",
-            description = "Maven project root (auto-detected if omitted).") Path projectRoot;
     @Option(names = "--dry-run",
             description = "Print changed sources; do not write to disk.") boolean dryRun;
+
+    @Mixin ProjectOptions project;
 
     @Override
     public Integer call() throws Exception {
@@ -37,12 +37,8 @@ public class ConvertToRecordCommand implements Callable<Integer> {
             spec.commandLine().getErr().println("Error: file not found: " + absFile);
             return 1;
         }
-        Path root = projectRoot != null
-                ? projectRoot.toAbsolutePath().normalize()
-                : RenameCommand.findProjectRoot(absFile);
-
         Map<Path, String> changed = JdtConvertToRecord.convertToRecord(
-                new MavenProject(root), absFile);
+                project.resolve(absFile), absFile);
 
         var out = spec.commandLine().getOut();
         if (dryRun) {

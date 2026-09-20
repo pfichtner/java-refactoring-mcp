@@ -1,7 +1,8 @@
 package com.github.pfichtner.cli;
 
 import com.github.pfichtner.JdtRenamePackage;
-import com.github.pfichtner.project.MavenProject;
+import com.github.pfichtner.project.JavaProject;
+import com.github.pfichtner.project.ProjectDetector;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
@@ -11,11 +12,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.Callable;
 
-/** CLI subcommand for rename-package. Logic lives in {@link JdtRenamePackage}. */
+/** CLI subcommand rename-package. Logic lives in {@link JdtRenamePackage}. */
 @Command(
     name = "rename-package",
     mixinStandardHelpOptions = true,
-    description = "Rename a package across the project, updating declarations and imports."
+    description = "Rename package across project, updating declarations and imports."
 )
 public class RenamePackageCommand implements Callable<Integer> {
 
@@ -25,7 +26,9 @@ public class RenamePackageCommand implements Callable<Integer> {
             description = "Fully-qualified old package, e.g. com.example.service.") String oldPackage;
     @Option(names = "--new-package", required = true,
             description = "Fully-qualified new package, e.g. com.example.util.") String newPackage;
-    @Option(names = "--project") Path projectRoot;
+    @Option(names = "--project",
+            description = "Project root (Maven or Gradle). Defaults to current directory.")
+    Path projectRoot;
     @Option(names = "--dry-run") boolean dryRun;
 
     @Override
@@ -34,15 +37,15 @@ public class RenamePackageCommand implements Callable<Integer> {
                 ? projectRoot.toAbsolutePath().normalize()
                 : Path.of(System.getProperty("user.dir"));
 
-        JdtRenamePackage.Result result = JdtRenamePackage.renamePackage(
-                new MavenProject(root), oldPackage, newPackage);
+        JavaProject project = ProjectDetector.detect(root);
+        JdtRenamePackage.Result result = JdtRenamePackage.renamePackage(project, oldPackage, newPackage);
 
         var out = spec.commandLine().getOut();
         if (dryRun) {
             out.println("Dry run — no files written.");
             for (JdtRenamePackage.FileChange fc : result.changedFiles()) {
-                if (fc.pathChanged()) out.println("  MOVE " + fc.oldPath().getFileName() + " → " + fc.newPath());
-                else                  out.println("  UPDATE " + fc.oldPath().getFileName());
+                if (fc.pathChanged()) out.println(" MOVE " + fc.oldPath().getFileName() + " → " + fc.newPath());
+                else out.println(" UPDATE " + fc.oldPath().getFileName());
                 out.println(fc.newSource().stripTrailing());
                 out.println();
             }
@@ -52,10 +55,10 @@ public class RenamePackageCommand implements Callable<Integer> {
                 Files.writeString(fc.newPath(), fc.newSource());
                 if (fc.pathChanged()) Files.deleteIfExists(fc.oldPath());
             }
-            out.println("Renamed package '" + oldPackage + "' → '" + newPackage + "':");
+            out.println("Renamed package in " + result.changedFiles().size() + " file(s):");
             result.changedFiles().forEach(fc -> {
-                if (fc.pathChanged()) out.println("  MOVED:   " + fc.oldPath().getFileName() + " → " + fc.newPath().getFileName());
-                else                  out.println("  UPDATED: " + fc.oldPath().getFileName());
+                if (fc.pathChanged()) out.println("  MOVED: " + fc.oldPath().getFileName() + " → " + fc.newPath().getFileName());
+                else out.println("  UPDATED: " + fc.oldPath().getFileName());
             });
         }
         return 0;

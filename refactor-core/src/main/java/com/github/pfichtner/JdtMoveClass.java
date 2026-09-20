@@ -1,6 +1,6 @@
 package com.github.pfichtner;
 
-import com.github.pfichtner.project.MavenProject;
+import com.github.pfichtner.project.JavaProject;
 import org.eclipse.jdt.core.dom.*;
 
 import java.io.IOException;
@@ -57,7 +57,7 @@ public class JdtMoveClass {
      * @return {@link Result} describing all required file changes
      */
     public static Result moveClass(
-            MavenProject project, Path sourceFile, String newPackage)
+            JavaProject project, Path sourceFile, String newPackage)
             throws IOException, InterruptedException {
 
         Path absSource = sourceFile.toAbsolutePath().normalize();
@@ -168,7 +168,7 @@ public class JdtMoveClass {
     // Helpers
     // -------------------------------------------------------------------------
 
-    private static Path findSourceRoot(MavenProject project, Path sourceFile)
+    private static Path findSourceRoot(JavaProject project, Path sourceFile)
             throws IOException, InterruptedException {
         for (Path root : project.sourceRoots()) {
             if (sourceFile.startsWith(root.toAbsolutePath().normalize())) return root;

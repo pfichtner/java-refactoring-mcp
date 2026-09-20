@@ -1,6 +1,6 @@
 package com.github.pfichtner;
 
-import com.github.pfichtner.project.MavenProject;
+import com.github.pfichtner.project.JavaProject;
 import org.eclipse.jdt.core.dom.*;
 
 import java.io.IOException;
@@ -41,7 +41,7 @@ public class JdtPushDownField {
      * @return {@code path → new source} for the superclass and all subclasses found
      */
     public static Map<Path, String> pushDown(
-            MavenProject project, Path sourceFile, int offset)
+            JavaProject project, Path sourceFile, int offset)
             throws IOException, InterruptedException {
 
         Path absSource = sourceFile.toAbsolutePath().normalize();
@@ -103,7 +103,7 @@ public class JdtPushDownField {
     // -------------------------------------------------------------------------
 
     private static List<Path> findSubclasses(
-            MavenProject project, Path excludeFile, String superclassName)
+            JavaProject project, Path excludeFile, String superclassName)
             throws IOException, InterruptedException {
 
         List<Path> result = new ArrayList<>();

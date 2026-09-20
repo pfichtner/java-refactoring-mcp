@@ -2,8 +2,8 @@ package com.github.pfichtner.cli;
 
 import com.github.pfichtner.JdtIntroduceParameterObject;
 import com.github.pfichtner.JdtRenamer;
-import com.github.pfichtner.project.MavenProject;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
 import picocli.CommandLine.Model.CommandSpec;
@@ -37,10 +37,10 @@ public class IntroduceParamObjectCommand implements Callable<Integer> {
     @Option(names = "--param-name",
             description = "Name for the new parameter in the method (default: first letter of class name lower-cased).")
             String paramName;
-    @Option(names = "--project",
-            description = "Maven project root (auto-detected if omitted).") Path projectRoot;
     @Option(names = "--dry-run",
             description = "Print changed sources; do not write to disk.") boolean dryRun;
+
+    @Mixin ProjectOptions project;
 
     @Override
     public Integer call() throws Exception {
@@ -49,10 +49,6 @@ public class IntroduceParamObjectCommand implements Callable<Integer> {
             spec.commandLine().getErr().println("Error: file not found: " + absFile);
             return 1;
         }
-        Path root = projectRoot != null
-                ? projectRoot.toAbsolutePath().normalize()
-                : RenameCommand.findProjectRoot(absFile);
-
         String resolvedParamName = paramName != null
                 ? paramName
                 : Character.toLowerCase(className.charAt(0)) + className.substring(1);
@@ -61,7 +57,7 @@ public class IntroduceParamObjectCommand implements Callable<Integer> {
         int offset    = JdtRenamer.toOffset(source, line, column);
 
         Map<Path, String> changed = JdtIntroduceParameterObject.introduce(
-                new MavenProject(root), absFile, offset, params, className, resolvedParamName);
+                project.resolve(absFile), absFile, offset, params, className, resolvedParamName);
 
         var out = spec.commandLine().getOut();
         if (dryRun) {

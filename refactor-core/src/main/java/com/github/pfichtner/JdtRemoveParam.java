@@ -1,6 +1,6 @@
 package com.github.pfichtner;
 
-import com.github.pfichtner.project.MavenProject;
+import com.github.pfichtner.project.JavaProject;
 import org.eclipse.jdt.core.dom.*;
 
 import java.io.IOException;
@@ -33,7 +33,7 @@ public class JdtRemoveParam {
      * @return map of {@code path → new source} for every changed file
      */
     public static Map<Path, String> removeParam(
-            MavenProject project, Path sourceFile, int offset)
+            JavaProject project, Path sourceFile, int offset)
             throws IOException, InterruptedException {
 
         String[] classpath   = project.classpath();
@@ -310,7 +310,7 @@ public class JdtRemoveParam {
     // Infrastructure (shared with JdtIntroduceParam)
     // -------------------------------------------------------------------------
 
-    private static List<Path> collectSourceFiles(MavenProject project) throws IOException {
+    private static List<Path> collectSourceFiles(JavaProject project) throws IOException {
         List<Path> files = new ArrayList<>();
         for (Path root : project.sourceRoots()) {
             if (!Files.isDirectory(root)) continue;

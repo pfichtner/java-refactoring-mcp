@@ -1,6 +1,6 @@
 package com.github.pfichtner;
 
-import com.github.pfichtner.project.MavenProject;
+import com.github.pfichtner.project.JavaProject;
 import org.eclipse.jdt.core.dom.*;
 
 import java.io.IOException;
@@ -18,7 +18,7 @@ import java.util.*;
  * <ul>
  *   <li><b>Single-file</b>: {@link #inlineMethod(String, String, int)} — call site
  *       and declaration must be in the same source string (snippets).</li>
- *   <li><b>Multi-file</b>: {@link #inlineMethod(MavenProject, Path, int, boolean)} —
+ *   <li><b>Multi-file</b>: {@link #inlineMethod(JavaProject, Path, int, boolean)} —
  *       inlines at <em>all</em> call sites found in the project; optionally removes
  *       the method declaration.</li>
  * </ul>
@@ -145,7 +145,7 @@ public class JdtInlineMethod {
      * @return map of {@code path → new source} for every changed file
      */
     public static Map<Path, String> inlineMethod(
-            MavenProject project, Path sourceFile, int offset, boolean removeDeclaration)
+            JavaProject project, Path sourceFile, int offset, boolean removeDeclaration)
             throws IOException, InterruptedException {
 
         String[] classpath   = project.classpath();
@@ -427,7 +427,7 @@ public class JdtInlineMethod {
     // Multi-file infrastructure
     // =========================================================================
 
-    private static List<Path> collectSourceFiles(MavenProject project) throws IOException {
+    private static List<Path> collectSourceFiles(JavaProject project) throws IOException {
         List<Path> files = new ArrayList<>();
         for (Path root : project.sourceRoots()) {
             if (!Files.isDirectory(root)) continue;

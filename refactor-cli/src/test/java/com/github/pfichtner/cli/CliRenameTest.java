@@ -116,13 +116,13 @@ class CliRenameTest {
 
     @Test
     void toOffset_first_line() {
-        assertEquals(4, RenameCommand.toOffset("abcde", 1, 5));
+        assertEquals(4, com.github.pfichtner.JdtRenamer.toOffset("abcde", 1, 5));
     }
 
     @Test
     void toOffset_second_line() {
         // "abcd\nefgh": line 2 starts at index 5; col 2 → index 6 ('f')
-        assertEquals(6, RenameCommand.toOffset("abcd\nefgh", 2, 2));
+        assertEquals(6, com.github.pfichtner.JdtRenamer.toOffset("abcd\nefgh", 2, 2));
     }
 
     // -------------------------------------------------------------------------

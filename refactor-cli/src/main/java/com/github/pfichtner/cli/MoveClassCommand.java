@@ -1,8 +1,8 @@
 package com.github.pfichtner.cli;
 
 import com.github.pfichtner.JdtMoveClass;
-import com.github.pfichtner.project.MavenProject;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
 import picocli.CommandLine.Model.CommandSpec;
@@ -25,8 +25,9 @@ public class MoveClassCommand implements Callable<Integer> {
     @Option(names = {"--file", "-f"}, required = true) Path file;
     @Option(names = {"--package", "-p"}, required = true,
             description = "Target package, e.g. com.example.util") String targetPackage;
-    @Option(names = "--project") Path projectRoot;
     @Option(names = "--dry-run") boolean dryRun;
+
+    @Mixin ProjectOptions project;
 
     @Override
     public Integer call() throws Exception {
@@ -35,12 +36,8 @@ public class MoveClassCommand implements Callable<Integer> {
             spec.commandLine().getErr().println("Error: file not found: " + absFile);
             return 1;
         }
-        Path root = projectRoot != null
-                ? projectRoot.toAbsolutePath().normalize()
-                : RenameCommand.findProjectRoot(absFile);
-
         JdtMoveClass.Result result = JdtMoveClass.moveClass(
-                new MavenProject(root), absFile, targetPackage);
+                project.resolve(absFile), absFile, targetPackage);
 
         var out = spec.commandLine().getOut();
         if (dryRun) {

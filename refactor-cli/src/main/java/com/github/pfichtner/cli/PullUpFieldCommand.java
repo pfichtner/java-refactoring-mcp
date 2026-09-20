@@ -2,8 +2,8 @@ package com.github.pfichtner.cli;
 
 import com.github.pfichtner.JdtPullUpField;
 import com.github.pfichtner.JdtRenamer;
-import com.github.pfichtner.project.MavenProject;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
 import picocli.CommandLine.Model.CommandSpec;
@@ -29,10 +29,10 @@ public class PullUpFieldCommand implements Callable<Integer> {
             description = "1-based line of the field to pull up.") int line;
     @Option(names = {"--column", "-c"}, required = true,
             description = "1-based column inside the field declaration.") int column;
-    @Option(names = "--project",
-            description = "Maven project root (auto-detected if omitted).") Path projectRoot;
     @Option(names = "--dry-run",
             description = "Print changed sources; do not write to disk.") boolean dryRun;
+
+    @Mixin ProjectOptions project;
 
     @Override
     public Integer call() throws Exception {
@@ -41,14 +41,10 @@ public class PullUpFieldCommand implements Callable<Integer> {
             spec.commandLine().getErr().println("Error: file not found: " + absFile);
             return 1;
         }
-        Path root = projectRoot != null
-                ? projectRoot.toAbsolutePath().normalize()
-                : RenameCommand.findProjectRoot(absFile);
-
         String source = Files.readString(absFile);
         int offset    = JdtRenamer.toOffset(source, line, column);
 
-        Map<Path, String> changed = JdtPullUpField.pullUp(new MavenProject(root), absFile, offset);
+        Map<Path, String> changed = JdtPullUpField.pullUp(project.resolve(absFile), absFile, offset);
 
         var out = spec.commandLine().getOut();
         if (dryRun) {

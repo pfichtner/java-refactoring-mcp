@@ -2,8 +2,8 @@ package com.github.pfichtner.cli;
 
 import com.github.pfichtner.JdtIntroduceStaticFactory;
 import com.github.pfichtner.JdtRenamer;
-import com.github.pfichtner.project.MavenProject;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
 import picocli.CommandLine.Model.CommandSpec;
@@ -33,10 +33,10 @@ public class IntroduceStaticFactoryCommand implements Callable<Integer> {
             description = "Simple name for the factory method (e.g. 'of', 'create').") String factoryName;
     @Option(names = "--private-constructor",
             description = "Make the original constructor private.") boolean makePrivate;
-    @Option(names = "--project",
-            description = "Maven project root (auto-detected if omitted).") Path projectRoot;
     @Option(names = "--dry-run",
             description = "Print changed sources; do not write to disk.") boolean dryRun;
+
+    @Mixin ProjectOptions project;
 
     @Override
     public Integer call() throws Exception {
@@ -45,15 +45,11 @@ public class IntroduceStaticFactoryCommand implements Callable<Integer> {
             spec.commandLine().getErr().println("Error: file not found: " + absFile);
             return 1;
         }
-        Path root = projectRoot != null
-                ? projectRoot.toAbsolutePath().normalize()
-                : RenameCommand.findProjectRoot(absFile);
-
         String source = Files.readString(absFile);
         int offset    = JdtRenamer.toOffset(source, line, column);
 
         Map<Path, String> changed = JdtIntroduceStaticFactory.introduceStaticFactory(
-                new MavenProject(root), absFile, offset, factoryName, makePrivate);
+                project.resolve(absFile), absFile, offset, factoryName, makePrivate);
 
         var out = spec.commandLine().getOut();
         if (dryRun) {

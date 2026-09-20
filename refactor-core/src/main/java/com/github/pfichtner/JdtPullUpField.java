@@ -1,6 +1,6 @@
 package com.github.pfichtner;
 
-import com.github.pfichtner.project.MavenProject;
+import com.github.pfichtner.project.JavaProject;
 import org.eclipse.jdt.core.dom.*;
 
 import java.io.IOException;
@@ -40,7 +40,7 @@ public class JdtPullUpField {
      * @return {@code path → new source} for the superclass and the subclass (2 entries)
      */
     public static Map<Path, String> pullUp(
-            MavenProject project, Path sourceFile, int offset)
+            JavaProject project, Path sourceFile, int offset)
             throws IOException, InterruptedException {
 
         Path absSource = sourceFile.toAbsolutePath().normalize();
@@ -187,7 +187,7 @@ public class JdtPullUpField {
         throw new IllegalArgumentException("No type declaration found in source.");
     }
 
-    static Path findClassFile(MavenProject project, String simpleName)
+    static Path findClassFile(JavaProject project, String simpleName)
             throws IOException, InterruptedException {
         String fileName = simpleName + ".java";
         for (Path root : project.sourceRoots()) {

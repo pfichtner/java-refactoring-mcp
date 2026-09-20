@@ -19,7 +19,7 @@ import com.github.pfichtner.JdtPullUpMethod;
 import com.github.pfichtner.JdtPushDownField;
 import com.github.pfichtner.JdtPushDownMethod;
 import com.github.pfichtner.JdtRenamer;
-import com.github.pfichtner.project.MavenProject;
+import com.github.pfichtner.project.ProjectDetector;
 import io.modelcontextprotocol.json.McpJsonDefaults;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
@@ -39,7 +39,7 @@ import java.util.Map;
  * Builds the MCP server and registers refactoring tools.
  *
  * The tools are thin: they parse MCP arguments, delegate to
- * {@link JdtRenamer} and {@link MavenProject}, and format the result.
+ * {@link JdtRenamer} and {@link ProjectDetector}, and format the result.
  * No refactoring logic lives here.
  */
 public class RefactoringServer {
@@ -238,7 +238,7 @@ public class RefactoringServer {
                 .tool(Tool.builder("rename_package", Map.of(
                         "type", "object",
                         "properties", Map.of(
-                                "project_root", Map.of("type", "string", "description", "Absolute Maven project root."),
+                                "project_root", Map.of("type", "string", "description", "Absolute project root (Maven or Gradle)."),
                                 "old_package",  Map.of("type", "string", "description", "Fully-qualified old package, e.g. com.example.service."),
                                 "new_package",  Map.of("type", "string", "description", "Fully-qualified new package, e.g. com.example.util.")
                         ),
@@ -254,7 +254,7 @@ public class RefactoringServer {
                     try {
                         Map<String, Object> args = request.arguments();
                         var result = JdtRenamePackage.renamePackage(
-                                new com.github.pfichtner.project.MavenProject(
+                                ProjectDetector.detect(
                                         Path.of((String) args.get("project_root"))),
                                 (String) args.get("old_package"),
                                 (String) args.get("new_package"));
@@ -281,7 +281,7 @@ public class RefactoringServer {
                 .tool(Tool.builder("move_class", Map.of(
                         "type", "object",
                         "properties", Map.of(
-                                "project_root", Map.of("type", "string", "description", "Absolute Maven project root."),
+                                "project_root", Map.of("type", "string", "description", "Absolute project root (Maven or Gradle)."),
                                 "file",         Map.of("type", "string", "description", "Absolute path to the .java file to move."),
                                 "new_package",  Map.of("type", "string", "description", "Target package, e.g. com.example.util.")
                         ),
@@ -299,7 +299,7 @@ public class RefactoringServer {
                         String file       = (String) args.get("file");
                         String newPackage = (String) args.get("new_package");
                         var result = JdtMoveClass.moveClass(
-                                new com.github.pfichtner.project.MavenProject(
+                                ProjectDetector.detect(
                                         Path.of((String) args.get("project_root"))),
                                 Path.of(file), newPackage);
 
@@ -421,7 +421,7 @@ public class RefactoringServer {
                 .tool(Tool.builder("remove_param", Map.of(
                         "type", "object",
                         "properties", Map.of(
-                                "project_root", Map.of("type", "string",  "description", "Absolute Maven project root."),
+                                "project_root", Map.of("type", "string",  "description", "Absolute project root (Maven or Gradle)."),
                                 "file",         Map.of("type", "string",  "description", "Absolute path to the file with the parameter."),
                                 "line",         Map.of("type", "integer", "description", "1-based line of the parameter declaration."),
                                 "column",       Map.of("type", "integer", "description", "1-based column of the parameter name.")
@@ -442,7 +442,7 @@ public class RefactoringServer {
                         String source = Files.readString(Path.of(file));
                         int offset    = JdtRenamer.toOffset(source, line, col);
                         var changed = JdtRemoveParam.removeParam(
-                                new com.github.pfichtner.project.MavenProject(
+                                ProjectDetector.detect(
                                         Path.of((String) args.get("project_root"))),
                                 Path.of(file), offset);
                         StringBuilder sb = new StringBuilder();
@@ -466,7 +466,7 @@ public class RefactoringServer {
                 .tool(Tool.builder("introduce_param", Map.of(
                         "type", "object",
                         "properties", Map.of(
-                                "project_root",  Map.of("type", "string",  "description", "Absolute Maven project root."),
+                                "project_root",  Map.of("type", "string",  "description", "Absolute project root (Maven or Gradle)."),
                                 "file",          Map.of("type", "string",  "description", "Absolute path to the source file."),
                                 "start_line",    Map.of("type", "integer", "description", "1-based start line of the expression."),
                                 "start_column",  Map.of("type", "integer", "description", "1-based start column."),
@@ -499,7 +499,7 @@ public class RefactoringServer {
                         int selEnd     = JdtRenamer.toOffset(source, endLine, endCol);
 
                         var changed = JdtIntroduceParam.introduceParam(
-                                new com.github.pfichtner.project.MavenProject(Path.of((String) args.get("project_root"))),
+                                ProjectDetector.detect(Path.of((String) args.get("project_root"))),
                                 Path.of(file), selStart, selEnd - selStart, paramName, paramType);
 
                         StringBuilder sb = new StringBuilder();
@@ -571,7 +571,7 @@ public class RefactoringServer {
                 .tool(Tool.builder("inline_method", Map.of(
                         "type", "object",
                         "properties", Map.of(
-                                "project_root",       Map.of("type", "string",  "description", "Absolute Maven project root (enables multi-file inline)."),
+                                "project_root",       Map.of("type", "string",  "description", "Absolute project root (Maven or Gradle; enables multi-file inline)."),
                                 "file",               Map.of("type", "string",  "description", "Absolute path to the file containing the call."),
                                 "line",               Map.of("type", "integer", "description", "1-based line of the method call."),
                                 "column",             Map.of("type", "integer", "description", "1-based column of the method call name."),
@@ -594,7 +594,7 @@ public class RefactoringServer {
                         String source = Files.readString(Path.of(file));
                         int offset    = JdtRenamer.toOffset(source, line, col);
                         var changed = JdtInlineMethod.inlineMethod(
-                                new com.github.pfichtner.project.MavenProject(
+                                ProjectDetector.detect(
                                         Path.of((String) args.get("project_root"))),
                                 Path.of(file), offset, removeDel);
                         StringBuilder sb = new StringBuilder();
@@ -766,7 +766,7 @@ public class RefactoringServer {
         String source = Files.readString(sourceFile);
         int offset    = JdtRenamer.toOffset(source, line, col);
 
-        return JdtRenamer.rename(new MavenProject(root), sourceFile, offset, newName);
+        return JdtRenamer.rename(ProjectDetector.detect(root), sourceFile, offset, newName);
     }
 
     // -------------------------------------------------------------------------
@@ -809,7 +809,7 @@ public class RefactoringServer {
                 "type", "object",
                 "properties", Map.of(
                         "project_root", Map.of("type", "string",
-                                "description", "Absolute path to the Maven project root."),
+                                "description", "Absolute path to the project root (Maven or Gradle)."),
                         "file", Map.of("type", "string",
                                 "description", "Source file — absolute or relative to project_root."),
                         "line", Map.of("type", "integer",
@@ -835,7 +835,7 @@ public class RefactoringServer {
                 .tool(Tool.builder("pull_up_method", Map.of(
                         "type", "object",
                         "properties", Map.of(
-                                "project_root", Map.of("type", "string", "description", "Absolute Maven project root."),
+                                "project_root", Map.of("type", "string", "description", "Absolute project root (Maven or Gradle)."),
                                 "file",         Map.of("type", "string", "description", "Absolute path to the .java file containing the subclass."),
                                 "line",         Map.of("type", "integer", "description", "1-based line of the method to pull up."),
                                 "column",       Map.of("type", "integer", "description", "1-based column of the method name.")
@@ -857,7 +857,7 @@ public class RefactoringServer {
                         String source = java.nio.file.Files.readString(Path.of(file));
                         int offset    = JdtRenamer.toOffset(source, line, col);
                         var changed   = JdtPullUpMethod.pullUp(
-                                new com.github.pfichtner.project.MavenProject(
+                                ProjectDetector.detect(
                                         Path.of((String) args.get("project_root"))),
                                 Path.of(file), offset);
                         StringBuilder sb = new StringBuilder();
@@ -881,7 +881,7 @@ public class RefactoringServer {
                 .tool(Tool.builder("push_down_method", Map.of(
                         "type", "object",
                         "properties", Map.of(
-                                "project_root", Map.of("type", "string", "description", "Absolute Maven project root."),
+                                "project_root", Map.of("type", "string", "description", "Absolute project root (Maven or Gradle)."),
                                 "file",         Map.of("type", "string", "description", "Absolute path to the .java file containing the superclass."),
                                 "line",         Map.of("type", "integer", "description", "1-based line of the method to push down."),
                                 "column",       Map.of("type", "integer", "description", "1-based column of the method name.")
@@ -904,7 +904,7 @@ public class RefactoringServer {
                         String source = java.nio.file.Files.readString(Path.of(file));
                         int offset    = JdtRenamer.toOffset(source, line, col);
                         var changed   = JdtPushDownMethod.pushDown(
-                                new com.github.pfichtner.project.MavenProject(
+                                ProjectDetector.detect(
                                         Path.of((String) args.get("project_root"))),
                                 Path.of(file), offset);
                         StringBuilder sb = new StringBuilder();
@@ -926,7 +926,7 @@ public class RefactoringServer {
                 .tool(Tool.builder("pull_up_field", Map.of(
                         "type", "object",
                         "properties", Map.of(
-                                "project_root", Map.of("type", "string",  "description", "Absolute path to the Maven project root"),
+                                "project_root", Map.of("type", "string",  "description", "Absolute path to the project root (Maven or Gradle)."),
                                 "file",         Map.of("type", "string",  "description", "Source file path relative to project_root"),
                                 "line",         Map.of("type", "integer", "description", "1-based line of the field to pull up"),
                                 "column",       Map.of("type", "integer", "description", "1-based column inside the field declaration")
@@ -945,7 +945,7 @@ public class RefactoringServer {
                         int offset    = JdtRenamer.toOffset(source, line, col);
 
                         var changed = JdtPullUpField.pullUp(
-                                new com.github.pfichtner.project.MavenProject(root), file, offset);
+                                ProjectDetector.detect(root), file, offset);
                         return ok(formatPreview(changed));
                     } catch (IllegalArgumentException e) {
                         return error(e.getMessage());
@@ -963,7 +963,7 @@ public class RefactoringServer {
                 .tool(Tool.builder("push_down_field", Map.of(
                         "type", "object",
                         "properties", Map.of(
-                                "project_root", Map.of("type", "string",  "description", "Absolute path to the Maven project root"),
+                                "project_root", Map.of("type", "string",  "description", "Absolute path to the project root (Maven or Gradle)."),
                                 "file",         Map.of("type", "string",  "description", "Source file path relative to project_root"),
                                 "line",         Map.of("type", "integer", "description", "1-based line of the field to push down"),
                                 "column",       Map.of("type", "integer", "description", "1-based column inside the field declaration")
@@ -982,7 +982,7 @@ public class RefactoringServer {
                         int offset    = JdtRenamer.toOffset(source, line, col);
 
                         var changed = JdtPushDownField.pushDown(
-                                new com.github.pfichtner.project.MavenProject(root), file, offset);
+                                ProjectDetector.detect(root), file, offset);
                         return ok(formatPreview(changed));
                     } catch (IllegalArgumentException e) {
                         return error(e.getMessage());
@@ -1000,7 +1000,7 @@ public class RefactoringServer {
                 .tool(Tool.builder("introduce_static_factory", Map.of(
                         "type", "object",
                         "properties", Map.of(
-                                "project_root",       Map.of("type", "string",  "description", "Absolute path to the Maven project root"),
+                                "project_root",       Map.of("type", "string",  "description", "Absolute path to the project root (Maven or Gradle)."),
                                 "file",               Map.of("type", "string",  "description", "Source file path relative to project_root"),
                                 "line",               Map.of("type", "integer", "description", "1-based line of the constructor"),
                                 "column",             Map.of("type", "integer", "description", "1-based column inside the constructor"),
@@ -1023,7 +1023,7 @@ public class RefactoringServer {
                         int offset    = JdtRenamer.toOffset(source, line, col);
 
                         var changed = JdtIntroduceStaticFactory.introduceStaticFactory(
-                                new com.github.pfichtner.project.MavenProject(root),
+                                ProjectDetector.detect(root),
                                 file, offset, name, makePrivate);
 
                         return ok(formatPreview(changed));
@@ -1043,7 +1043,7 @@ public class RefactoringServer {
                 .tool(Tool.builder("introduce_parameter_object", Map.of(
                         "type", "object",
                         "properties", Map.of(
-                                "project_root",    Map.of("type", "string",  "description", "Absolute path to the Maven project root"),
+                                "project_root",    Map.of("type", "string",  "description", "Absolute path to the project root (Maven or Gradle)."),
                                 "file",            Map.of("type", "string",  "description", "Source file path relative to project_root"),
                                 "line",            Map.of("type", "integer", "description", "1-based line of the method declaration"),
                                 "column",          Map.of("type", "integer", "description", "1-based column inside the method declaration"),
@@ -1072,7 +1072,7 @@ public class RefactoringServer {
                         int offset    = JdtRenamer.toOffset(source, line, col);
 
                         var changed = JdtIntroduceParameterObject.introduce(
-                                new com.github.pfichtner.project.MavenProject(root),
+                                ProjectDetector.detect(root),
                                 file, offset, paramNames, className, paramObjName);
                         return ok(formatPreview(changed));
                     } catch (IllegalArgumentException e) {
@@ -1092,7 +1092,7 @@ public class RefactoringServer {
                         "type", "object",
                         "properties", Map.of(
                                 "project_root", Map.of("type", "string",
-                                        "description", "Absolute path to the Maven project root"),
+                                        "description", "Absolute path to the project root (Maven or Gradle)."),
                                 "file", Map.of("type", "string",
                                         "description", "Source file path relative to project_root")
                         ),
@@ -1104,7 +1104,7 @@ public class RefactoringServer {
                         Path root = Path.of((String) args.get("project_root"));
                         Path file = root.resolve((String) args.get("file"));
                         var changed = JdtConvertToRecord.convertToRecord(
-                                new com.github.pfichtner.project.MavenProject(root), file);
+                                ProjectDetector.detect(root), file);
                         return ok(formatPreview(changed));
                     } catch (IllegalArgumentException e) {
                         return error(e.getMessage());

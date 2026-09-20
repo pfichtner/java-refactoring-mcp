@@ -2,8 +2,8 @@ package com.github.pfichtner.cli;
 
 import com.github.pfichtner.JdtIntroduceParam;
 import com.github.pfichtner.JdtRenamer;
-import com.github.pfichtner.project.MavenProject;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
 import picocli.CommandLine.Model.CommandSpec;
@@ -38,10 +38,10 @@ public class IntroduceParamCommand implements Callable<Integer> {
     @Option(names = "--type", description = "Explicit type (inferred if omitted).")
     String paramType;
 
-    @Option(names = "--project", description = "Maven project root (auto-detected if omitted).")
-    Path projectRoot;
 
     @Option(names = "--dry-run") boolean dryRun;
+
+    @Mixin ProjectOptions project;
 
     @Override
     public Integer call() throws Exception {
@@ -53,13 +53,8 @@ public class IntroduceParamCommand implements Callable<Integer> {
         String source  = Files.readString(absFile);
         int selStart   = JdtRenamer.toOffset(source, startLine, startColumn);
         int selEnd     = JdtRenamer.toOffset(source, endLine, endColumn);
-
-        Path root = projectRoot != null
-                ? projectRoot.toAbsolutePath().normalize()
-                : RenameCommand.findProjectRoot(absFile);
-
         Map<Path, String> changed = JdtIntroduceParam.introduceParam(
-                new MavenProject(root), absFile, selStart, selEnd - selStart,
+                project.resolve(absFile), absFile, selStart, selEnd - selStart,
                 paramName, paramType);
 
         var out = spec.commandLine().getOut();
