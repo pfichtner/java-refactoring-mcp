@@ -1135,7 +1135,8 @@ public class RefactoringServer {
                                 Map.entry("param_names",       Map.of("type", "array", "items", Map.of("type", "string"),
                                                                       "description", "Names of the contiguous parameters to group (>=2)")),
                                 Map.entry("class_name",        Map.of("type", "string",  "description", "Simple name for the new parameter-object class")),
-                                Map.entry("param_object_name", Map.of("type", "string",  "description", "Name for the new parameter in the method (optional, defaults to lower-camel of class_name)"))
+                                Map.entry("param_object_name", Map.of("type", "string",  "description", "Name for the new parameter in the method (optional, defaults to lower-camel of class_name)")),
+                                Map.entry("as_record", Map.of("type", "boolean", "description", "If true, generate a record instead of a plain class (Java 16+)."))
                         ),
                         "required", List.of("project_root", "file", "param_names", "class_name")
                 )).build())
@@ -1154,9 +1155,10 @@ public class RefactoringServer {
                         String source = java.nio.file.Files.readString(file);
                         int offset    = resolveOffset(args, source, file.getFileName().toString());
 
+                        boolean asRecord = Boolean.TRUE.equals(args.get("as_record"));
                         var changed = JdtIntroduceParameterObject.introduce(
                                 ProjectDetector.detect(root),
-                                file, offset, paramNames, className, paramObjName);
+                                file, offset, paramNames, className, paramObjName, asRecord);
                         return ok(formatPreview(changed));
                     } catch (IllegalArgumentException e) {
                         return error(e.getMessage());

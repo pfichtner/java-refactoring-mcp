@@ -37,6 +37,8 @@ public class IntroduceParamObjectCommand implements Callable<Integer> {
     @Option(names = "--param-name",
             description = "Name for the new parameter in the method (default: first letter of class name lower-cased).")
             String paramName;
+    @Option(names = "--record",
+            description = "Generate a record instead of a plain class (Java 16+).") boolean asRecord;
     @Option(names = "--dry-run",
             description = "Print changed sources; do not write to disk.") boolean dryRun;
 
@@ -57,7 +59,7 @@ public class IntroduceParamObjectCommand implements Callable<Integer> {
         int offset    = JdtRenamer.toOffset(source, line, column);
 
         Map<Path, String> changed = JdtIntroduceParameterObject.introduce(
-                project.resolve(absFile), absFile, offset, params, className, resolvedParamName);
+                project.resolve(absFile), absFile, offset, params, className, resolvedParamName, asRecord);
 
         var out = spec.commandLine().getOut();
         if (dryRun) {

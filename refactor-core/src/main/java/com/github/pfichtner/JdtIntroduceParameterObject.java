@@ -64,6 +64,18 @@ public class JdtIntroduceParameterObject {
             String className,
             String paramObjectName)
             throws IOException, InterruptedException {
+        return introduce(project, sourceFile, offset, paramNames, className, paramObjectName, false);
+    }
+
+    public static Map<Path, String> introduce(
+            JavaProject project,
+            Path sourceFile,
+            int offset,
+            List<String> paramNames,
+            String className,
+            String paramObjectName,
+            boolean asRecord)
+            throws IOException, InterruptedException {
 
         if (paramNames.size() < 2) {
             throw new IllegalArgumentException(
@@ -149,14 +161,19 @@ public class JdtIntroduceParameterObject {
         for (SingleVariableDeclaration svd : groupedParams) {
             IVariableBinding vb = svd.resolveBinding();
             if (vb != null) {
-                paramKeyToGetter.put(vb.getKey(), getterName(svd.getName().getIdentifier()));
+                String accessorName = asRecord
+                        ? svd.getName().getIdentifier()
+                        : getterName(svd.getName().getIdentifier());
+                paramKeyToGetter.put(vb.getKey(), accessorName);
             }
         }
 
         // -------------------------------------------------------------------------
         // Generate new class source
         // -------------------------------------------------------------------------
-        String newClassSource = buildParameterObjectClass(
+        String newClassSource = asRecord
+                ? buildParameterObjectRecord(packageName, className, groupedParams, targetSource)
+                : buildParameterObjectClass(
                 packageName, className, groupedParams, targetSource);
 
         // -------------------------------------------------------------------------
@@ -292,6 +309,24 @@ public class JdtIntroduceParameterObject {
         }
 
         sb.append("}\n");
+        return sb.toString();
+    }
+
+    private static String buildParameterObjectRecord(
+            String packageName, String className,
+            List<SingleVariableDeclaration> params, String source) {
+
+        StringBuilder sb = new StringBuilder();
+        if (packageName != null && !packageName.isEmpty()) {
+            sb.append("package ").append(packageName).append(";\n\n");
+        }
+        sb.append("public record ").append(className).append("(");
+        for (int i = 0; i < params.size(); i++) {
+            if (i > 0) sb.append(", ");
+            SingleVariableDeclaration p = params.get(i);
+            sb.append(typeText(source, p)).append(" ").append(p.getName().getIdentifier());
+        }
+        sb.append(") {}\n");
         return sb.toString();
     }
 

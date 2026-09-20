@@ -56,6 +56,39 @@ class IntroduceParameterObjectTest {
     }
 
     @Test
+    void introduce_parameter_object_as_record() throws Exception {
+        Path projectRoot = fixtures.projectPath("projects/introduce-param-object");
+        MavenProject project = new MavenProject(projectRoot);
+        Path srcRoot     = project.sourceRoots().get(0);
+        Path printerFile = srcRoot.resolve("com/example/Printer.java");
+        Path appFile     = srcRoot.resolve("com/example/App.java");
+
+        String printerSrc = Files.readString(printerFile);
+        String appSrc     = Files.readString(appFile);
+
+        int offset = Fixtures.offsetOf(printerSrc, "print");
+
+        Map<Path, String> changed = JdtIntroduceParameterObject.introduce(
+                project, printerFile, offset,
+                List.of("x", "y"), "Coordinate", "coordinate", true);
+
+        Path coordFile = printerFile.getParent().resolve("Coordinate.java");
+        assertThat(changed.containsKey(coordFile.toAbsolutePath().normalize())).as("Coordinate.java must be created").isTrue();
+        assertThat(changed.containsKey(printerFile.toAbsolutePath().normalize())).as("Printer.java must be in result").isTrue();
+        assertThat(changed.containsKey(appFile.toAbsolutePath().normalize())).as("App.java must be in result").isTrue();
+
+        Approvals.verify(
+            RenameStoryBoard.titled("Introduce parameter object as record: Printer.print(x,y) → Coordinate")
+                .inputProject(Map.of("App.java", appSrc, "Printer.java", printerSrc))
+                .refactoring("introduce parameter object (--record)",
+                    "`int x, int y` → `Coordinate coordinate`",
+                    Fixtures.lineCol(printerSrc, offset))
+                .outputProject(changed)
+                .build()
+        );
+    }
+
+    @Test
     void introduce_parameter_object_rejected_when_fewer_than_two_params() throws Exception {
         Path projectRoot = fixtures.projectPath("projects/introduce-param-object");
         MavenProject project = new MavenProject(projectRoot);
