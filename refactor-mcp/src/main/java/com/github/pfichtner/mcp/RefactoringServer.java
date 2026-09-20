@@ -15,6 +15,7 @@ import com.github.pfichtner.JdtConvertToRecord;
 import com.github.pfichtner.JdtIntroduceParameterObject;
 import com.github.pfichtner.JdtIntroduceStaticFactory;
 import com.github.pfichtner.JdtChangeMethodSignature;
+import com.github.pfichtner.JdtEncapsulateField;
 import com.github.pfichtner.JdtPullUpField;
 import com.github.pfichtner.JdtPullUpMethod;
 import com.github.pfichtner.JdtPushDownField;
@@ -82,6 +83,7 @@ public class RefactoringServer {
         server.addTool(introduceParameterObject());
         server.addTool(convertToRecord());
         server.addTool(changeMethodSignature());
+        server.addTool(encapsulateField());
 
         return server;
     }
@@ -1228,6 +1230,48 @@ public class RefactoringServer {
                         }
                         var changed = JdtChangeMethodSignature.changeSignature(
                                 ProjectDetector.detect(root), file, offset, newReturnType, paramOrder);
+                        return ok(formatPreview(changed));
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
+    }
+
+    // -------------------------------------------------------------------------
+    // Tool: encapsulate_field
+    // -------------------------------------------------------------------------
+
+    static SyncToolSpecification encapsulateField() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("encapsulate_field", Map.of(
+                        "type", "object",
+                        "properties", Map.ofEntries(
+                                Map.entry("project_root",    Map.of("type", "string",  "description", "Absolute project root (Maven or Gradle).")),
+                                Map.entry("file",            Map.of("type", "string",  "description", "Source file containing the field declaration.")),
+                                Map.entry("line",            Map.of("type", "integer", "description", "1-based line of the field name.")),
+                                Map.entry("column",          Map.of("type", "integer", "description", "1-based column of the field name.")),
+                                Map.entry("field",           Map.of("type", "string",  "description", "Name-based locator: field name, e.g. \"name\".")),
+                                Map.entry("class",           Map.of("type", "string",  "description", "Optional: scope to a specific class when the file contains multiple types.")),
+                                Map.entry("generate_setter", Map.of("type", "boolean", "description", "Also generate a setter and rewrite write access sites (default false)."))
+                        ),
+                        "required", List.of("project_root", "file")))
+                        .description("""
+                        Make a public field private, generate a getter (and optional setter),
+                        and rewrite all read access sites (and write sites if generate_setter=true)
+                        across the project. Returns changed file contents; does not write to disk.
+                        """)
+                        .build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        Path root = Path.of((String) args.get("project_root"));
+                        Path file = root.resolve((String) args.get("file"));
+                        String source = Files.readString(file);
+                        int offset = resolveOffset(args, source, file.getFileName().toString());
+                        boolean generateSetter = Boolean.TRUE.equals(args.get("generate_setter"));
+                        var changed = JdtEncapsulateField.encapsulateField(
+                                ProjectDetector.detect(root), file, offset, generateSetter);
                         return ok(formatPreview(changed));
                     } catch (Exception e) {
                         return error(e.getMessage());

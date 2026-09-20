@@ -264,11 +264,11 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 ### Change method signature
 | Test case | Approval |
 |-----------|----------|
-| Change return type updates declaration only | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.change_return_type_updates_declaration_only.approved.md) |
-| Rejected when nothing to change | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.rejected_when_nothing_to_change.approved.md) |
-| Rejected when param order length wrong | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.rejected_when_param_order_length_wrong.approved.md) |
-| Reorder and return type change applied together | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.reorder_and_return_type_change_applied_together.approved.md) |
-| Reorder params updates declaration and call sites | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.reorder_params_updates_declaration_and_call_sites.approved.md) |
+| Change method signature: change return type String → Object | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.change_return_type_updates_declaration_only.approved.md) |
+| Change method signature rejected: nothing to change | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.rejected_when_nothing_to_change.approved.md) |
+| Change method signature rejected: wrong paramOrder length | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.rejected_when_param_order_length_wrong.approved.md) |
+| Change method signature: reorder params + return type Object | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.reorder_and_return_type_change_applied_together.approved.md) |
+| Change method signature: reorder params convert(int,String) → convert(String,int) | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.reorder_params_updates_declaration_and_call_sites.approved.md) |
 
 ### Cli convert to record
 | Test case | Approval |
@@ -279,6 +279,13 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Test case | Approval |
 |-----------|----------|
 | Dry run by method name prints preview | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliLocatorByNameTest.dry_run_by_method_name_prints_preview.approved.txt) |
+
+### Encapsulate field
+| Test case | Approval |
+|-----------|----------|
+| Encapsulate field: Person.name — getter only | [→](refactor-core/src/test/java/com/github/pfichtner/EncapsulateFieldTest.encapsulate_field_generates_getter_and_rewrites_reads.approved.md) |
+| Encapsulate field: Person.name — getter + setter | [→](refactor-core/src/test/java/com/github/pfichtner/EncapsulateFieldTest.encapsulate_field_generates_getter_and_setter_rewrites_both.approved.md) |
+| Encapsulate field: Person.age — getter only (verify private result) | [→](refactor-core/src/test/java/com/github/pfichtner/EncapsulateFieldTest.encapsulate_field_rejected_when_already_private.approved.md) |
 
 ### Locator by name
 | Test case | Approval |
