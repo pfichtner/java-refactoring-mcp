@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Approval tests verifying that name-based locators produce identical
@@ -181,6 +182,104 @@ class LocatorByNameTest {
                 .inputProject(inputs)
                 .refactoring("remove param", "`c` from `add`",
                         "target: parameter 'c' in method 'add'")
+                .outputProject(changed)
+                .build()
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // inline variable by name
+    // -------------------------------------------------------------------------
+
+    @Test
+    void inline_variable_by_name() throws Exception {
+        String source = fixtures.load("inline-var/simple/input/Foo.java");
+        int offset = LocatorResolver.resolve(new Locator.VariableName("x"), source, "Foo.java");
+
+        String result = JdtInliner.inlineVariable(source, "Foo.java", offset);
+
+        assertThat(result).isNotEqualTo(source);
+        Approvals.verify(
+            RenameStoryBoard.titled("Inline variable by name: x")
+                .javaSection("Input", source)
+                .refactoring("inline variable", "`x` = `6 * 7`",
+                        "target: variable 'x'")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // inline constant by name
+    // -------------------------------------------------------------------------
+
+    @Test
+    void inline_constant_by_name() throws Exception {
+        String source = fixtures.load("inline-constant/int-constant/input/Foo.java");
+        int offset = LocatorResolver.resolve(new Locator.FieldName("MAX"), source, "Foo.java");
+
+        String result = JdtInliner.inlineConstant(source, "Foo.java", offset, true, false);
+
+        assertThat(result).isNotEqualTo(source);
+        Approvals.verify(
+            RenameStoryBoard.titled("Inline constant by name: MAX")
+                .javaSection("Input", source)
+                .refactoring("inline constant", "`MAX` = `100` (all occurrences)",
+                        "target: field 'MAX'")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // push down method by name
+    // -------------------------------------------------------------------------
+
+    @Test
+    void push_down_method_by_name() throws Exception {
+        Path projectRoot = fixtures.projectPath("projects/push-down-method");
+        MavenProject project = new MavenProject(projectRoot);
+
+        Path shapeFile = project.sourceRoots().get(0).resolve("com/example/Shape.java");
+        String source = Files.readString(shapeFile);
+        int offset = LocatorResolver.resolve(new Locator.MethodName("area"), source, "Shape.java");
+
+        Map<Path, String> changed = JdtPushDownMethod.pushDown(project, shapeFile, offset);
+        Map<String, String> inputs = fixtures.loadProjectSources("projects/push-down-method/src/main/java");
+
+        assertThat(changed).isNotEmpty();
+        Approvals.verify(
+            RenameStoryBoard.titled("Push down method by name: Shape.area")
+                .inputProject(inputs)
+                .refactoring("push down method", "`Shape.area()` → subclasses",
+                        "target: method 'area'")
+                .outputProject(changed)
+                .build()
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // push down field by name
+    // -------------------------------------------------------------------------
+
+    @Test
+    void push_down_field_by_name() throws Exception {
+        Path projectRoot = fixtures.projectPath("projects/push-down-field");
+        MavenProject project = new MavenProject(projectRoot);
+
+        Path vehicleFile = project.sourceRoots().get(0).resolve("com/example/Vehicle.java");
+        String source = Files.readString(vehicleFile);
+        int offset = LocatorResolver.resolve(new Locator.FieldName("maxSpeed"), source, "Vehicle.java");
+
+        Map<Path, String> changed = JdtPushDownField.pushDown(project, vehicleFile, offset);
+        Map<String, String> inputs = fixtures.loadProjectSources("projects/push-down-field/src/main/java");
+
+        assertThat(changed).isNotEmpty();
+        Approvals.verify(
+            RenameStoryBoard.titled("Push down field by name: Vehicle.maxSpeed")
+                .inputProject(inputs)
+                .refactoring("push down field", "`Vehicle.maxSpeed` → subclasses",
+                        "target: field 'maxSpeed'")
                 .outputProject(changed)
                 .build()
         );

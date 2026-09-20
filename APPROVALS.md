@@ -269,8 +269,12 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 ### Locator by name
 | Test case | Approval |
 |-----------|----------|
+| Inline constant by name: MAX | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.inline_constant_by_name.approved.md) |
+| Inline variable by name: x | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.inline_variable_by_name.approved.md) |
 | Pull up field by name: Dog.breed | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.pull_up_field_by_name.approved.md) |
 | Pull up method by name: Dog.speak | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.pull_up_method_by_name.approved.md) |
+| Push down field by name: Vehicle.maxSpeed | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.push_down_field_by_name.approved.md) |
+| Push down method by name: Shape.area | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.push_down_method_by_name.approved.md) |
 | Remove param by name: add.c | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.remove_param_by_name.approved.md) |
 | Rename field by name: name → fullName | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.rename_field_by_name.approved.md) |
 | Rename method by name: add → plus | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.rename_method_by_name.approved.md) |
