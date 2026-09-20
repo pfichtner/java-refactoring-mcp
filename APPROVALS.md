@@ -264,6 +264,20 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 |-----------|----------|
 | Dry run by method name prints preview | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliLocatorByNameTest.dry_run_by_method_name_prints_preview.approved.txt) |
 
+### Convert anonymous to nested
+| Test case | Approval |
+|-----------|----------|
+| Convert anonymous Comparator → nested class CaseInsensitiveOrder | [→](refactor-core/src/test/java/com/github/pfichtner/ConvertAnonymousToNestedTest.convert_comparator_anonymous_to_nested_class.approved.md) |
+| Convert anonymous rejected: no anonymous class at offset | [→](refactor-core/src/test/java/com/github/pfichtner/ConvertAnonymousToNestedTest.convert_rejected_when_no_anonymous_class_at_offset.approved.md) |
+| Convert anonymous Runnable → nested class Worker | [→](refactor-core/src/test/java/com/github/pfichtner/ConvertAnonymousToNestedTest.convert_runnable_anonymous_to_nested_class.approved.md) |
+
+### Convert nested to top level
+| Test case | Approval |
+|-----------|----------|
+| Convert nested interface Transformer → top-level Transformer.java | [→](refactor-core/src/test/java/com/github/pfichtner/ConvertNestedToTopLevelTest.convert_nested_interface_to_top_level.approved.md) |
+| Convert nested rejected: no nested type at offset | [→](refactor-core/src/test/java/com/github/pfichtner/ConvertNestedToTopLevelTest.convert_rejected_when_no_nested_type_at_offset.approved.md) |
+| Convert nested class Helper → top-level class Helper.java | [→](refactor-core/src/test/java/com/github/pfichtner/ConvertNestedToTopLevelTest.convert_static_nested_class_to_top_level.approved.md) |
+
 ### Decompose conditional
 | Test case | Approval |
 |-----------|----------|
@@ -278,6 +292,13 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Encapsulate field: Person.name — getter only | [→](refactor-core/src/test/java/com/github/pfichtner/EncapsulateFieldTest.encapsulate_field_generates_getter_and_rewrites_reads.approved.md) |
 | Encapsulate field: Person.name — getter + setter | [→](refactor-core/src/test/java/com/github/pfichtner/EncapsulateFieldTest.encapsulate_field_generates_getter_and_setter_rewrites_both.approved.md) |
 | Encapsulate field: Person.age — getter only (verify private result) | [→](refactor-core/src/test/java/com/github/pfichtner/EncapsulateFieldTest.encapsulate_field_rejected_when_already_private.approved.md) |
+
+### Introduce indirection
+| Test case | Approval |
+|-----------|----------|
+| Introduce indirection: Service.process → static doProcess(Service, String) | [→](refactor-core/src/test/java/com/github/pfichtner/IntroduceIndirectionTest.introduce_indirection_for_instance_method.approved.md) |
+| Introduce indirection: MathUtils.square → static computeSquare(int) | [→](refactor-core/src/test/java/com/github/pfichtner/IntroduceIndirectionTest.introduce_indirection_for_static_method.approved.md) |
+| Introduce indirection rejected: no method at offset | [→](refactor-core/src/test/java/com/github/pfichtner/IntroduceIndirectionTest.introduce_indirection_rejected_when_no_method_at_offset.approved.md) |
 
 ### Locator by name
 | Test case | Approval |
@@ -297,6 +318,19 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Move method to named target: Printer.byline(Report, Author) → Report | [→](refactor-core/src/test/java/com/github/pfichtner/MoveMethodTest.move_method_with_multiple_parameter_types_to_named_target.approved.md) |
 | Move method rejected: Report already declares describe(Report) | [→](refactor-core/src/test/java/com/github/pfichtner/MoveMethodTest.reject_duplicate_method_in_target.approved.md) |
 | Move method rejected: target class not found | [→](refactor-core/src/test/java/com/github/pfichtner/MoveMethodTest.reject_target_class_not_found.approved.md) |
+
+### Move static member
+| Test case | Approval |
+|-----------|----------|
+| Move static member rejected: no static member at offset | [→](refactor-core/src/test/java/com/github/pfichtner/MoveStaticMemberTest.move_static_member_rejected_when_no_static_member_at_offset.approved.md) |
+| Move static method MathUtils.square → Helpers.square | [→](refactor-core/src/test/java/com/github/pfichtner/MoveStaticMemberTest.move_static_method_to_another_class_and_update_call_sites.approved.md) |
+
+### Promote to field
+| Test case | Approval |
+|-----------|----------|
+| Promote local variable result → private field | [→](refactor-core/src/test/java/com/github/pfichtner/PromoteToFieldTest.promote_local_with_initializer_to_field.approved.md) |
+| Promote local variable count (no initializer) → private field | [→](refactor-core/src/test/java/com/github/pfichtner/PromoteToFieldTest.promote_local_without_initializer_to_field.approved.md) |
+| Promote to field rejected: no local variable at offset | [→](refactor-core/src/test/java/com/github/pfichtner/PromoteToFieldTest.promote_rejected_when_no_local_variable_at_offset.approved.md) |
 
 ### Refactoring server by name
 | Test case | Approval |
