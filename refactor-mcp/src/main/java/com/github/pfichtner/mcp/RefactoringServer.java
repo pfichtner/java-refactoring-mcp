@@ -42,6 +42,7 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Builds the MCP server and registers refactoring tools.
@@ -317,17 +318,15 @@ public class RefactoringServer {
                                         Path.of((String) args.get("project_root"))),
                                 Path.of(file), newPackage);
 
-                        StringBuilder sb = new StringBuilder();
-                        sb.append("New path: ").append(result.newFilePath()).append("\n\n");
-                        sb.append("=== ").append(result.newFilePath().getFileName())
-                          .append(" (new) ===\n")
-                          .append(result.newClassSource().stripTrailing()).append("\n");
-                        result.changedImports().entrySet().stream()
+                        String imports = result.changedImports().entrySet().stream()
                                 .sorted(Map.Entry.comparingByKey())
-                                .forEach(e -> sb.append("\n=== ").append(e.getKey().getFileName())
-                                        .append(" (updated import) ===\n")
-                                        .append(e.getValue().stripTrailing()).append("\n"));
-                        return ok(sb.toString().stripTrailing());
+                                .map(e -> "\n=== " + e.getKey().getFileName() + " (updated import) ===\n"
+                                        + e.getValue().stripTrailing() + "\n")
+                                .collect(Collectors.joining());
+                        return ok(("New path: " + result.newFilePath() + "\n\n"
+                                + "=== " + result.newFilePath().getFileName() + " (new) ===\n"
+                                + result.newClassSource().stripTrailing() + "\n"
+                                + imports).stripTrailing());
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }
@@ -460,11 +459,10 @@ public class RefactoringServer {
                                 ProjectDetector.detect(
                                         Path.of((String) args.get("project_root"))),
                                 Path.of(file), offset);
-                        StringBuilder sb = new StringBuilder();
-                        changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
-                                .forEach(e -> sb.append("=== ").append(e.getKey().getFileName())
-                                        .append(" ===\n").append(e.getValue().stripTrailing()).append("\n\n"));
-                        return ok(sb.toString().stripTrailing());
+                        return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                                .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
+                                        + e.getValue().stripTrailing() + "\n\n")
+                                .collect(Collectors.joining()).stripTrailing());
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }
@@ -517,11 +515,10 @@ public class RefactoringServer {
                                 ProjectDetector.detect(Path.of((String) args.get("project_root"))),
                                 Path.of(file), selStart, selEnd - selStart, paramName, paramType);
 
-                        StringBuilder sb = new StringBuilder();
-                        changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
-                                .forEach(e -> sb.append("=== ").append(e.getKey().getFileName())
-                                        .append(" ===\n").append(e.getValue().stripTrailing()).append("\n\n"));
-                        return ok(sb.toString().stripTrailing());
+                        return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                                .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
+                                        + e.getValue().stripTrailing() + "\n\n")
+                                .collect(Collectors.joining()).stripTrailing());
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }
@@ -612,11 +609,10 @@ public class RefactoringServer {
                                 ProjectDetector.detect(
                                         Path.of((String) args.get("project_root"))),
                                 Path.of(file), offset, removeDel);
-                        StringBuilder sb = new StringBuilder();
-                        changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
-                                .forEach(e -> sb.append("=== ").append(e.getKey().getFileName())
-                                        .append(" ===\n").append(e.getValue().stripTrailing()).append("\n\n"));
-                        return ok(sb.toString().stripTrailing());
+                        return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                                .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
+                                        + e.getValue().stripTrailing() + "\n\n")
+                                .collect(Collectors.joining()).stripTrailing());
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }
@@ -858,54 +854,45 @@ public class RefactoringServer {
 
     static String formatPreview(Map<Path, String> changed) {
         if (changed.isEmpty()) return "No changes.";
-        var sb = new StringBuilder();
-        sb.append("Dry run — no files written.\n");
         String names = changed.keySet().stream()
                 .map(p -> p.getFileName().toString())
                 .sorted()
-                .reduce((a, b) -> a + ", " + b).orElse("");
-        sb.append("Would change (").append(changed.size()).append("): ").append(names).append("\n");
-        changed.entrySet().stream()
+                .collect(Collectors.joining(", "));
+        String content = changed.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
-                .forEach(e -> {
-                    sb.append("\n=== ").append(e.getKey().getFileName()).append(" ===\n");
-                    sb.append(e.getValue().stripTrailing()).append("\n");
-                });
-        return sb.toString();
+                .map(e -> "\n=== " + e.getKey().getFileName() + " ===\n"
+                        + e.getValue().stripTrailing() + "\n")
+                .collect(Collectors.joining());
+        return "Dry run — no files written.\n"
+                + "Would change (" + changed.size() + "): " + names + "\n"
+                + content;
     }
 
     static String formatPreview(List<FileChange> changed) {
         if (changed.isEmpty()) return "No changes.";
-        var sb = new StringBuilder();
-        sb.append("Dry run — no files written.\n");
         String names = changed.stream()
                 .map(fc -> fc.newPath().getFileName().toString())
                 .sorted()
-                .reduce((a, b) -> a + ", " + b).orElse("");
-        sb.append("Would change (").append(changed.size()).append("): ").append(names).append("\n");
-        changed.stream()
+                .collect(Collectors.joining(", "));
+        String content = changed.stream()
                 .sorted(Comparator.comparing(fc -> fc.newPath().toString()))
-                .forEach(fc -> {
-                    sb.append("\n=== ").append(fc.newPath().getFileName()).append(" ===\n");
-                    sb.append(fc.newSource().stripTrailing()).append("\n");
-                });
-        return sb.toString();
+                .map(fc -> "\n=== " + fc.newPath().getFileName() + " ===\n"
+                        + fc.newSource().stripTrailing() + "\n")
+                .collect(Collectors.joining());
+        return "Dry run — no files written.\n"
+                + "Would change (" + changed.size() + "): " + names + "\n"
+                + content;
     }
 
     static String formatSummary(List<FileChange> changed) {
         if (changed.isEmpty()) return "No changes.";
-        var sb = new StringBuilder();
-        sb.append("Renamed in ").append(changed.size()).append(" file(s):\n");
-        changed.stream()
+        String content = changed.stream()
                 .sorted(Comparator.comparing(fc -> fc.newPath().toString()))
-                .forEach(fc -> {
-                    if (fc.pathChanged())
-                        sb.append("  ").append(fc.oldPath().getFileName())
-                          .append(" → ").append(fc.newPath().getFileName()).append("\n");
-                    else
-                        sb.append("  ").append(fc.newPath().getFileName()).append("\n");
-                });
-        return sb.toString();
+                .map(fc -> fc.pathChanged()
+                        ? "  " + fc.oldPath().getFileName() + " → " + fc.newPath().getFileName() + "\n"
+                        : "  " + fc.newPath().getFileName() + "\n")
+                .collect(Collectors.joining());
+        return "Renamed in " + changed.size() + " file(s):\n" + content;
     }
 
     // -------------------------------------------------------------------------
@@ -975,11 +962,10 @@ public class RefactoringServer {
                                 ProjectDetector.detect(
                                         Path.of((String) args.get("project_root"))),
                                 Path.of(file), offset);
-                        StringBuilder sb = new StringBuilder();
-                        changed.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(e ->
-                                sb.append("=== ").append(e.getKey().getFileName()).append(" ===\n")
-                                  .append(e.getValue().stripTrailing()).append("\n\n"));
-                        return ok(sb.toString().stripTrailing());
+                        return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                                .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
+                                        + e.getValue().stripTrailing() + "\n\n")
+                                .collect(Collectors.joining()).stripTrailing());
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }
@@ -1022,11 +1008,10 @@ public class RefactoringServer {
                                 ProjectDetector.detect(
                                         Path.of((String) args.get("project_root"))),
                                 Path.of(file), offset);
-                        StringBuilder sb = new StringBuilder();
-                        changed.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(e ->
-                                sb.append("=== ").append(e.getKey().getFileName()).append(" ===\n")
-                                  .append(e.getValue().stripTrailing()).append("\n\n"));
-                        return ok(sb.toString().stripTrailing());
+                        return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                                .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
+                                        + e.getValue().stripTrailing() + "\n\n")
+                                .collect(Collectors.joining()).stripTrailing());
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }
@@ -1070,11 +1055,10 @@ public class RefactoringServer {
                                 ProjectDetector.detect(
                                         Path.of((String) args.get("project_root"))),
                                 Path.of(file), offset, targetClass);
-                        StringBuilder sb = new StringBuilder();
-                        changed.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(e ->
-                                sb.append("=== ").append(e.getKey().getFileName()).append(" ===\n")
-                                  .append(e.getValue().stripTrailing()).append("\n\n"));
-                        return ok(sb.toString().stripTrailing());
+                        return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                                .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
+                                        + e.getValue().stripTrailing() + "\n\n")
+                                .collect(Collectors.joining()).stripTrailing());
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }

@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 
 /**
  * CLI subcommand for rename refactoring. Logic lives in {@link JdtRenamer}.
@@ -75,7 +76,7 @@ public class RenameCommand implements Callable<Integer> {
         String names = changed.stream()
                 .map(fc -> fc.newPath().getFileName().toString())
                 .sorted()
-                .reduce((a, b) -> a + ", " + b).orElse("");
+                .collect(Collectors.joining(", "));
         out.println("Would change (" + changed.size() + "): " + names);
         changed.stream()
                 .sorted(Comparator.comparing(fc -> fc.newPath().toString()))

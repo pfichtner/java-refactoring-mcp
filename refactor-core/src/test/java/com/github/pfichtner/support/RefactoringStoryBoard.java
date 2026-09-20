@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Fluent builder for rename approval storyboards.
@@ -92,12 +93,11 @@ public class RefactoringStoryBoard {
     public RefactoringStoryBoard filesystemSection(List<FileChange> changes) {
         List<FileChange> moved = changes.stream().filter(FileChange::pathChanged).toList();
         if (moved.isEmpty()) return this;
-        StringBuilder sb = new StringBuilder();
-        moved.stream()
+        String filesystemMd = moved.stream()
                 .sorted(Comparator.comparing(fc -> fc.oldPath().getFileName().toString()))
-                .forEach(fc -> sb.append("- `").append(fc.oldPath().getFileName())
-                        .append("` → `").append(fc.newPath().getFileName()).append("`\n"));
-        board.addCustomMarkdown("\n\n### Filesystem:\n" + sb.toString().stripTrailing());
+                .map(fc -> "- `" + fc.oldPath().getFileName() + "` → `" + fc.newPath().getFileName() + "`")
+                .collect(Collectors.joining("\n"));
+        board.addCustomMarkdown("\n\n### Filesystem:\n" + filesystemMd);
         return this;
     }
 

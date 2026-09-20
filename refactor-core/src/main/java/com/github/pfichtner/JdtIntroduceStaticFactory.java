@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Headless Introduce Static Factory refactoring using JDT ASTParser.
@@ -144,13 +145,11 @@ public class JdtIntroduceStaticFactory {
 
         String paramList = params.stream()
                 .map(p -> source.substring(p.getStartPosition(), p.getStartPosition() + p.getLength()))
-                .reduce((a, b) -> a + ", " + b)
-                .orElse("");
+                .collect(Collectors.joining(", "));
 
         String argList = params.stream()
                 .map(p -> p.getName().getIdentifier())
-                .reduce((a, b) -> a + ", " + b)
-                .orElse("");
+                .collect(Collectors.joining(", "));
 
         return "public static " + className + " " + factoryMethodName
                 + "(" + paramList + ") {\n"

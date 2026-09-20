@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -31,10 +32,10 @@ class RenamePackageTest {
                 "projects/rename-package/src/main/java");
 
         // Build newPath → newSource map for outputProject display
-        Map<Path, String> outputs = new LinkedHashMap<>();
-        result.changedFiles().stream()
+        Map<Path, String> outputs = result.changedFiles().stream()
                 .sorted(Comparator.comparing(a -> a.newPath().getFileName().toString()))
-                .forEach(fc -> outputs.put(fc.newPath(), fc.newSource()));
+                .collect(Collectors.toMap(fc -> fc.newPath(), fc -> fc.newSource(),
+                        (a, b) -> b, LinkedHashMap::new));
 
         Approvals.verify(
             RefactoringStoryBoard.titled("Rename package: com.example.service → com.example.util")
@@ -93,10 +94,10 @@ class RenamePackageTest {
         Map<String, String> inputs = fixtures.loadProjectSources(
                 "projects/rename-package-fqn/src/main/java");
 
-        Map<Path, String> outputs = new LinkedHashMap<>();
-        result.changedFiles().stream()
+        Map<Path, String> outputs = result.changedFiles().stream()
                 .sorted(Comparator.comparing(a -> a.newPath().getFileName().toString()))
-                .forEach(fc -> outputs.put(fc.newPath(), fc.newSource()));
+                .collect(Collectors.toMap(fc -> fc.newPath(), fc -> fc.newSource(),
+                        (a, b) -> b, LinkedHashMap::new));
 
         Approvals.verify(
             RefactoringStoryBoard.titled("Rename package with FQN code references: com.example.service → com.example.util")
@@ -118,10 +119,10 @@ class RenamePackageTest {
         Map<String, String> inputs = fixtures.loadProjectSources(
                 "projects/rename-package-javadoc/src/main/java");
 
-        Map<Path, String> outputs = new LinkedHashMap<>();
-        result.changedFiles().stream()
+        Map<Path, String> outputs = result.changedFiles().stream()
                 .sorted(Comparator.comparing(a -> a.newPath().getFileName().toString()))
-                .forEach(fc -> outputs.put(fc.newPath(), fc.newSource()));
+                .collect(Collectors.toMap(fc -> fc.newPath(), fc -> fc.newSource(),
+                        (a, b) -> b, LinkedHashMap::new));
 
         Approvals.verify(
             RefactoringStoryBoard.titled("Rename package: {@link} and @see FQN in Javadoc updated")

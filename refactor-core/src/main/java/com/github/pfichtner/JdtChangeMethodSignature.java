@@ -220,9 +220,9 @@ public class JdtChangeMethodSignature {
         for (Path root : project.sourceRoots()) {
             if (!Files.isDirectory(root)) continue;
             try (var stream = Files.walk(root)) {
-                stream.filter(p -> p.toString().endsWith(".java"))
+                files.addAll(stream.filter(p -> p.toString().endsWith(".java"))
                       .map(p -> p.toAbsolutePath().normalize())
-                      .forEach(files::add);
+                      .toList());
             }
         }
         return files;
