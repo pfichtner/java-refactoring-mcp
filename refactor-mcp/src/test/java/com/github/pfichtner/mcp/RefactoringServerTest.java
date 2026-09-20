@@ -108,6 +108,53 @@ class RefactoringServerTest {
     }
 
     // -------------------------------------------------------------------------
+    // convert_to_record
+    // -------------------------------------------------------------------------
+
+    private static final Path CONVERT_FIXTURE_ROOT;
+    static {
+        try {
+            CONVERT_FIXTURE_ROOT = Path.of(
+                    RefactoringServerTest.class.getClassLoader()
+                            .getResource("fixtures/projects/convert-to-record/pom.xml")
+                            .toURI()
+            ).getParent();
+        } catch (Exception e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
+
+    @Test
+    void convert_to_record_handler_returns_preview() throws Exception {
+        Map<String, Object> args = Map.of(
+                "project_root", CONVERT_FIXTURE_ROOT.toString(),
+                "file",         "src/main/java/com/example/Point.java"
+        );
+
+        var result = RefactoringServer.convertToRecord().callHandler()
+                .apply(null, fakeRequest(args));
+
+        assertThat(result.isError()).isFalse();
+        String text = textOf(result);
+        assertThat(text).as("Should contain record declaration").contains("record Point");
+        assertThat(text).as("Getter call sites should be renamed").contains(".x()");
+    }
+
+    @Test
+    void convert_to_record_handler_rejects_class_with_extends() throws Exception {
+        Map<String, Object> args = Map.of(
+                "project_root", CONVERT_FIXTURE_ROOT.toString(),
+                "file",         "src/main/java/com/example/Derived.java"
+        );
+
+        var result = RefactoringServer.convertToRecord().callHandler()
+                .apply(null, fakeRequest(args));
+
+        assertThat(result.isError()).isTrue();
+        assertThat(textOf(result)).contains("extends");
+    }
+
+    // -------------------------------------------------------------------------
     // Error cases
     // -------------------------------------------------------------------------
 

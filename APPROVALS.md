@@ -261,6 +261,11 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 
 ## Other
 
+### Cli convert to record
+| Test case | Approval |
+|-----------|----------|
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliConvertToRecordTest.dry_run_prints_preview_without_writing.approved.txt) |
+
 ### Cli locator by name
 | Test case | Approval |
 |-----------|----------|
