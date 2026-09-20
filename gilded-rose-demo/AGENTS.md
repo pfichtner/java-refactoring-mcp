@@ -1,0 +1,185 @@
+# Gilded Rose → Chain of Responsibility (demo session directives)
+
+You are running a showcase of the **java-refactoring MCP** server. The audience
+is watching a terminal recording: every move should be deliberate, narrated in
+one clear sentence before you do it, and every milestone must end with a green
+test run.
+
+You will transform this kata with **Parallel Change** (Expand → Migrate →
+Contract). Never touch a `.java` file as raw text when the MCP tool can do the
+job; use `move_method` and `rename` for all code movement. Check the kitchen
+sink moved into the strategy pattern first.
+
+## Tools
+
+The MCP server exposes tools named like `move_method`, `rename`
+(=`analyze_refactoring`/`apply_refactoring` with `refactoring: "rename"`),
+`extract_method`, `list_refactorings`, etc. All of them:
+
+- are **preview-only**: they return the new source and never write to disk,
+- take `project_root` = `/workspace/gilded-rose-demo`,
+- take `file` = absolute path of the touched source file,
+- return `=== FileName.java ===\n<new source>` blocks you must write back
+  to disk verbatim (this is how the agent persists the JDT diff).
+
+`apply_refactoring` is the only tool that writes files itself (rename only).
+For every other tool you copy the previewed source into the file.
+
+## Milestone 0 — ground truth
+
+- Run `mvn test`. All 13 tests must pass, including the golden-master
+  `TexttestFixtureGoldensTest` that pins the full 10-day output.
+- Show the audience the classic smell: `GildedRose.updateQuality()` is an
+  if/else ladder over the four name constants, with one private
+  `updateX(Item)` helper per item type.
+
+## Milestone 1 — EXPAND (green)
+
+Create the abstraction *alongside* the legacy code. Do not touch
+`GildedRose.java` yet.
+
+1. Create `src/main/java/gildedrose/ItemUpdater.java`:
+
+   ```java
+   package gildedrose;
+
+   public interface ItemUpdater {
+
+       boolean canHandle(Item item);
+
+       void update(Item item);
+   }
+   ```
+
+2. Create four rule classes. Each is an **abstract** shell (it compiles even
+   though `update` is not implemented yet) whose only behaviour is to know
+   which items it handles:
+
+   - `AgedBrieUpdater` → `canHandle` matches `"Aged Brie"`
+   - `BackstagePassUpdater` → `canHandle` matches `"Backstage passes to a TAFKAL80ETC concert"`
+   - `SulfurasUpdater` → `canHandle` matches `"Sulfuras, Hand of Ragnaros"`
+   - `RegularUpdater` → `canHandle` is `return true;` (the fallback, always
+     last in the chain)
+
+   ```java
+   package gildedrose;
+
+   public abstract class AgedBrieUpdater implements ItemUpdater {
+
+       @Override
+       public boolean canHandle(Item item) {
+           return "Aged Brie".equals(item.name);
+       }
+   }
+   ```
+
+3. `mvn test` → still green. The legacy code is untouched; the abstraction
+   exists in parallel. That is the "expand".
+
+## Milestone 2 — MIGRATE (one item type at a time, green every step)
+
+For each type in this order — `AgedBrie` → `BackstagePass` → `Sulfuras` →
+`Regular` — do the same four moves. The helper lives in `GildedRose.java`, the
+rule class name is the helper's name with the target class from the list.
+
+For each pair:
+
+1. **`move_method`** — tell the audience you are physically moving the
+   behaviour into its own class:
+   ```
+   move_method
+     project_root=/workspace/gilded-rose-demo
+     file=/workspace/gilded-rose-demo/src/main/java/gildedrose/GildedRose.java
+     method=<helper, e.g. updateAgedBrie>
+     target_class=<rule, e.g. AgedBrieUpdater>
+   ```
+   Write the returned `GildedRose.java` and `<Rule>.java` blocks back to disk.
+
+2. **`rename`** the just-moved method to the interface name via
+   `analyze_refactoring` + `refactoring: "rename"`:
+   ```
+   analyze_refactoring
+     project_root=/workspace/gilded-rose-demo
+     file=/workspace/gilded-rose-demo/src/main/java/gildedrose/<Rule>.java
+     method=<helper, e.g. updateAgedBrie>
+     refactoring=rename
+     new_name=update
+   ```
+   Write the returned `<Rule>.java` back to disk. (The move landed a
+   `private void updateAgedBrie(Item)`. Finishing the interface contract is a
+   two-token edit the tool has no operation for: make the class `final` and the
+   method `public` with `@Override`.)
+
+3. **Rewire the dispatcher branch** in `GildedRose.java`: replace
+   `updateAgedBrie(item);` with `new AgedBrieUpdater().update(item);` (same for
+   the other three: `updateBackstagePass`, `updateSulfuras`, `updateNormal`).
+
+4. `mvn test` → green. Show the audience the new rule file briefly.
+
+When all four types are migrated, the dispatcher still uses the name-based
+if/else but every branch now calls a rule's `update`.
+
+## Milestone 3 — CONTRACT (green)
+
+The four legacy helpers in `GildedRose.java` are now dead code. Replace the
+name-string if/else with a true chain iteration over a `List<ItemUpdater>`,
+drop the dead helpers and the three now-unused name constants. `GildedRose.java`
+must end up as:
+
+```java
+package gildedrose;
+
+import java.util.List;
+
+public class GildedRose {
+
+    private final List<ItemUpdater> chain = List.of(
+            new AgedBrieUpdater(),
+            new BackstagePassUpdater(),
+            new SulfurasUpdater(),
+            new RegularUpdater());
+
+    Item[] items;
+
+    public GildedRose(Item[] items) {
+        this.items = items;
+    }
+
+    public void updateQuality() {
+        for (int i = 0; i < items.length; i++) {
+            apply(items[i]);
+        }
+    }
+
+    private void apply(Item item) {
+        for (ItemUpdater updater : chain) {
+            if (updater.canHandle(item)) {
+                updater.update(item);
+                return;
+            }
+        }
+        throw new IllegalStateException("No updater for item: " + item.name);
+    }
+}
+```
+
+## Epilogue — prove equivalence
+
+- `mvn test` → all 13 green, golden master byte-identical, so behaviour is
+  unchanged after the entire migration.
+- Optionally run the fixture: `mvn -q exec:java -Dexec.mainClass=gildedrose.TexttestFixture -Dexec.args=9`
+  and point at how clean `GildedRose` is compared with the start.
+- Accomplish the last mile: trace one item (e.g. an Aged Brie) through the
+  chain: `AgedBrieUpdater.canHandle` answers true → its `update` runs → done;
+  a normal item falls through to the `RegularUpdater` tail.
+
+## Rules of the session
+
+- One refactoring per pull; narrate before you act.
+- Never use `sed`, `awk`, or string-replace to move Java code — only
+  `move_method` / `rename`.
+- New files, the `private → public/@Override/final` contract finishing, and the
+  final dead-code cleanup are the only direct writes; say so when you make one.
+- After every milestone run `mvn test` and report the count (`Tests run: 13`).
+- If a tool returns an error, read it, fix the arguments, retry — do not
+  improvise around the tool.
