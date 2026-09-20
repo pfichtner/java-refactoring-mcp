@@ -12,11 +12,18 @@ package com.github.pfichtner.locator;
  * specific type declaration when the file contains multiple types.
  */
 public sealed interface Locator
-        permits Locator.Position, Locator.MethodName, Locator.FieldName,
+        permits Locator.Position, Locator.LineOnly, Locator.MethodName, Locator.FieldName,
                 Locator.TypeName, Locator.ParameterInMethod, Locator.VariableName {
 
     /** 1-based line and column — the classic position-based locator. */
     record Position(int line, int col) implements Locator {}
+
+    /**
+     * Line-only locator: resolves to the single named declaration at that line.
+     * Fails with an error if the line contains zero or more than one named element —
+     * in those cases use {@link Position} (line + column) or a name-based locator.
+     */
+    record LineOnly(int line) implements Locator {}
 
     /**
      * Method identified by name, with optional param-type list and enclosing class.

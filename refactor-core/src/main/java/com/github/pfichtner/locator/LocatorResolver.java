@@ -32,6 +32,8 @@ public final class LocatorResolver {
         return switch (locator) {
             case Locator.Position(int line, int col) ->
                     JdtRenamer.toOffset(source, line, col);
+            case Locator.LineOnly lo ->
+                    resolveLineOnly(lo.line(), source, unitName);
             case Locator.MethodName mn ->
                     resolveMethod(mn.nameSpec(), mn.className(), source, unitName);
             case Locator.FieldName fn ->
@@ -238,6 +240,39 @@ public final class LocatorResolver {
                     ". Specify parameter types, e.g. '" + base + "(int, int)'");
         }
         return matches.get(0);
+    }
+
+    private static int resolveLineOnly(int line, String source, String unitName) {
+        CompilationUnit cu = parse(source, unitName);
+        List<SimpleName> matches = new ArrayList<>();
+        cu.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(SimpleName node) {
+                if (isDeclarationName(node) && cu.getLineNumber(node.getStartPosition()) == line)
+                    matches.add(node);
+                return true;
+            }
+        });
+        if (matches.isEmpty())
+            throw new IllegalArgumentException(
+                    "No named element at line " + line + " in " + unitName +
+                    ". Use --variable, --method, or another name-based locator.");
+        if (matches.size() > 1)
+            throw new IllegalArgumentException(
+                    "Ambiguous: " + matches.size() + " elements at line " + line +
+                    " in " + unitName + ". Specify --column or a name-based locator.");
+        return matches.get(0).getStartPosition();
+    }
+
+    private static boolean isDeclarationName(SimpleName name) {
+        ASTNode p = name.getParent();
+        if (p instanceof MethodDeclaration md)              return md.getName() == name;
+        if (p instanceof AbstractTypeDeclaration td)        return td.getName() == name;
+        if (p instanceof VariableDeclarationFragment vdf)   return vdf.getName() == name;
+        if (p instanceof SingleVariableDeclaration svd)     return svd.getName() == name;
+        if (p instanceof EnumConstantDeclaration ecd)       return ecd.getName() == name;
+        if (p instanceof AnnotationTypeMemberDeclaration a) return a.getName() == name;
+        return false;
     }
 
     /** Parses {@code "name"} or {@code "name(Type1, Type2)"} into name + optional param list. */

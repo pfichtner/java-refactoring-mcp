@@ -228,6 +228,79 @@ class LocatorResolverTest {
     }
 
     // -------------------------------------------------------------------------
+    // LineOnly
+    // -------------------------------------------------------------------------
+
+    @Test
+    void line_only_resolves_unique_variable() {
+        String source = """
+                public class Calc {
+                    public int compute(int a) {
+                        int result = a * 2;
+                        return result;
+                    }
+                }
+                """;
+        // "result" is the only named declaration on its line
+        int offset = resolve(new Locator.LineOnly(3), source);
+        assertThat(tokenAt(source, offset, 6)).isEqualTo("result");
+    }
+
+    @Test
+    void line_only_resolves_unique_field() {
+        String source = """
+                public class Person {
+                    private String name;
+                    private int age;
+                }
+                """;
+        int offset = resolve(new Locator.LineOnly(2), source);
+        assertThat(tokenAt(source, offset, 4)).isEqualTo("name");
+    }
+
+    @Test
+    void line_only_ambiguous_multiple_declarations_throws() {
+        String source = """
+                public class Calc {
+                    public int compute(int a) {
+                        int i = 0, j = 0;
+                        return i + j;
+                    }
+                }
+                """;
+        // "i" and "j" are both declared on line 3
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> resolve(new Locator.LineOnly(3), source)).actual();
+        assertThat(ex.getMessage()).containsIgnoringCase("ambiguous");
+    }
+
+    @Test
+    void line_only_no_element_throws() {
+        String source = """
+                public class Calc {
+                    // just a comment
+                    public int compute(int a) { return a; }
+                }
+                """;
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> resolve(new Locator.LineOnly(2), source)).actual();
+        assertThat(ex.getMessage()).containsIgnoringCase("no named element");
+    }
+
+    @Test
+    void line_only_ambiguous_method_with_param_throws() {
+        String source = """
+                public class Svc {
+                    public void process(int count) {}
+                }
+                """;
+        // line 2 has both "process" (method) and "count" (parameter)
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> resolve(new Locator.LineOnly(2), source)).actual();
+        assertThat(ex.getMessage()).containsIgnoringCase("ambiguous");
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 

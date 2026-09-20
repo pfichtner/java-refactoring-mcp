@@ -18,7 +18,7 @@ import java.nio.file.Path;
  */
 public class LocatorOptions {
 
-    @ArgGroup(exclusive = false, heading = "Position locator (use with --column):%n")
+    @ArgGroup(exclusive = false, heading = "Position locator (--column optional when line has one element):%n")
     PositionGroup position;
 
     @ArgGroup(exclusive = false, heading = "Name-based locator (alternative to --line/--column):%n")
@@ -29,9 +29,10 @@ public class LocatorOptions {
                 description = "1-based line number of the target element.")
         int line;
 
-        @Option(names = {"--column", "-c"}, required = true,
-                description = "1-based column number of the target element.")
-        int column;
+        @Option(names = {"--column", "-c"},
+                description = "1-based column number of the target element. " +
+                              "Omit if the line contains exactly one named declaration.")
+        Integer column;
     }
 
     static class NameGroup {
@@ -86,6 +87,8 @@ public class LocatorOptions {
         }
 
         if (hasPosition) {
+            if (position.column == null)
+                return new Locator.LineOnly(position.line);
             return new Locator.Position(position.line, position.column);
         }
 

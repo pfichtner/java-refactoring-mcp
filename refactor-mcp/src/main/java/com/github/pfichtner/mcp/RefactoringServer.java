@@ -797,19 +797,21 @@ public class RefactoringServer {
         boolean hasPosition = hasLine || hasCol;
         boolean hasName     = hasMethod || hasField || hasType || hasParameter || hasVariable;
 
+        if (hasCol && !hasLine)
+            throw new IllegalArgumentException("'column' requires 'line' to also be specified.");
+
         if (hasPosition && hasName) {
             throw new IllegalArgumentException(
-                    "Specify either (line + column) OR a name-based locator (method/field/type/variable/parameter), not both.");
+                    "Specify either a position (line / line+column) OR a name-based locator (method/field/type/variable/parameter), not both.");
         }
         if (!hasPosition && !hasName) {
             throw new IllegalArgumentException(
-                    "Specify either (line + column) or a name-based locator (method, field, type, variable, or parameter).");
+                    "Specify either a position (line, or line+column) or a name-based locator (method, field, type, variable, or parameter).");
         }
 
         if (hasPosition) {
-            if (!hasLine || !hasCol) {
-                throw new IllegalArgumentException("Both 'line' and 'column' are required together.");
-            }
+            if (!hasCol)
+                return new Locator.LineOnly(((Number) args.get("line")).intValue());
             return new Locator.Position(
                     ((Number) args.get("line")).intValue(),
                     ((Number) args.get("column")).intValue());
@@ -849,7 +851,7 @@ public class RefactoringServer {
                 .map(p -> p.getFileName().toString())
                 .sorted()
                 .reduce((a, b) -> a + ", " + b).orElse("");
-        sb.append("Changed files (").append(changed.size()).append("): ").append(names).append("\n");
+        sb.append("Would change (").append(changed.size()).append("): ").append(names).append("\n");
         changed.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
                 .forEach(e -> {

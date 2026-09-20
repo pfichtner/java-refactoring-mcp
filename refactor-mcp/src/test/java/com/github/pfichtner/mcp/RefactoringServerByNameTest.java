@@ -117,11 +117,33 @@ class RefactoringServerByNameTest {
     }
 
     @Test
-    void only_line_without_column_throws() {
+    void only_column_without_line_throws() {
         Map<String, Object> args = new java.util.HashMap<>();
-        args.put("line", 1);
-        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> RefactoringServer.resolveOffset(args, "class Foo {}", "Foo.java")).actual();
-        assertThat(ex.getMessage()).containsIgnoringCase("column");
+        args.put("column", 7);
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> RefactoringServer.resolveOffset(args, "class Foo {}", "Foo.java")).actual();
+        assertThat(ex.getMessage()).containsIgnoringCase("line");
+    }
+
+    @Test
+    void line_without_column_resolves_single_element() throws Exception {
+        Map<String, Object> args = new java.util.HashMap<>();
+        args.put("line", 2);
+        // line 2 has exactly one named declaration: the field "count"
+        String source = "class Counter {\n    int count;\n}";
+        int offset = RefactoringServer.resolveOffset(args, source, "Counter.java");
+        assertThat(source.substring(offset, offset + 5)).isEqualTo("count");
+    }
+
+    @Test
+    void line_without_column_ambiguous_throws() {
+        Map<String, Object> args = new java.util.HashMap<>();
+        args.put("line", 3);
+        // line 3 has two variable declarations: i and j
+        String source = "class C {\n    void m() {\n        int i=0, j=0;\n    }\n}";
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> RefactoringServer.resolveOffset(args, source, "C.java")).actual();
+        assertThat(ex.getMessage()).containsIgnoringCase("ambiguous");
     }
 
     @Test
