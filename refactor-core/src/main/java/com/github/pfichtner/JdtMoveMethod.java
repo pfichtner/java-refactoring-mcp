@@ -67,16 +67,13 @@ public class JdtMoveMethod {
 
         String methodName = method.getName().getIdentifier();
         int paramCount = method.parameters().size();
-        for (Object o : targetType.bodyDeclarations()) {
-            if (o instanceof MethodDeclaration md
-                    && !md.isConstructor()
-                    && md.getName().getIdentifier().equals(methodName)
-                    && md.parameters().size() == paramCount) {
-                throw new IllegalArgumentException(
-                        "Class '" + targetClass + "' already declares '"
-                        + methodName + "' with " + paramCount + " parameter(s).");
-            }
-        }
+        if (targetType.bodyDeclarations().stream().anyMatch(o -> o instanceof MethodDeclaration md
+                && !md.isConstructor()
+                && md.getName().getIdentifier().equals(methodName)
+                && md.parameters().size() == paramCount))
+            throw new IllegalArgumentException(
+                    "Class '" + targetClass + "' already declares '"
+                    + methodName + "' with " + paramCount + " parameter(s).");
 
         String rawMethod = source.substring(
                 method.getStartPosition(), method.getStartPosition() + method.getLength());

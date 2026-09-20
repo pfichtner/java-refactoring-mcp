@@ -72,10 +72,8 @@ public class JdtEncapsulateField {
                 fdecl.getType().getStartPosition() + fdecl.getType().getLength());
 
         // Precondition: must not already be private
-        boolean isPrivate = false;
-        for (Object m : fdecl.modifiers()) {
-            if (m instanceof Modifier mod && mod.isPrivate()) { isPrivate = true; break; }
-        }
+        boolean isPrivate = fdecl.modifiers().stream()
+                .anyMatch(m -> m instanceof Modifier mod && mod.isPrivate());
         if (isPrivate) {
             throw new IllegalArgumentException("Field '" + fieldName + "' is already private.");
         }

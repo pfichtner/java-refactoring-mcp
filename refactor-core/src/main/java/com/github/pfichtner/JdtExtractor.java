@@ -101,15 +101,13 @@ public class JdtExtractor {
                     "Selection is not within a statement block.");
         }
 
-        List<Statement> result = new ArrayList<>();
-        for (Object o : block.statements()) {
-            Statement s = (Statement) o;
-            int sEnd = s.getStartPosition() + s.getLength();
-            if (s.getStartPosition() >= selectionStart && sEnd <= selectionEnd) {
-                result.add(s);
-            }
-        }
-        return result;
+        @SuppressWarnings("unchecked")
+        List<Object> stmts = block.statements();
+        return stmts.stream()
+                .map(o -> (Statement) o)
+                .filter(s -> s.getStartPosition() >= selectionStart
+                        && s.getStartPosition() + s.getLength() <= selectionEnd)
+                .collect(Collectors.toList());
     }
 
     // -------------------------------------------------------------------------

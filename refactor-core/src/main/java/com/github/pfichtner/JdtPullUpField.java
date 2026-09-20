@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Headless Pull-Up Field refactoring using JDT ASTParser.
@@ -125,13 +126,10 @@ public class JdtPullUpField {
                 "Field is not a direct member of a class declaration.");
     }
 
-    @SuppressWarnings("unchecked")
     static Set<String> fieldNames(FieldDeclaration fd) {
-        Set<String> names = new LinkedHashSet<>();
-        for (VariableDeclarationFragment frag : (List<VariableDeclarationFragment>) fd.fragments()) {
-            names.add(frag.getName().getIdentifier());
-        }
-        return names;
+        return ((List<?>) fd.fragments()).stream()
+                .map(o -> ((VariableDeclarationFragment) o).getName().getIdentifier())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     static String removeField(String source, FieldDeclaration field) {
@@ -158,10 +156,11 @@ public class JdtPullUpField {
 
     static String insertField(String targetSource, TypeDeclaration targetType, String rawField) {
         // Insert after the last existing field, or just inside the opening brace if none
-        FieldDeclaration lastField = null;
-        for (Object o : targetType.bodyDeclarations()) {
-            if (o instanceof FieldDeclaration fd) lastField = fd;
-        }
+        FieldDeclaration lastField = ((List<?>) targetType.bodyDeclarations()).stream()
+                .filter(o -> o instanceof FieldDeclaration)
+                .map(o -> (FieldDeclaration) o)
+                .reduce((first, second) -> second)
+                .orElse(null);
 
         String reindented = reindent(rawField, "    ");
 
@@ -181,10 +180,11 @@ public class JdtPullUpField {
     }
 
     static TypeDeclaration findPrimaryType(CompilationUnit cu) {
-        for (Object o : cu.types()) {
-            if (o instanceof TypeDeclaration td) return td;
-        }
-        throw new IllegalArgumentException("No type declaration found in source.");
+        return ((List<?>) cu.types()).stream()
+                .filter(o -> o instanceof TypeDeclaration)
+                .map(o -> (TypeDeclaration) o)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("No type declaration found in source."));
     }
 
     static Path findClassFile(JavaProject project, String simpleName)

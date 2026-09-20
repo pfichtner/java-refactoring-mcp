@@ -193,16 +193,19 @@ public class JdtExtractConstant {
         return td;
     }
 
+    @SuppressWarnings("unchecked")
     private static String detectFieldIndent(String source, TypeDeclaration type) {
         // Try to detect indentation from the first existing body declaration
-        for (Object o : type.bodyDeclarations()) {
-            BodyDeclaration bd = (BodyDeclaration) o;
-            int pos = bd.getStartPosition();
-            int lineStart = pos;
-            while (lineStart > 0 && source.charAt(lineStart - 1) != '\n') lineStart--;
-            return source.substring(lineStart, pos);
-        }
-        return "    "; // default: 4 spaces
+        return ((List<Object>) type.bodyDeclarations()).stream()
+                .findFirst()
+                .map(o -> {
+                    BodyDeclaration bd = (BodyDeclaration) o;
+                    int pos = bd.getStartPosition();
+                    int lineStart = pos;
+                    while (lineStart > 0 && source.charAt(lineStart - 1) != '\n') lineStart--;
+                    return source.substring(lineStart, pos);
+                })
+                .orElse("    ");
     }
 
     // -------------------------------------------------------------------------

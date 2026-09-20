@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Headless Introduce Parameter Object refactoring using JDT ASTParser.
@@ -279,34 +281,24 @@ public class JdtIntroduceParameterObject {
         sb.append("public class ").append(className).append(" {\n");
 
         // Fields
-        for (SingleVariableDeclaration p : params) {
-            String typeSrc = typeText(source, p);
-            sb.append("    private final ").append(typeSrc)
-              .append(" ").append(p.getName().getIdentifier()).append(";\n");
-        }
+        sb.append(params.stream()
+                .map(p -> "    private final " + typeText(source, p) + " " + p.getName().getIdentifier() + ";\n")
+                .collect(Collectors.joining()));
 
         // Constructor
         sb.append("\n    public ").append(className).append("(");
-        for (int i = 0; i < params.size(); i++) {
-            if (i > 0) sb.append(", ");
-            SingleVariableDeclaration p = params.get(i);
-            sb.append(typeText(source, p)).append(" ").append(p.getName().getIdentifier());
-        }
+        sb.append(params.stream().map(p -> typeText(source, p) + " " + p.getName().getIdentifier()).collect(Collectors.joining(", ")));
         sb.append(") {\n");
-        for (SingleVariableDeclaration p : params) {
-            String name = p.getName().getIdentifier();
-            sb.append("        this.").append(name).append(" = ").append(name).append(";\n");
-        }
+        sb.append(params.stream()
+                .map(p -> "        this." + p.getName().getIdentifier() + " = " + p.getName().getIdentifier() + ";\n")
+                .collect(Collectors.joining()));
         sb.append("    }\n");
 
         // Getters (one blank line before the block, no blank lines between getters)
         sb.append("\n");
-        for (SingleVariableDeclaration p : params) {
-            String name = p.getName().getIdentifier();
-            sb.append("    public ").append(typeText(source, p))
-              .append(" ").append(getterName(name)).append("() { return ")
-              .append(name).append("; }\n");
-        }
+        sb.append(params.stream()
+                .map(p -> "    public " + typeText(source, p) + " " + getterName(p.getName().getIdentifier()) + "() { return " + p.getName().getIdentifier() + "; }\n")
+                .collect(Collectors.joining()));
 
         sb.append("}\n");
         return sb.toString();
@@ -321,11 +313,7 @@ public class JdtIntroduceParameterObject {
             sb.append("package ").append(packageName).append(";\n\n");
         }
         sb.append("public record ").append(className).append("(");
-        for (int i = 0; i < params.size(); i++) {
-            if (i > 0) sb.append(", ");
-            SingleVariableDeclaration p = params.get(i);
-            sb.append(typeText(source, p)).append(" ").append(p.getName().getIdentifier());
-        }
+        sb.append(params.stream().map(p -> typeText(source, p) + " " + p.getName().getIdentifier()).collect(Collectors.joining(", ")));
         sb.append(") {}\n");
         return sb.toString();
     }
@@ -345,19 +333,15 @@ public class JdtIntroduceParameterObject {
 
     private static Object[] buildWrapEdit(
             String src, List<Expression> args, int first, int last, String className) {
-        StringBuilder text = new StringBuilder("new ").append(className).append("(");
-        for (int i = first; i <= last; i++) {
-            if (i > first) text.append(", ");
-            Expression arg = args.get(i);
-            text.append(src, arg.getStartPosition(), arg.getStartPosition() + arg.getLength());
-        }
-        text.append(")");
+        String text = IntStream.rangeClosed(first, last)
+                .mapToObj(i -> { Expression a = args.get(i); return src.substring(a.getStartPosition(), a.getStartPosition() + a.getLength()); })
+                .collect(Collectors.joining(", "));
         Expression firstArg = args.get(first);
         Expression lastArg  = args.get(last);
         return new Object[]{
                 firstArg.getStartPosition(),
                 lastArg.getStartPosition() + lastArg.getLength(),
-                text.toString()
+                "new " + className + "(" + text + ")"
         };
     }
 

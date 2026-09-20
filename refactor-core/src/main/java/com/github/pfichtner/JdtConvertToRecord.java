@@ -162,12 +162,9 @@ public class JdtConvertToRecord {
             throw new IllegalArgumentException("Cannot convert an interface to a record.");
         }
         String name = type.getName().getIdentifier();
-        for (Object mod : type.modifiers()) {
-            if (mod instanceof Modifier m && m.isAbstract()) {
-                throw new IllegalArgumentException(
-                        "Cannot convert abstract class '" + name + "' to a record.");
-            }
-        }
+        if (type.modifiers().stream().anyMatch(mod -> mod instanceof Modifier m && m.isAbstract()))
+            throw new IllegalArgumentException(
+                    "Cannot convert abstract class '" + name + "' to a record.");
         if (type.getSuperclassType() != null) {
             throw new IllegalArgumentException(
                     "Cannot convert class '" + name + "' to a record: it extends '"
@@ -239,13 +236,14 @@ public class JdtConvertToRecord {
         Set<String> fieldNames = components.stream().map(c -> c.name).collect(Collectors.toSet());
         int fieldCount = components.size();
 
-        for (Object bd : type.bodyDeclarations()) {
-            if (!(bd instanceof MethodDeclaration md) || !md.isConstructor()) continue;
-            if (md.parameters().size() != fieldCount) continue;
-            if (md.getBody() == null) continue;
-            if (collectAssignedFields(md.getBody()).containsAll(fieldNames)) return md;
-        }
-        return null;
+        return ((List<Object>) type.bodyDeclarations()).stream()
+                .filter(bd -> bd instanceof MethodDeclaration md && md.isConstructor()
+                        && md.parameters().size() == fieldCount
+                        && md.getBody() != null
+                        && collectAssignedFields(md.getBody()).containsAll(fieldNames))
+                .map(bd -> (MethodDeclaration) bd)
+                .findFirst()
+                .orElse(null);
     }
 
     @SuppressWarnings("unchecked")
@@ -469,11 +467,13 @@ public class JdtConvertToRecord {
         return result;
     }
 
+    @SuppressWarnings("unchecked")
     private static TypeDeclaration findPrimaryType(CompilationUnit cu) {
-        for (Object o : cu.types()) {
-            if (o instanceof TypeDeclaration td) return td;
-        }
-        throw new IllegalArgumentException("No class declaration found in source.");
+        return ((List<Object>) cu.types()).stream()
+                .filter(o -> o instanceof TypeDeclaration)
+                .map(o -> (TypeDeclaration) o)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("No class declaration found in source."));
     }
 
     private static CompilationUnit parseSimple(String source, String unitName) {

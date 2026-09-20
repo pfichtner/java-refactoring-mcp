@@ -102,15 +102,17 @@ public class JdtRenamePackage {
         }
 
         // 2. Import declarations: replace the package prefix in matching import names
-        for (Object o : cu.imports()) {
-            if (o instanceof ImportDeclaration imp) {
-                String importName = imp.getName().getFullyQualifiedName();
-                if (importName.equals(oldPackage) || importName.startsWith(fqnPrefix)) {
+        ((List<?>) cu.imports()).stream()
+                .filter(o -> o instanceof ImportDeclaration)
+                .map(o -> (ImportDeclaration) o)
+                .filter(imp -> {
+                    String importName = imp.getName().getFullyQualifiedName();
+                    return importName.equals(oldPackage) || importName.startsWith(fqnPrefix);
+                })
+                .forEach(imp -> {
                     int nameStart = imp.getName().getStartPosition();
                     edits.add(new Edit(nameStart, nameStart + oldPackage.length(), newPackage));
-                }
-            }
-        }
+                });
 
         // 3. Fully-qualified code references (QualifiedName nodes outside package/import
         //    declarations), e.g. in field types, local variables, lambdas.

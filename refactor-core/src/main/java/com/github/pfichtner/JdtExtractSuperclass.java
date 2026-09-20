@@ -64,13 +64,11 @@ public class JdtExtractSuperclass {
         }
 
         @SuppressWarnings("unchecked")
-        List<MethodDeclaration> allPublic = new ArrayList<>();
-        for (Object o : typeDecl.bodyDeclarations()) {
-            if (o instanceof MethodDeclaration md
-                    && isPublicNonStatic(md) && !md.isConstructor()) {
-                allPublic.add(md);
-            }
-        }
+        List<MethodDeclaration> allPublic = ((List<Object>) typeDecl.bodyDeclarations()).stream()
+                .filter(o -> o instanceof MethodDeclaration md
+                        && isPublicNonStatic(md) && !md.isConstructor())
+                .map(o -> (MethodDeclaration) o)
+                .collect(Collectors.toList());
         if (allPublic.isEmpty()) {
             throw new IllegalArgumentException(
                     "No public non-static methods found — nothing to move.");
@@ -104,12 +102,10 @@ public class JdtExtractSuperclass {
         StringBuilder superSrc = new StringBuilder();
         superSrc.append(pkg);
         superSrc.append("public abstract class ").append(superclassName).append(" {\n");
-        for (MethodDeclaration m : toMove) {
-            // Re-indent the method body (strip original indentation, add 4 spaces)
-            String methodText = classSource.substring(
-                    m.getStartPosition(), m.getStartPosition() + m.getLength());
-            superSrc.append(reindent(methodText, "    ")).append("\n");
-        }
+        superSrc.append(toMove.stream()
+                .map(m -> reindent(classSource.substring(
+                        m.getStartPosition(), m.getStartPosition() + m.getLength()), "    ") + "\n")
+                .collect(Collectors.joining()));
         superSrc.append("}\n");
 
         // -------------------------------------------------------------------------
@@ -223,10 +219,13 @@ public class JdtExtractSuperclass {
     }
 
     private static TypeDeclaration findPrimaryType(CompilationUnit cu) {
-        for (Object o : cu.types()) {
-            if (o instanceof TypeDeclaration td) return td;
-        }
-        throw new IllegalArgumentException("No type declaration found.");
+        @SuppressWarnings("unchecked")
+        List<Object> types = cu.types();
+        return types.stream()
+                .filter(o -> o instanceof TypeDeclaration)
+                .map(o -> (TypeDeclaration) o)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("No type declaration found."));
     }
 
     private static CompilationUnit parse(String source, String unitName) {

@@ -82,16 +82,13 @@ public class JdtPullUpMethod {
 
         String methodName = method.getName().getIdentifier();
         int paramCount = method.parameters().size();
-        for (Object o : superTypeDecl.bodyDeclarations()) {
-            if (o instanceof MethodDeclaration md
-                    && !md.isConstructor()
-                    && md.getName().getIdentifier().equals(methodName)
-                    && md.parameters().size() == paramCount) {
-                throw new IllegalArgumentException(
-                        "Superclass '" + superSimpleName + "' already declares '"
-                        + methodName + "' with " + paramCount + " parameter(s).");
-            }
-        }
+        if (superTypeDecl.bodyDeclarations().stream().anyMatch(o -> o instanceof MethodDeclaration md
+                && !md.isConstructor()
+                && md.getName().getIdentifier().equals(methodName)
+                && md.parameters().size() == paramCount))
+            throw new IllegalArgumentException(
+                    "Superclass '" + superSimpleName + "' already declares '"
+                    + methodName + "' with " + paramCount + " parameter(s).");
 
         String rawMethod = source.substring(
                 method.getStartPosition(), method.getStartPosition() + method.getLength());
@@ -184,10 +181,11 @@ public class JdtPullUpMethod {
     }
 
     static TypeDeclaration findPrimaryType(CompilationUnit cu) {
-        for (Object o : cu.types()) {
-            if (o instanceof TypeDeclaration td) return td;
-        }
-        throw new IllegalArgumentException("No type declaration found in source.");
+        return ((List<?>) cu.types()).stream()
+                .filter(o -> o instanceof TypeDeclaration)
+                .map(o -> (TypeDeclaration) o)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("No type declaration found in source."));
     }
 
     static String reindent(String text, String newIndent) {

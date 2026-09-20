@@ -65,16 +65,13 @@ public class JdtIntroduceStaticFactory {
         int paramCount = ctor.parameters().size();
 
         // Reject if a method with the same name and param count already exists
-        for (Object o : type.bodyDeclarations()) {
-            if (o instanceof MethodDeclaration md
-                    && !md.isConstructor()
-                    && md.getName().getIdentifier().equals(factoryMethodName)
-                    && md.parameters().size() == paramCount) {
-                throw new IllegalArgumentException(
-                        "Class '" + className + "' already has a method '"
-                        + factoryMethodName + "' with " + paramCount + " parameter(s).");
-            }
-        }
+        if (type.bodyDeclarations().stream().anyMatch(o -> o instanceof MethodDeclaration md
+                && !md.isConstructor()
+                && md.getName().getIdentifier().equals(factoryMethodName)
+                && md.parameters().size() == paramCount))
+            throw new IllegalArgumentException(
+                    "Class '" + className + "' already has a method '"
+                    + factoryMethodName + "' with " + paramCount + " parameter(s).");
 
         // Build the factory method text
         String factoryMethod = buildFactoryMethod(source, ctor, className, factoryMethodName);
@@ -85,9 +82,7 @@ public class JdtIntroduceStaticFactory {
 
         // Call-site replacements inside the source file
         String replacement = className + "." + factoryMethodName;
-        for (int[] site : callSites) {
-            edits.add(new Edit(site[0], site[1], replacement));
-        }
+        callSites.stream().map(site -> new Edit(site[0], site[1], replacement)).forEach(edits::add);
 
         // Optional: make constructor private
         if (makeConstructorPrivate) {
@@ -218,10 +213,11 @@ public class JdtIntroduceStaticFactory {
     }
 
     private static Modifier findPublicModifier(MethodDeclaration method) {
-        for (Object o : method.modifiers()) {
-            if (o instanceof Modifier m && m.isPublic()) return m;
-        }
-        return null;
+        return ((List<?>) method.modifiers()).stream()
+                .filter(o -> o instanceof Modifier m && m.isPublic())
+                .map(o -> (Modifier) o)
+                .findFirst()
+                .orElse(null);
     }
 
     // -------------------------------------------------------------------------
@@ -245,14 +241,9 @@ public class JdtIntroduceStaticFactory {
     // -------------------------------------------------------------------------
 
     private static String indentBlock(String text, String indent) {
-        String[] lines = text.split("\n", -1);
-        StringBuilder out = new StringBuilder();
-        for (int i = 0; i < lines.length; i++) {
-            if (i > 0) out.append("\n");
-            if (!lines[i].isEmpty()) out.append(indent);
-            out.append(lines[i]);
-        }
-        return out.toString();
+        return Arrays.stream(text.split("\n", -1))
+                .map(line -> line.isEmpty() ? line : indent + line)
+                .collect(Collectors.joining("\n"));
     }
 
     // -------------------------------------------------------------------------

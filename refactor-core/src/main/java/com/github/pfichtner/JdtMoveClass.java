@@ -121,16 +121,16 @@ public class JdtMoveClass {
                     List<Edit> edits = new ArrayList<>();
 
                     // Update explicit single-class import
-                    for (Object o : fileCu.imports()) {
-                        if (o instanceof ImportDeclaration imp
-                                && !imp.isOnDemand()
-                                && !imp.isStatic()
-                                && imp.getName().getFullyQualifiedName().equals(oldFqn)) {
-                            Name impName = imp.getName();
-                            edits.add(new Edit(impName.getStartPosition(),
-                                    impName.getStartPosition() + impName.getLength(), newFqn));
-                        }
-                    }
+                    ((List<?>) fileCu.imports()).stream()
+                            .filter(o -> o instanceof ImportDeclaration imp
+                                    && !imp.isOnDemand()
+                                    && !imp.isStatic()
+                                    && imp.getName().getFullyQualifiedName().equals(oldFqn))
+                            .map(o -> {
+                                Name n = ((ImportDeclaration) o).getName();
+                                return new Edit(n.getStartPosition(), n.getStartPosition() + n.getLength(), newFqn);
+                            })
+                            .forEach(edits::add);
 
                     // Update fully-qualified code references (QualifiedName nodes in body)
                     fileCu.accept(new ASTVisitor(true) {
@@ -178,10 +178,11 @@ public class JdtMoveClass {
     }
 
     private static TypeDeclaration findPrimaryType(CompilationUnit cu) {
-        for (Object o : cu.types()) {
-            if (o instanceof TypeDeclaration td) return td;
-        }
-        throw new IllegalArgumentException("No type declaration found in the source.");
+        return ((List<?>) cu.types()).stream()
+                .filter(o -> o instanceof TypeDeclaration)
+                .map(o -> (TypeDeclaration) o)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("No type declaration found in the source."));
     }
 
     private static CompilationUnit parse(String source, String unitName) {

@@ -2,7 +2,6 @@ package com.github.pfichtner;
 
 import org.eclipse.jdt.core.dom.*;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -59,14 +58,12 @@ public class JdtExtractInterface {
         }
 
         @SuppressWarnings("unchecked")
-        List<MethodDeclaration> allMethods = new ArrayList<>();
-        for (Object o : typeDecl.bodyDeclarations()) {
-            if (o instanceof MethodDeclaration md
-                    && isPublicNonStatic(md)
-                    && !md.isConstructor()) {
-                allMethods.add(md);
-            }
-        }
+        List<MethodDeclaration> allMethods = ((List<Object>) typeDecl.bodyDeclarations()).stream()
+                .filter(o -> o instanceof MethodDeclaration md
+                        && isPublicNonStatic(md)
+                        && !md.isConstructor())
+                .map(o -> (MethodDeclaration) o)
+                .collect(Collectors.toList());
 
         if (allMethods.isEmpty()) {
             throw new IllegalArgumentException(
@@ -104,9 +101,9 @@ public class JdtExtractInterface {
         StringBuilder iface = new StringBuilder();
         iface.append(pkg);
         iface.append("public interface ").append(interfaceName).append(" {\n");
-        for (MethodDeclaration m : selected) {
-            iface.append("    ").append(buildSignature(classSource, m)).append(";\n");
-        }
+        iface.append(selected.stream()
+                .map(m -> "    " + buildSignature(classSource, m) + ";\n")
+                .collect(Collectors.joining()));
         iface.append("}\n");
 
         // -------------------------------------------------------------------------
@@ -152,11 +149,9 @@ public class JdtExtractInterface {
         @SuppressWarnings("unchecked") List<TypeParameter> typeParams = m.typeParameters();
         if (!typeParams.isEmpty()) {
             sig.append("<");
-            for (int i = 0; i < typeParams.size(); i++) {
-                if (i > 0) sig.append(", ");
-                TypeParameter tp = typeParams.get(i);
-                sig.append(source, tp.getStartPosition(), tp.getStartPosition() + tp.getLength());
-            }
+            sig.append(typeParams.stream()
+                    .map(tp -> source.substring(tp.getStartPosition(), tp.getStartPosition() + tp.getLength()))
+                    .collect(Collectors.joining(", ")));
             sig.append("> ");
         }
 
@@ -173,22 +168,18 @@ public class JdtExtractInterface {
         // Parameters
         sig.append("(");
         @SuppressWarnings("unchecked") List<SingleVariableDeclaration> params = m.parameters();
-        for (int i = 0; i < params.size(); i++) {
-            if (i > 0) sig.append(", ");
-            SingleVariableDeclaration p = params.get(i);
-            sig.append(source, p.getStartPosition(), p.getStartPosition() + p.getLength());
-        }
+        sig.append(params.stream()
+                .map(p -> source.substring(p.getStartPosition(), p.getStartPosition() + p.getLength()))
+                .collect(Collectors.joining(", ")));
         sig.append(")");
 
         // Throws
         @SuppressWarnings("unchecked") List<Type> thrown = m.thrownExceptionTypes();
         if (!thrown.isEmpty()) {
             sig.append(" throws ");
-            for (int i = 0; i < thrown.size(); i++) {
-                if (i > 0) sig.append(", ");
-                Type t = thrown.get(i);
-                sig.append(source, t.getStartPosition(), t.getStartPosition() + t.getLength());
-            }
+            sig.append(thrown.stream()
+                    .map(t -> source.substring(t.getStartPosition(), t.getStartPosition() + t.getLength()))
+                    .collect(Collectors.joining(", ")));
         }
 
         return sig.toString();
@@ -199,22 +190,18 @@ public class JdtExtractInterface {
     // -------------------------------------------------------------------------
 
     private static boolean isPublicNonStatic(MethodDeclaration m) {
-        for (Object o : m.modifiers()) {
-            if (o instanceof Modifier mod) {
-                if (mod.isStatic()) return false;
-            }
-        }
-        for (Object o : m.modifiers()) {
-            if (o instanceof Modifier mod && mod.isPublic()) return true;
-        }
-        return false;
+        return m.modifiers().stream().noneMatch(o -> o instanceof Modifier mod && mod.isStatic())
+                && m.modifiers().stream().anyMatch(o -> o instanceof Modifier mod && mod.isPublic());
     }
 
     private static TypeDeclaration findPrimaryType(CompilationUnit cu) {
-        for (Object o : cu.types()) {
-            if (o instanceof TypeDeclaration td) return td;
-        }
-        throw new IllegalArgumentException("No type declaration found in the source.");
+        @SuppressWarnings("unchecked")
+        List<Object> types = cu.types();
+        return types.stream()
+                .filter(o -> o instanceof TypeDeclaration)
+                .map(o -> (TypeDeclaration) o)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("No type declaration found in the source."));
     }
 
     private static CompilationUnit parse(String source, String unitName) {

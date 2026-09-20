@@ -273,13 +273,11 @@ public class RefactoringServer {
                                         Path.of((String) args.get("project_root"))),
                                 (String) args.get("old_package"),
                                 (String) args.get("new_package"));
-                        StringBuilder sb = new StringBuilder();
-                        for (FileChange fc : result.changedFiles()) {
-                            sb.append("=== ").append(fc.newPath().getFileName());
-                            if (fc.pathChanged()) sb.append(" (moved from ").append(fc.oldPath().getFileName()).append(")");
-                            sb.append(" ===\n").append(fc.newSource().stripTrailing()).append("\n\n");
-                        }
-                        return ok(sb.toString().stripTrailing());
+                        return ok(result.changedFiles().stream()
+                                .map(fc -> "=== " + fc.newPath().getFileName()
+                                        + (fc.pathChanged() ? " (moved from " + fc.oldPath().getFileName() + ")" : "")
+                                        + " ===\n" + fc.newSource().stripTrailing() + "\n\n")
+                                .collect(Collectors.joining()).stripTrailing());
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }

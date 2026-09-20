@@ -5,6 +5,7 @@ import org.eclipse.jdt.core.dom.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 
 /**
  * Resolves a {@link Locator} to a character offset in a Java source string.
@@ -145,11 +146,9 @@ public final class LocatorResolver {
                 if (parsed.paramTypes() != null && !paramTypesMatch(node, parsed.paramTypes())) return true;
                 @SuppressWarnings("unchecked")
                 List<SingleVariableDeclaration> params = node.parameters();
-                for (SingleVariableDeclaration p : params) {
-                    if (p.getName().getIdentifier().equals(paramName)) {
-                        matches.add(p);
-                    }
-                }
+                params.stream()
+                        .filter(p -> p.getName().getIdentifier().equals(paramName))
+                        .forEach(matches::add);
                 return true;
             }
         });
@@ -238,12 +237,8 @@ public final class LocatorResolver {
     private static boolean paramTypesMatch(MethodDeclaration node, List<String> paramTypes) {
         List<SingleVariableDeclaration> params = node.parameters();
         if (params.size() != paramTypes.size()) return false;
-        for (int i = 0; i < paramTypes.size(); i++) {
-            String expected = paramTypes.get(i).trim();
-            String actual = params.get(i).getType().toString();
-            if (!actual.equals(expected)) return false;
-        }
-        return true;
+        return IntStream.range(0, paramTypes.size())
+                .allMatch(i -> params.get(i).getType().toString().equals(paramTypes.get(i).trim()));
     }
 
     private static MethodDeclaration nameOffset(

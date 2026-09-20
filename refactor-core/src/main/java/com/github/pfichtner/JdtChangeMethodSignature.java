@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Headless Change Method Signature refactoring using JDT ASTParser.
@@ -93,11 +95,8 @@ public class JdtChangeMethodSignature {
                 seen[idx] = true;
             }
             // Check it's not identity
-            boolean isIdentity = true;
-            for (int i = 0; i < paramOrder.length; i++) {
-                if (paramOrder[i] != i) { isIdentity = false; break; }
-            }
-            if (isIdentity) paramOrder = null;
+            int[] order = paramOrder;
+            if (IntStream.range(0, order.length).allMatch(i -> order[i] == i)) paramOrder = null;
         }
 
         if (newReturnType == null && paramOrder == null) {
@@ -126,22 +125,15 @@ public class JdtChangeMethodSignature {
 
         if (paramOrder != null) {
             // Build the new parameter list text
-            String[] paramTexts = new String[paramCount];
-            for (int i = 0; i < paramCount; i++) {
-                SingleVariableDeclaration p = params.get(i);
-                paramTexts[i] = targetSource.substring(
-                        p.getStartPosition(), p.getStartPosition() + p.getLength());
-            }
+            String[] paramTexts = IntStream.range(0, paramCount)
+                    .mapToObj(i -> { var p = params.get(i); return targetSource.substring(p.getStartPosition(), p.getStartPosition() + p.getLength()); })
+                    .toArray(String[]::new);
             // Replace the entire parameter span (first param start → last param end)
             int firstStart = params.get(0).getStartPosition();
             SingleVariableDeclaration last = params.get(paramCount - 1);
             int lastEnd = last.getStartPosition() + last.getLength();
-            StringBuilder newParams = new StringBuilder();
-            for (int i = 0; i < paramOrder.length; i++) {
-                if (i > 0) newParams.append(", ");
-                newParams.append(paramTexts[paramOrder[i]]);
-            }
-            targetEdits.add(new Object[]{firstStart, lastEnd, newParams.toString()});
+            String newParams = Arrays.stream(paramOrder).mapToObj(i -> paramTexts[i]).collect(Collectors.joining(", "));
+            targetEdits.add(new Object[]{firstStart, lastEnd, newParams});
 
             // --- Call site edits (all files) ---
             final int[] finalParamOrder = paramOrder;
@@ -159,21 +151,14 @@ public class JdtChangeMethodSignature {
                         @SuppressWarnings("unchecked")
                         List<Expression> args = node.arguments();
                         if (args.size() != paramCount) return true;
-                        String[] argTexts = new String[paramCount];
-                        for (int i = 0; i < paramCount; i++) {
-                            Expression arg = args.get(i);
-                            argTexts[i] = fileSource.substring(
-                                    arg.getStartPosition(), arg.getStartPosition() + arg.getLength());
-                        }
+                        String[] argTexts = IntStream.range(0, paramCount)
+                                .mapToObj(i -> { var arg = args.get(i); return fileSource.substring(arg.getStartPosition(), arg.getStartPosition() + arg.getLength()); })
+                                .toArray(String[]::new);
                         int firstArgStart = args.get(0).getStartPosition();
                         Expression lastArg = args.get(paramCount - 1);
                         int lastArgEnd = lastArg.getStartPosition() + lastArg.getLength();
-                        StringBuilder newArgs = new StringBuilder();
-                        for (int i = 0; i < finalParamOrder.length; i++) {
-                            if (i > 0) newArgs.append(", ");
-                            newArgs.append(argTexts[finalParamOrder[i]]);
-                        }
-                        edits.add(new Object[]{firstArgStart, lastArgEnd, newArgs.toString()});
+                        String newArgs = Arrays.stream(finalParamOrder).mapToObj(i -> argTexts[i]).collect(Collectors.joining(", "));
+                        edits.add(new Object[]{firstArgStart, lastArgEnd, newArgs});
                         return true;
                     }
                 });

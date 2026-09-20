@@ -52,11 +52,10 @@ public class GradleProject implements JavaProject {
             if (script != null) {
                 Pattern srcDirs = Pattern.compile(
                         "srcDirs\\s*(?:=|\\()\\s*['\"]([^'\"]+)['\"]");
-                Matcher m = srcDirs.matcher(script);
-                while (m.find()) {
-                    Path p = Path.of(m.group(1));
-                    roots.add(p.isAbsolute() ? p : root.resolve(p));
-                }
+                srcDirs.matcher(script).results()
+                        .map(r -> Path.of(r.group(1)))
+                        .map(p -> p.isAbsolute() ? p : root.resolve(p))
+                        .forEach(roots::add);
             }
         } catch (Exception ignored) {
         }
