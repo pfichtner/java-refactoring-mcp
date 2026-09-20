@@ -68,19 +68,19 @@ class ConvertToRecordTest {
     }
 
     @Test
-    void convert_to_record_rejected_when_no_private_final_fields() throws Exception {
+    void convert_to_record_rejected_when_has_non_private_final_fields() throws Exception {
         Path projectRoot   = fixtures.projectPath("projects/convert-to-record");
         MavenProject project = new MavenProject(projectRoot);
         Path mutableFile   = project.sourceRoots().get(0).resolve("com/example/Mutable.java");
         String source      = Files.readString(mutableFile);
 
         IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtConvertToRecord.convertToRecord(project, mutableFile)).actual();
-        assertThat(ex.getMessage()).contains("private final");
+        assertThat(ex.getMessage()).contains("non-private-final field(s)");
 
         Approvals.verify(
-            RenameStoryBoard.titled("Convert to record rejected: no private final fields")
+            RenameStoryBoard.titled("Convert to record rejected: has non-private-final fields")
                 .javaSection("Input: Mutable.java", source)
-                .refactoring("convert to record", "`Mutable` has no private final fields", "")
+                .refactoring("convert to record", "`Mutable` has non-private-final field(s): count", "")
                 .diagnostic(ex.getMessage())
                 .build()
         );

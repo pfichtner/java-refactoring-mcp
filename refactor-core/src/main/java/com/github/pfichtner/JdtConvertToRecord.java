@@ -192,6 +192,7 @@ public class JdtConvertToRecord {
     @SuppressWarnings("unchecked")
     private static List<FieldComponent> collectComponents(String source, TypeDeclaration type) {
         List<FieldComponent> result = new ArrayList<>();
+        List<String> nonPrivateFinalNames = new ArrayList<>();
         for (Object bd : type.bodyDeclarations()) {
             if (!(bd instanceof FieldDeclaration fd)) continue;
             boolean isPrivate = false, isFinal = false;
@@ -201,15 +202,23 @@ public class JdtConvertToRecord {
                     if (m.isFinal())   isFinal   = true;
                 }
             }
-            if (!isPrivate || !isFinal) continue;
-            String typeSrc = source.substring(
-                    fd.getType().getStartPosition(),
-                    fd.getType().getStartPosition() + fd.getType().getLength());
             for (Object frag : fd.fragments()) {
-                if (frag instanceof VariableDeclarationFragment vdf) {
+                if (!(frag instanceof VariableDeclarationFragment vdf)) continue;
+                if (isPrivate && isFinal) {
+                    String typeSrc = source.substring(
+                            fd.getType().getStartPosition(),
+                            fd.getType().getStartPosition() + fd.getType().getLength());
                     result.add(new FieldComponent(typeSrc, vdf.getName().getIdentifier(), fd));
+                } else {
+                    nonPrivateFinalNames.add(vdf.getName().getIdentifier());
                 }
             }
+        }
+        if (!nonPrivateFinalNames.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Class '" + type.getName().getIdentifier()
+                    + "' has non-private-final field(s): " + String.join(", ", nonPrivateFinalNames)
+                    + " — records require all instance fields to be private final.");
         }
         if (result.isEmpty()) {
             throw new IllegalArgumentException(

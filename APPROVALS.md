@@ -218,7 +218,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 |-----------|----------|
 | Convert class to record: Point (getters renamed at call sites) | [→](refactor-core/src/test/java/com/github/pfichtner/ConvertToRecordTest.convert_class_to_record_renames_getter_call_sites.approved.md) |
 | Convert to record rejected: class has extends clause | [→](refactor-core/src/test/java/com/github/pfichtner/ConvertToRecordTest.convert_to_record_rejected_when_class_has_extends.approved.md) |
-| Convert to record rejected: no private final fields | [→](refactor-core/src/test/java/com/github/pfichtner/ConvertToRecordTest.convert_to_record_rejected_when_no_private_final_fields.approved.md) |
+| Convert to record rejected: has non-private-final fields | [→](refactor-core/src/test/java/com/github/pfichtner/ConvertToRecordTest.convert_to_record_rejected_when_has_non_private_final_fields.approved.md) |
 
 ---
 
