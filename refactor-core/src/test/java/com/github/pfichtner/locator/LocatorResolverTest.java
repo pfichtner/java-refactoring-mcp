@@ -208,23 +208,77 @@ class LocatorResolverTest {
                     }
                 }
                 """;
-        int offset = resolve(new Locator.VariableName("result"), source);
+        int offset = resolve(new Locator.VariableName("result", "compute"), source);
         assertThat(tokenAt(source, offset, 6)).isEqualTo("result");
+    }
+
+    @Test
+    void variable_name_scoped_to_method_ignores_same_name_in_other_method() {
+        String source = """
+                public class Calc {
+                    public int compute(int a) {
+                        int result = a * 2;
+                        return result;
+                    }
+                    public int other(int b) {
+                        int result = b + 1;
+                        return result;
+                    }
+                }
+                """;
+        // resolve "result" in compute — offset must point before "other" method starts
+        int offset = resolve(new Locator.VariableName("result", "compute"), source);
+        assertThat(tokenAt(source, offset, 6)).isEqualTo("result");
+        assertThat(offset).isLessThan(source.indexOf("other"));
+    }
+
+    @Test
+    void variable_name_with_method_overload_requires_param_types_when_ambiguous() {
+        String source = """
+                public class Svc {
+                    public void process(int count) {
+                        int result = count * 2;
+                    }
+                    public void process(String label) {
+                        int result = label.length();
+                    }
+                }
+                """;
+        // "process" is ambiguous without param types → resolver must throw
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> resolve(new Locator.VariableName("result", "process"), source)).actual();
+        assertThat(ex.getMessage()).containsIgnoringCase("ambiguous");
+
+        // With param types, resolves unambiguously to the int overload
+        int offset = resolve(new Locator.VariableName("result", "process(int)"), source);
+        assertThat(tokenAt(source, offset, 6)).isEqualTo("result");
+        // Must be inside process(int count), i.e. before process(String label)
+        int secondProcessStart = source.indexOf("process", source.indexOf("process") + 1);
+        assertThat(offset).isLessThan(secondProcessStart);
     }
 
     @Test
     void variable_does_not_match_field() {
         String source = "public class Foo { int val; public void m() { int x = 1; } }";
-        // "val" is a field, should not match VariableName
-        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> resolve(new Locator.VariableName("val"), source)).actual();
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> resolve(new Locator.VariableName("val", "m"), source)).actual();
         assertThat(ex.getMessage()).contains("val");
     }
 
     @Test
     void unknown_variable_throws() {
         String source = "public class Foo { public void m() { int x = 1; } }";
-        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> resolve(new Locator.VariableName("missing"), source)).actual();
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> resolve(new Locator.VariableName("missing", "m"), source)).actual();
         assertThat(ex.getMessage()).contains("missing");
+    }
+
+    @Test
+    void variable_name_unknown_method_throws() {
+        String source = "public class Foo { public void m() { int x = 1; } }";
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> resolve(new Locator.VariableName("x", "noSuchMethod"), source)).actual();
+        assertThat(ex.getMessage()).contains("noSuchMethod");
     }
 
     @Test
@@ -237,8 +291,9 @@ class LocatorResolverTest {
                     }
                 }
                 """;
+        // Two "i" declarations inside the same method → ambiguous even with method scope
         var ex = assertThatExceptionOfType(IllegalArgumentException.class)
-                .isThrownBy(() -> resolve(new Locator.VariableName("i"), source)).actual();
+                .isThrownBy(() -> resolve(new Locator.VariableName("i", "run"), source)).actual();
         assertThat(ex.getMessage()).containsIgnoringCase("ambiguous");
         assertThat(ex.getMessage()).contains("i");
     }

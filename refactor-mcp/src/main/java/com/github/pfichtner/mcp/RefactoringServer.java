@@ -826,15 +826,22 @@ public class RefactoringServer {
             return new Locator.ParameterInMethod((String) args.get("method"), (String) args.get("parameter"));
         }
 
-        int kindCount = (hasMethod ? 1 : 0) + (hasField ? 1 : 0) + (hasType ? 1 : 0) + (hasVariable ? 1 : 0);
+        if (hasVariable) {
+            if (!hasMethod)
+                throw new IllegalArgumentException(
+                        "'variable' requires 'method' to also be specified " +
+                        "(local variables can share names across methods).");
+            return new Locator.VariableName((String) args.get("variable"), (String) args.get("method"));
+        }
+
+        int kindCount = (hasMethod ? 1 : 0) + (hasField ? 1 : 0) + (hasType ? 1 : 0);
         if (kindCount > 1) {
-            throw new IllegalArgumentException("Specify only one of: method, field, type, or variable.");
+            throw new IllegalArgumentException("Specify only one of: method, field, or type.");
         }
 
         if (hasMethod)   return new Locator.MethodName((String) args.get("method"), className);
         if (hasField)    return new Locator.FieldName((String) args.get("field"), className);
         if (hasType)     return new Locator.TypeName((String) args.get("type"));
-        if (hasVariable) return new Locator.VariableName((String) args.get("variable"));
 
         throw new IllegalArgumentException("No valid locator found in arguments.");
     }

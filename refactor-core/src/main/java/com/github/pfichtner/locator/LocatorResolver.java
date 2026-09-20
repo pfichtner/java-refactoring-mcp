@@ -43,7 +43,7 @@ public final class LocatorResolver {
             case Locator.ParameterInMethod pm ->
                     resolveParameter(pm.methodSpec(), pm.paramName(), source, unitName);
             case Locator.VariableName vn ->
-                    resolveVariable(vn.name(), source, unitName);
+                    resolveVariable(vn.name(), vn.methodSpec(), source, unitName);
         };
     }
 
@@ -166,29 +166,49 @@ public final class LocatorResolver {
         return matches.get(0).getName().getStartPosition();
     }
 
-    private static int resolveVariable(String name, String source, String unitName) {
+    private static int resolveVariable(String name, String methodSpec, String source, String unitName) {
+        ParsedName parsed = ParsedName.parse(methodSpec);
         CompilationUnit cu = parse(source, unitName);
-        List<VariableDeclarationFragment> matches = new ArrayList<>();
 
+        // 1. Find the enclosing method/constructor
+        List<MethodDeclaration> methods = new ArrayList<>();
         cu.accept(new ASTVisitor() {
             @Override
-            public boolean visit(VariableDeclarationFragment node) {
-                if (node.getName().getIdentifier().equals(name) &&
-                        !(node.getParent() instanceof FieldDeclaration)) {
-                    matches.add(node);
-                }
+            public boolean visit(MethodDeclaration node) {
+                if (!node.getName().getIdentifier().equals(parsed.name())) return true;
+                if (parsed.paramTypes() != null && !paramTypesMatch(node, parsed.paramTypes())) return true;
+                methods.add(node);
                 return true;
             }
         });
 
-        if (matches.isEmpty()) {
-            throw new IllegalArgumentException("Local variable '" + name + "' not found in " + unitName);
-        }
-        if (matches.size() > 1) {
+        if (methods.isEmpty())
             throw new IllegalArgumentException(
-                    "Ambiguous: multiple local variables named '" + name + "' in " + unitName);
-        }
-        return matches.get(0).getName().getStartPosition();
+                    "Method '" + methodSpec + "' not found in " + unitName);
+        if (methods.size() > 1)
+            throw new IllegalArgumentException(
+                    "Ambiguous: multiple methods named '" + methodSpec + "' in " + unitName +
+                    ". Specify parameter types, e.g. \"" + parsed.name() + "(int, String)\".");
+
+        // 2. Within that method, find the local variable
+        List<VariableDeclarationFragment> vars = new ArrayList<>();
+        methods.get(0).accept(new ASTVisitor() {
+            @Override
+            public boolean visit(VariableDeclarationFragment node) {
+                if (node.getName().getIdentifier().equals(name))
+                    vars.add(node);
+                return true;
+            }
+        });
+
+        if (vars.isEmpty())
+            throw new IllegalArgumentException(
+                    "Local variable '" + name + "' not found in method '" + methodSpec + "' in " + unitName);
+        if (vars.size() > 1)
+            throw new IllegalArgumentException(
+                    "Ambiguous: multiple variables named '" + name + "' in method '" + methodSpec +
+                    "' in " + unitName + ". Use --line or --line/--column to disambiguate.");
+        return vars.get(0).getName().getStartPosition();
     }
 
     // -------------------------------------------------------------------------

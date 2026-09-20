@@ -51,9 +51,11 @@ public sealed interface Locator
     record ParameterInMethod(String methodSpec, String paramName) implements Locator {}
 
     /**
-     * A local variable or field identified by its simple name.
-     * Used by inline-variable / inline-constant when the caller knows the name
-     * but not the position.
+     * A local variable identified by name within a specific method or constructor.
+     * {@code methodSpec} follows the same {@code "name"} or {@code "name(types)"}
+     * syntax as {@link MethodName#nameSpec()} and is mandatory — local variables
+     * with the same name can exist in multiple methods, so file-wide search is
+     * not sensible.
      */
-    record VariableName(String name) implements Locator {}
+    record VariableName(String name, String methodSpec) implements Locator {}
 }

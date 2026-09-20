@@ -99,16 +99,24 @@ public class LocatorOptions {
             return new Locator.ParameterInMethod(name.method, name.parameter);
         }
 
+        if (name.variable != null) {
+            if (name.method == null) {
+                throw new IllegalArgumentException(
+                        "--variable requires --method to also be specified " +
+                        "(local variables can share names across methods).");
+            }
+            return new Locator.VariableName(name.variable, name.method);
+        }
+
         int kindCount = (name.method != null ? 1 : 0) + (name.field != null ? 1 : 0)
-                + (name.type != null ? 1 : 0) + (name.variable != null ? 1 : 0);
+                + (name.type != null ? 1 : 0);
         if (kindCount > 1) {
-            throw new IllegalArgumentException("Specify only one of: --method, --field, --type, or --variable.");
+            throw new IllegalArgumentException("Specify only one of: --method, --field, or --type.");
         }
 
         if (name.method   != null) return new Locator.MethodName(name.method, name.enclosingClass);
         if (name.field    != null) return new Locator.FieldName(name.field, name.enclosingClass);
         if (name.type     != null) return new Locator.TypeName(name.type);
-        if (name.variable != null) return new Locator.VariableName(name.variable);
 
         throw new IllegalArgumentException("No valid locator provided.");
     }

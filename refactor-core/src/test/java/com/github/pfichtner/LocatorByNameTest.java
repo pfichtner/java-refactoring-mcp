@@ -194,7 +194,7 @@ class LocatorByNameTest {
     @Test
     void inline_variable_by_name() throws Exception {
         String source = fixtures.load("inline-var/simple/input/Foo.java");
-        int offset = LocatorResolver.resolve(new Locator.VariableName("x"), source, "Foo.java");
+        int offset = LocatorResolver.resolve(new Locator.VariableName("x", "compute"), source, "Foo.java");
 
         String result = JdtInliner.inlineVariable(source, "Foo.java", offset);
 
