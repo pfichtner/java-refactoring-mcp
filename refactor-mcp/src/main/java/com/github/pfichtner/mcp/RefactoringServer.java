@@ -18,6 +18,7 @@ import com.github.pfichtner.JdtChangeMethodSignature;
 import com.github.pfichtner.JdtDecomposeConditional;
 import com.github.pfichtner.JdtEncapsulateField;
 import com.github.pfichtner.JdtPullUpField;
+import com.github.pfichtner.JdtMoveMethod;
 import com.github.pfichtner.JdtPullUpMethod;
 import com.github.pfichtner.JdtPushDownField;
 import com.github.pfichtner.JdtPushDownMethod;
@@ -78,6 +79,7 @@ public class RefactoringServer {
         server.addTool(renamePackage());
         server.addTool(pullUpMethod());
         server.addTool(pushDownMethod());
+        server.addTool(moveMethod());
         server.addTool(pullUpField());
         server.addTool(pushDownField());
         server.addTool(introduceStaticFactory());
@@ -991,6 +993,54 @@ public class RefactoringServer {
                                 ProjectDetector.detect(
                                         Path.of((String) args.get("project_root"))),
                                 Path.of(file), offset);
+                        StringBuilder sb = new StringBuilder();
+                        changed.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(e ->
+                                sb.append("=== ").append(e.getKey().getFileName()).append(" ===\n")
+                                  .append(e.getValue().stripTrailing()).append("\n\n"));
+                        return ok(sb.toString().stripTrailing());
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
+    }
+
+    // Tool: move_method
+
+    static SyncToolSpecification moveMethod() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("move_method", Map.of(
+                        "type", "object",
+                        "properties", Map.ofEntries(
+                                Map.entry("project_root",  Map.of("type", "string", "description", "Absolute project root (Maven or Gradle).")),
+                                Map.entry("file",          Map.of("type", "string", "description", "Absolute path to the .java file containing the method to move.")),
+                                Map.entry("target_class",  Map.of("type", "string", "description", "Simple name of the target class, e.g. \"Report\".")),
+                                Map.entry("line",          Map.of("type", "integer", "description", "1-based line of the method to move. Use with 'column' OR use 'method' name-based locator.")),
+                                Map.entry("column",        Map.of("type", "integer", "description", "1-based column of the method name. Use with 'line'.")),
+                                Map.entry("method",        Map.of("type", "string",  "description", "Name-based locator: method name, e.g. \"format\" or \"format(Report)\".")),
+                                Map.entry("class",         Map.of("type", "string",  "description", "Optional: scope to a specific class when the file contains multiple types."))
+                        ),
+                        "required", List.of("project_root", "file", "target_class")))
+                        .description("""
+                        Move a method from one class to another class within the project.
+                        The method is removed from the source class and added to the target class.
+                        Target class is located by simple name within the project source roots.
+                        Call sites in other files are not updated.
+                        Returns new source for both the target file and the source file.
+                        Does not write to disk.
+                        """)
+                        .build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        String file = (String) args.get("file");
+                        String targetClass = (String) args.get("target_class");
+                        String source = java.nio.file.Files.readString(Path.of(file));
+                        int offset    = resolveOffset(args, source, Path.of(file).getFileName().toString());
+                        var changed   = JdtMoveMethod.moveMethod(
+                                ProjectDetector.detect(
+                                        Path.of((String) args.get("project_root"))),
+                                Path.of(file), offset, targetClass);
                         StringBuilder sb = new StringBuilder();
                         changed.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(e ->
                                 sb.append("=== ").append(e.getKey().getFileName()).append(" ===\n")

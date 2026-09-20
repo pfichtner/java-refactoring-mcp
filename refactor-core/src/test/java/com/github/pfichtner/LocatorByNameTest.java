@@ -108,6 +108,24 @@ class LocatorByNameTest {
     }
 
     // -------------------------------------------------------------------------
+    // move method by name
+    // -------------------------------------------------------------------------
+
+    @Test
+    void move_method_by_name() throws Exception {
+        Path projectRoot = fixtures.projectPath("projects/move-method");
+        MavenProject project = new MavenProject(projectRoot);
+
+        Path printerFile = project.sourceRoots().get(0).resolve("com/example/Printer.java");
+        String source = Files.readString(printerFile);
+
+        int positionOffset = Fixtures.offsetOf(source, "public String format") + "public String ".length();
+        int namedOffset = LocatorResolver.resolve(new Locator.MethodName("format"), source, "Printer.java");
+
+        assertThat(namedOffset).isEqualTo(positionOffset);
+    }
+
+    // -------------------------------------------------------------------------
     // pull up field by name
     // -------------------------------------------------------------------------
 
