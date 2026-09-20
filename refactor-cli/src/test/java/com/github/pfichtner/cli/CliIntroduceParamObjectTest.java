@@ -55,9 +55,10 @@ class CliIntroduceParamObjectTest {
     void apply_record_writes_record_and_updates_call_sites(@TempDir Path tmp) throws Exception {
         copyTree(FIXTURE_ROOT, tmp);
 
-        Path printerFile = tmp.resolve("src/main/java/com/example/Printer.java");
-        Path coordFile   = tmp.resolve("src/main/java/com/example/Coordinate.java");
-        Path appFile     = tmp.resolve("src/main/java/com/example/App.java");
+        Path srcRoot     = tmp.resolve("src/main/java/com/example");
+        Path printerFile = srcRoot.resolve("Printer.java");
+        Path coordFile   = srcRoot.resolve("Coordinate.java");
+        Path appFile     = srcRoot.resolve("App.java");
 
         StringWriter out = new StringWriter();
         int exit = cli(out).execute(
@@ -70,13 +71,22 @@ class CliIntroduceParamObjectTest {
                 "--record");
 
         assertThat(exit).as("Expected exit code 0: " + out).isEqualTo(0);
-        assertThat(Files.readString(coordFile))
-                .as("Coordinate.java should be a record").contains("record Coordinate(int x, int y)");
-        assertThat(Files.readString(printerFile))
-                .as("Printer.java should use record-style accessors").contains("coordinate.x()");
-        assertThat(Files.readString(appFile))
-                .as("App.java should use canonical constructor")
-                .contains("new Coordinate(");
+        assertThat(coordFile).as("Coordinate.java must be created").exists();
+
+        String snapshot = snapshot(
+                "App.java",     Files.readString(appFile),
+                "Coordinate.java", Files.readString(coordFile),
+                "Printer.java", Files.readString(printerFile));
+        Approvals.verify(snapshot);
+    }
+
+    private static String snapshot(String... nameAndContent) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < nameAndContent.length; i += 2) {
+            sb.append("=== ").append(nameAndContent[i]).append(" ===\n");
+            sb.append(nameAndContent[i + 1].stripTrailing()).append("\n\n");
+        }
+        return sb.toString().stripTrailing();
     }
 
     // -------------------------------------------------------------------------

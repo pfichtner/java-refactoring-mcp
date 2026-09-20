@@ -145,6 +145,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 ### Introduce parameter object
 | Test case | Approval |
 |-----------|----------|
+| Introduce parameter object as record: Printer.print(x,y) → Coordinate | [→](refactor-core/src/test/java/com/github/pfichtner/IntroduceParameterObjectTest.introduce_parameter_object_as_record.approved.md) |
 | Introduce parameter object: Printer.print(x,y) → Coordinate | [→](refactor-core/src/test/java/com/github/pfichtner/IntroduceParameterObjectTest.introduce_parameter_object_creates_class_and_updates_call_sites.approved.md) |
 | Introduce parameter object rejected: fewer than 2 params | [→](refactor-core/src/test/java/com/github/pfichtner/IntroduceParameterObjectTest.introduce_parameter_object_rejected_when_fewer_than_two_params.approved.md) |
 | Introduce parameter object rejected: unknown param name | [→](refactor-core/src/test/java/com/github/pfichtner/IntroduceParameterObjectTest.introduce_parameter_object_rejected_when_param_name_not_found.approved.md) |
@@ -274,6 +275,12 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Test case | Approval |
 |-----------|----------|
 | Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliConvertToRecordTest.dry_run_prints_preview_without_writing.approved.txt) |
+
+### Cli introduce param object
+| Test case | Approval |
+|-----------|----------|
+| Apply record writes record and updates call sites | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliIntroduceParamObjectTest.apply_record_writes_record_and_updates_call_sites.approved.txt) |
+| Dry run record prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliIntroduceParamObjectTest.dry_run_record_prints_preview_without_writing.approved.txt) |
 
 ### Cli locator by name
 | Test case | Approval |
