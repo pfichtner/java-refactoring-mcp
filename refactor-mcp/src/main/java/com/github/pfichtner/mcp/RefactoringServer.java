@@ -14,6 +14,7 @@ import com.github.pfichtner.JdtInliner;
 import com.github.pfichtner.JdtConvertToRecord;
 import com.github.pfichtner.JdtIntroduceParameterObject;
 import com.github.pfichtner.JdtIntroduceStaticFactory;
+import com.github.pfichtner.JdtChangeMethodSignature;
 import com.github.pfichtner.JdtPullUpField;
 import com.github.pfichtner.JdtPullUpMethod;
 import com.github.pfichtner.JdtPushDownField;
@@ -80,6 +81,7 @@ public class RefactoringServer {
         server.addTool(introduceStaticFactory());
         server.addTool(introduceParameterObject());
         server.addTool(convertToRecord());
+        server.addTool(changeMethodSignature());
 
         return server;
     }
@@ -1176,6 +1178,57 @@ public class RefactoringServer {
                         return ok(formatPreview(changed));
                     } catch (IllegalArgumentException e) {
                         return error(e.getMessage());
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
+    }
+
+    // -------------------------------------------------------------------------
+    // Tool: change_method_signature
+    // -------------------------------------------------------------------------
+
+    static SyncToolSpecification changeMethodSignature() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("change_method_signature", Map.of(
+                        "type", "object",
+                        "properties", Map.ofEntries(
+                                Map.entry("project_root",   Map.of("type", "string",  "description", "Absolute project root (Maven or Gradle).")),
+                                Map.entry("file",           Map.of("type", "string",  "description", "Source file containing the method declaration.")),
+                                Map.entry("line",           Map.of("type", "integer", "description", "1-based line of the method name.")),
+                                Map.entry("column",         Map.of("type", "integer", "description", "1-based column of the method name.")),
+                                Map.entry("method",         Map.of("type", "string",  "description", "Name-based locator: method name, e.g. \"convert\" or \"convert(int,String)\".")),
+                                Map.entry("class",          Map.of("type", "string",  "description", "Optional: scope to a specific class when the file contains multiple types.")),
+                                Map.entry("new_return_type",Map.of("type", "string",  "description", "New return type source text (e.g. \"double\"). Omit to leave unchanged.")),
+                                Map.entry("param_order",    Map.of("type", "array", "items", Map.of("type", "integer"),
+                                        "description", "New parameter order as 0-based indices (e.g. [1,0] swaps two params). Omit to leave unchanged."))
+                        ),
+                        "required", List.of("project_root", "file")))
+                        .description("""
+                        Change a method's return type and/or reorder its parameters project-wide.
+                        param_order: integer array where param_order[i] is the original index of the
+                        parameter that should appear at position i. Call sites are updated when
+                        parameters are reordered. Returns changed file contents; does not write to disk.
+                        """)
+                        .build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        Path root = Path.of((String) args.get("project_root"));
+                        Path file = root.resolve((String) args.get("file"));
+                        String source = Files.readString(file);
+                        int offset = resolveOffset(args, source, file.getFileName().toString());
+                        String newReturnType = (String) args.get("new_return_type");
+                        int[] paramOrder = null;
+                        if (args.containsKey("param_order")) {
+                            @SuppressWarnings("unchecked")
+                            List<Number> orderList = (List<Number>) args.get("param_order");
+                            paramOrder = orderList.stream().mapToInt(Number::intValue).toArray();
+                        }
+                        var changed = JdtChangeMethodSignature.changeSignature(
+                                ProjectDetector.detect(root), file, offset, newReturnType, paramOrder);
+                        return ok(formatPreview(changed));
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }

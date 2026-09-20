@@ -261,6 +261,15 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 
 ## Other
 
+### Change method signature
+| Test case | Approval |
+|-----------|----------|
+| Change return type updates declaration only | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.change_return_type_updates_declaration_only.approved.md) |
+| Rejected when nothing to change | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.rejected_when_nothing_to_change.approved.md) |
+| Rejected when param order length wrong | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.rejected_when_param_order_length_wrong.approved.md) |
+| Reorder and return type change applied together | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.reorder_and_return_type_change_applied_together.approved.md) |
+| Reorder params updates declaration and call sites | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.reorder_params_updates_declaration_and_call_sites.approved.md) |
+
 ### Cli convert to record
 | Test case | Approval |
 |-----------|----------|
