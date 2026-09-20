@@ -41,10 +41,12 @@ All operations follow **analyze → apply**: the agent can preview the exact dif
 - Java 21+
 - Maven 3.8+
 
-### 2. Build the MCP server
+### 2. Get the MCP server jar
+
+Either download the prebuilt jar from the [latest release](https://github.com/pfichtner/java-refactoring-mcp/releases) — no build needed — or build it yourself:
 
 ```bash
-git clone https://github.com/your-org/java-refactoring-mcp
+git clone https://github.com/pfichtner/java-refactoring-mcp
 cd java-refactoring-mcp
 mvn package -DskipTests
 ```
@@ -52,7 +54,7 @@ mvn package -DskipTests
 The fat jar lands at:
 
 ```
-refactor-mcp/target/refactor-mcp-0.1.0-SNAPSHOT.jar
+refactor-mcp/target/refactor-mcp-<version>-fat.jar
 ```
 
 Note the absolute path — you will need it in the next step.
@@ -62,7 +64,7 @@ Note the absolute path — you will need it in the next step.
 #### Claude Code
 
 ```bash
-claude mcp add java-refactoring -- java -jar /absolute/path/to/refactor-mcp-0.1.0-SNAPSHOT.jar
+claude mcp add java-refactoring -- java -jar /absolute/path/to/refactor-mcp-0.1.0-SNAPSHOT-fat.jar
 ```
 
 Or add it to `.claude/settings.json` (project-scoped) or `~/.claude/settings.json` (global):
@@ -72,7 +74,7 @@ Or add it to `.claude/settings.json` (project-scoped) or `~/.claude/settings.jso
   "mcpServers": {
     "java-refactoring": {
       "command": "java",
-      "args": ["-jar", "/absolute/path/to/refactor-mcp-0.1.0-SNAPSHOT.jar"]
+      "args": ["-jar", "/absolute/path/to/refactor-mcp-0.1.0-SNAPSHOT-fat.jar"]
     }
   }
 }
@@ -87,7 +89,7 @@ Add to the editor's MCP config file (e.g. `.cursor/mcp.json`):
   "mcpServers": {
     "java-refactoring": {
       "command": "java",
-      "args": ["-jar", "/absolute/path/to/refactor-mcp-0.1.0-SNAPSHOT.jar"]
+      "args": ["-jar", "/absolute/path/to/refactor-mcp-0.1.0-SNAPSHOT-fat.jar"]
     }
   }
 }
@@ -102,7 +104,7 @@ Add to `~/.config/opencode.json`:
   "mcp": {
     "java-refactoring": {
       "command": "java",
-      "args": ["-jar", "/absolute/path/to/refactor-mcp-0.1.0-SNAPSHOT.jar"]
+      "args": ["-jar", "/absolute/path/to/refactor-mcp-0.1.0-SNAPSHOT-fat.jar"]
     }
   }
 }

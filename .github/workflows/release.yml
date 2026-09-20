@@ -1,0 +1,39 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Set release version from tag
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          mvn --batch-mode versions:set "-DnewVersion=${VERSION}" -DgenerateBackupPoms=false
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+      - name: Build with Maven
+        run: mvn --batch-mode verify
+      - name: Compute checksums
+        run: |
+          sha256sum "refactor-mcp/target/refactor-mcp-${VERSION}-fat.jar" > "refactor-mcp/target/refactor-mcp-${VERSION}-fat.jar.sha256"
+          sha256sum "refactor-cli/target/refactor-cli-${VERSION}-fat.jar" > "refactor-cli/target/refactor-cli-${VERSION}-fat.jar.sha256"
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            refactor-mcp/target/refactor-mcp-${{ env.VERSION }}-fat.jar
+            refactor-mcp/target/refactor-mcp-${{ env.VERSION }}-fat.jar.sha256
+            refactor-cli/target/refactor-cli-${{ env.VERSION }}-fat.jar
+            refactor-cli/target/refactor-cli-${{ env.VERSION }}-fat.jar.sha256
