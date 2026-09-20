@@ -3,6 +3,8 @@ package com.github.pfichtner;
 import org.eclipse.jdt.core.dom.*;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * Headless Convert-Anonymous-Class-to-Named-Nested-Class refactoring using JDT ASTParser.
@@ -179,15 +181,12 @@ public class JdtConvertAnonymousToNested {
     // -------------------------------------------------------------------------
 
     private static ClassInstanceCreation findClassInstanceCreationWithAnon(ASTNode node) {
-        ASTNode current = node;
-        while (current != null) {
-            if (current instanceof ClassInstanceCreation cic
-                    && cic.getAnonymousClassDeclaration() != null) {
-                return cic;
-            }
-            current = current.getParent();
-        }
-        return null;
+        return Stream.iterate(node, Objects::nonNull, ASTNode::getParent)
+                .filter(n -> n instanceof ClassInstanceCreation cic
+                        && cic.getAnonymousClassDeclaration() != null)
+                .map(n -> (ClassInstanceCreation) n)
+                .findFirst()
+                .orElse(null);
     }
 
     private static TypeDeclaration findEnclosingNamedType(ASTNode node) {
