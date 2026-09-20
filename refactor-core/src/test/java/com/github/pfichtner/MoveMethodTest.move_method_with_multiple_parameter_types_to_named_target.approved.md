@@ -1,4 +1,4 @@
-# Move method: Printer.format → Report
+# Move method to named target: Printer.byline(Report, Author) → Report
 
 
 ### Input: Printer.java:
@@ -44,8 +44,8 @@ public class Report {
 ```
 
 ### Refactoring:
-**move method** `Printer.format(Report)` → `Report`  
-target: line 5, col 19 in Printer.java
+**move method** `Printer.byline(Report, Author)` → `Report` (not Author)  
+target class named explicitly; line 13, col 19 in Printer.java
 
 ### Output: Printer.java:
 ```java
@@ -53,12 +53,12 @@ package com.example;
 
 public class Printer {
 
-    public String describe(Report report) {
-        return "Length: " + report.title().length();
+    public String format(Report report) {
+        return "Report: " + report.title();
     }
 
-    public String byline(Report report, Author author) {
-        return report.title() + " by " + author.name();
+    public String describe(Report report) {
+        return "Length: " + report.title().length();
     }
 }
 ```
@@ -83,8 +83,8 @@ public class Report {
         return "Length: " + report.title().length();
     }
 
-    public String format(Report report) {
-        return "Report: " + report.title();
+    public String byline(Report report, Author author) {
+        return report.title() + " by " + author.name();
     }
 }
 ```

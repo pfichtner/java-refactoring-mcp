@@ -9,4 +9,8 @@ public class Printer {
     public String describe(Report report) {
         return "Length: " + report.title().length();
     }
+
+    public String byline(Report report, Author author) {
+        return report.title() + " by " + author.name();
+    }
 }

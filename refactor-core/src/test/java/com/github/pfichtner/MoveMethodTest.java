@@ -46,6 +46,36 @@ class MoveMethodTest {
     }
 
     @Test
+    void move_method_with_multiple_parameter_types_to_named_target() throws Exception {
+        // byline(Report, Author) has two candidate parameter types.
+        // The caller names the target explicitly; the API does not guess.
+        Path projectRoot = fixtures.projectPath("projects/move-method");
+        MavenProject project = new MavenProject(projectRoot);
+        Path srcRoot = project.sourceRoots().get(0);
+        Path printerFile = srcRoot.resolve("com/example/Printer.java");
+        Path reportFile  = srcRoot.resolve("com/example/Report.java");
+
+        String printerSource = Files.readString(printerFile);
+        String reportSource  = Files.readString(reportFile);
+
+        int offset = Fixtures.offsetOf(printerSource, "public String byline") + "public String ".length();
+        Map<Path, String> changed = JdtMoveMethod.moveMethod(project, printerFile, offset, "Report");
+
+        assertThat(changed).hasSize(2);
+        assertThat(changed).containsKey(reportFile.toAbsolutePath().normalize());
+        assertThat(changed).containsKey(printerFile.toAbsolutePath().normalize());
+
+        Approvals.verify(
+            RenameStoryBoard.titled("Move method to named target: Printer.byline(Report, Author) → Report")
+                .inputProject(Map.of("Printer.java", printerSource, "Report.java", reportSource))
+                .refactoring("move method", "`Printer.byline(Report, Author)` → `Report` (not Author)",
+                        "target class named explicitly; " + Fixtures.lineCol(printerSource, offset) + " in Printer.java")
+                .outputProject(changed)
+                .build()
+        );
+    }
+
+    @Test
     void reject_target_class_not_found() throws Exception {
         Path projectRoot = fixtures.projectPath("projects/move-method");
         MavenProject project = new MavenProject(projectRoot);
