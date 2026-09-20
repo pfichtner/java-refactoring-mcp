@@ -122,6 +122,48 @@ Once connected the agent sees three tools:
 
 A well-prompted agent will always call `analyze_refactoring` first, show you the diff, and only call `apply_refactoring` after your confirmation.
 
+### Giving your agent standing instructions (skill file)
+
+Repeating "use the MCP tools, never edit `.java` files directly" in every prompt is error-prone — the agent can forget or fall back to text edits on complex tasks.
+A better approach is a **skill file**: a named instruction set the agent loads once and follows throughout the session.
+
+**Claude Code** — create `.claude/skills/java-refactor.md` in your project:
+
+```markdown
+---
+description: Use java-refactoring MCP for all Java changes. Enforces analyze → apply and blocks raw text edits on .java files.
+---
+
+# Java Refactoring
+
+The `java-refactoring` MCP server is connected. Use it for **every change to a `.java` file**.
+Never use Write, Edit, or shell tools (sed, awk, …) to modify Java source directly — those treat
+code as text and miss bindings, overloads, and cross-file references.
+
+## Workflow
+
+1. **Discover** — call `list_refactorings` if unsure which operation fits
+2. **Preview** — call `analyze_refactoring` (dry-run) to verify the diff before writing anything
+3. **Apply** — call the operation tool; one refactoring at a time
+
+## Rules
+
+- Prefer name-based locators (`"method": "add"`) over line/column — they survive edits
+- For overloaded methods include param types: `"method": "add(int, int)"`
+- If no tool covers the needed change, say so and ask rather than falling back to text edits
+```
+
+Then invoke it at the start of a refactoring session:
+
+```
+/java-refactor
+Rename the method `add` in Calculator.java to `plus`. Project root: /home/me/myproject.
+```
+
+The agent loads the skill instructions, then proceeds with `analyze_refactoring` → confirm → `apply_refactoring` without needing further reminders.
+
+Other editors that support system-prompt injection (Cursor, Windsurf, OpenCode, etc.) can embed the same rules as a project-level system prompt in their config.
+
 ### Example prompts
 
 ```
