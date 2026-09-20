@@ -124,6 +124,80 @@ class InlineMethodTest {
     }
 
     // -------------------------------------------------------------------------
+    // Single-file: all occurrences
+    // -------------------------------------------------------------------------
+
+    @Test
+    void inline_all_occurrences_void_method_keeps_declaration() throws Exception {
+        String source = fixtures.load("inline-method/all-occurrences-void/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "greet()");
+
+        String result = JdtInlineMethod.inlineMethod(source, "Foo.java", offset, true, false);
+
+        Approvals.verify(
+            RenameStoryBoard.titled("Inline method: greet() — all occurrences, declaration kept")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`greet()` — all occurrences in file, declaration kept",
+                        "both call sites expanded in-place; greet() declaration stays")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void inline_all_occurrences_returns_expression_keeps_declaration() throws Exception {
+        String source = fixtures.load("inline-method/all-occurrences-returns/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "add(x, y)");
+
+        String result = JdtInlineMethod.inlineMethod(source, "Foo.java", offset, true, false);
+
+        Approvals.verify(
+            RenameStoryBoard.titled("Inline method: add() — all occurrences, declaration kept")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`add(...)` — all occurrences in file, declaration kept",
+                        "both call sites replaced with return expression; add() declaration stays")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void inline_all_occurrences_removes_declaration() throws Exception {
+        String source = fixtures.load("inline-method/all-occurrences-remove-decl/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "greet()");
+
+        String result = JdtInlineMethod.inlineMethod(source, "Foo.java", offset, true, true);
+
+        Approvals.verify(
+            RenameStoryBoard.titled("Inline method: greet() — all occurrences, declaration removed")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`greet()` — all occurrences, declaration removed",
+                        "both call sites expanded; greet() declaration deleted")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void inline_rejected_when_remove_declaration_without_all_occurrences() throws Exception {
+        String source = fixtures.load("inline-method/void-no-params/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "greet()");
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> JdtInlineMethod.inlineMethod(source, "Foo.java", offset, false, true));
+        assertTrue(ex.getMessage().contains("allOccurrences=true"));
+
+        Approvals.verify(
+            RenameStoryBoard.titled("Inline method — rejected: removeDeclaration without allOccurrences")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`greet()` — allOccurrences=false, removeDeclaration=true",
+                        "declaration removal requires all occurrences to be inlined")
+                .diagnostic(ex.getMessage())
+                .build()
+        );
+    }
+
+    // -------------------------------------------------------------------------
 
     @Test
     void inline_rejected_when_body_has_multiple_statements_in_value_context() throws Exception {

@@ -47,10 +47,29 @@ public class JdtInlineMethod {
     // =========================================================================
 
     /**
-     * Inlines the method call at {@code offset} in {@code source}.
+     * Inlines the single method call at {@code offset} in {@code source}.
      * Declaration must be in the same source text.
      */
     public static String inlineMethod(String source, String unitName, int offset) {
+        return inlineMethod(source, unitName, offset, false, false);
+    }
+
+    /**
+     * Inlines the method identified by the call at {@code offset} in {@code source}.
+     *
+     * @param allOccurrences    if {@code true}, every call site in the file is inlined;
+     *                          if {@code false}, only the single call at {@code offset} is inlined
+     * @param removeDeclaration if {@code true}, the method declaration is also deleted
+     *                          (requires {@code allOccurrences = true})
+     */
+    public static String inlineMethod(String source, String unitName, int offset,
+                                      boolean allOccurrences, boolean removeDeclaration) {
+        if (removeDeclaration && !allOccurrences) {
+            throw new IllegalArgumentException(
+                    "removeDeclaration requires allOccurrences=true — "
+                    + "cannot remove declaration when only one call site is inlined.");
+        }
+
         CompilationUnit cu = parseSingle(source, unitName);
 
         MethodInvocation call = findMethodInvocation(cu, offset);
@@ -59,7 +78,8 @@ public class JdtInlineMethod {
             throw new IllegalArgumentException(
                     "Cannot resolve method call at offset " + offset + ".");
         }
-        MethodDeclaration decl = findMethodDeclarationInCu(cu, binding.getMethodDeclaration().getKey());
+        String methodKey = binding.getMethodDeclaration().getKey();
+        MethodDeclaration decl = findMethodDeclarationInCu(cu, methodKey);
         if (decl == null) {
             throw new IllegalArgumentException(
                     "Method '" + binding.getName()
@@ -68,16 +88,46 @@ public class JdtInlineMethod {
         validateDeclaration(decl, binding.getName(), call, cu);
 
         @SuppressWarnings("unchecked") List<Statement> stmts = decl.getBody().statements();
-        Map<String, String> paramMap = buildParamMap(decl, call, source);
 
-        ASTNode callParent = call.getParent();
-        if (callParent instanceof ExpressionStatement callStmt) {
-            Edit e = voidCallEdit(callStmt, source, source, cu, decl, stmts, paramMap);
-            return e.apply(source);
-        } else {
-            Edit e = valueCallEdit(call, source, source, cu, decl, stmts, paramMap);
-            return e.apply(source);
+        if (!allOccurrences) {
+            Map<String, String> paramMap = buildParamMap(decl, call, source);
+            ASTNode callParent = call.getParent();
+            if (callParent instanceof ExpressionStatement callStmt) {
+                Edit e = voidCallEdit(callStmt, source, source, cu, decl, stmts, paramMap);
+                return e.apply(source);
+            } else {
+                Edit e = valueCallEdit(call, source, source, cu, decl, stmts, paramMap);
+                return e.apply(source);
+            }
         }
+
+        List<MethodInvocation> calls = findAllCallSites(cu, methodKey);
+        List<Edit> edits = new ArrayList<>();
+        for (MethodInvocation c : calls) {
+            Map<String, String> paramMap = buildParamMap(decl, c, source);
+            ASTNode parent = c.getParent();
+            if (parent instanceof ExpressionStatement cs) {
+                edits.add(voidCallEdit(cs, source, source, cu, decl, stmts, paramMap));
+            } else {
+                edits.add(valueCallEdit(c, source, source, cu, decl, stmts, paramMap));
+            }
+        }
+
+        if (removeDeclaration) {
+            int mStart = decl.getStartPosition();
+            int mEnd   = mStart + decl.getLength();
+            int lineStart = mStart;
+            while (lineStart > 0 && source.charAt(lineStart - 1) != '\n') lineStart--;
+            int lineEnd = mEnd;
+            while (lineEnd < source.length() && source.charAt(lineEnd) != '\n') lineEnd++;
+            if (lineEnd < source.length()) lineEnd++;
+            edits.add(new Edit(lineStart, lineEnd, ""));
+        }
+
+        edits.sort((a, b) -> b.start() - a.start());
+        StringBuilder sb = new StringBuilder(source);
+        for (Edit ed : edits) sb.replace(ed.start(), ed.end(), ed.replacement());
+        return sb.toString();
     }
 
     // =========================================================================
