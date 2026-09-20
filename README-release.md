@@ -70,10 +70,16 @@ Reported artifacts per release:
    sha256sum -c refactor-mcp-X.Y.Z-fat.jar.sha256
    ```
 
-9. **Bump version after release.** For the next feature cycle, follow step 3
-   with the next version (e.g. `0.1.1`). `main` carries the released version
-   until then — this project does not keep an intermediate `-SNAPSHOT` on
-   `main` between releases.
+9. **Bump back to a snapshot.** Immediately after tagging, move `main` to the
+   next development version:
+   ```bash
+   mvn versions:set -DnewVersion=X.Y.1-SNAPSHOT -DgenerateBackupPoms=false
+   ```
+   Then sync the version-embedded jar names in the docs/configs (same files as
+   step 4) back to `-SNAPSHOT-fat.jar` and commit
+   `chore(release): back to X.Y.1-SNAPSHOT`. `main` always carries a
+   `-SNAPSHOT` version; a released version only ever exists on its tag. At the
+   next release, step 3 simply strips the `-SNAPSHOT` again.
 
 ## What the release workflow does
 

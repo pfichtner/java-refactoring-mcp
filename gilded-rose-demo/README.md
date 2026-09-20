@@ -32,7 +32,7 @@ src/                       # starts pristine; the migration rewrites it
 
 - `opencode` CLI, `asciinema`, Java 21, Maven
 - The refactoring engine MCP server fat jar:
-  `/workspace/refactor-mcp/target/refactor-mcp-0.1.0-fat.jar`
+  `/workspace/refactor-mcp/target/refactor-mcp-0.1.1-SNAPSHOT-fat.jar`
   (build with `mvn package -DskipTests` in `/workspace`)
 
 ## Re-run the migration from a clean slate

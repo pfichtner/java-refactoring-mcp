@@ -64,7 +64,7 @@ Note the absolute path — you will need it in the next step.
 #### Claude Code
 
 ```bash
-claude mcp add java-refactoring -- java -jar /absolute/path/to/refactor-mcp-0.1.0-fat.jar
+claude mcp add java-refactoring -- java -jar /absolute/path/to/refactor-mcp-0.1.1-SNAPSHOT-fat.jar
 ```
 
 Or add it to `.claude/settings.json` (project-scoped) or `~/.claude/settings.json` (global):
@@ -74,7 +74,7 @@ Or add it to `.claude/settings.json` (project-scoped) or `~/.claude/settings.jso
   "mcpServers": {
     "java-refactoring": {
       "command": "java",
-      "args": ["-jar", "/absolute/path/to/refactor-mcp-0.1.0-fat.jar"]
+      "args": ["-jar", "/absolute/path/to/refactor-mcp-0.1.1-SNAPSHOT-fat.jar"]
     }
   }
 }
@@ -89,7 +89,7 @@ Add to the editor's MCP config file (e.g. `.cursor/mcp.json`):
   "mcpServers": {
     "java-refactoring": {
       "command": "java",
-      "args": ["-jar", "/absolute/path/to/refactor-mcp-0.1.0-fat.jar"]
+      "args": ["-jar", "/absolute/path/to/refactor-mcp-0.1.1-SNAPSHOT-fat.jar"]
     }
   }
 }
@@ -104,7 +104,7 @@ Add to `~/.config/opencode.json`:
   "mcp": {
     "java-refactoring": {
       "command": "java",
-      "args": ["-jar", "/absolute/path/to/refactor-mcp-0.1.0-fat.jar"]
+      "args": ["-jar", "/absolute/path/to/refactor-mcp-0.1.1-SNAPSHOT-fat.jar"]
     }
   }
 }

@@ -4,7 +4,7 @@
       "command": "java",
       "args": [
         "-jar",
-        "/home/kasm-user/Projekte/java-refactoring-mcp/refactor-mcp/target/refactor-mcp-0.1.0-fat.jar"
+        "/home/kasm-user/Projekte/java-refactoring-mcp/refactor-mcp/target/refactor-mcp-0.1.1-SNAPSHOT-fat.jar"
       ]
     }
   }

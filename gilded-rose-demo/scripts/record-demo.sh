@@ -10,7 +10,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CAST_DIR="$ROOT/cast"
-JAR=/workspace/refactor-mcp/target/refactor-mcp-0.1.0-fat.jar
+JAR=/workspace/refactor-mcp/target/refactor-mcp-0.1.1-SNAPSHOT-fat.jar
 
 [ -f "$JAR" ] || { echo "fat jar missing — build it first (mvn package -DskipTests in /workspace)"; exit 1; }
 
