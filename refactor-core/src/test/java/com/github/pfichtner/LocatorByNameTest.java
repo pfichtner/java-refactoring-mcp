@@ -16,8 +16,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Approval tests verifying that name-based locators produce identical
- * refactoring results to equivalent position-based locators.
+ * Tests verifying that name-based locators resolve to the same offset as
+ * equivalent position-based locators; refactoring outcome is covered by RenameTest.
  *
  * Each test uses the same fixture project as its position-based counterpart
  * in {@link RenameTest} / pull-up/push-down tests, but identifies the target
@@ -38,19 +38,11 @@ class LocatorByNameTest {
 
         Path calcFile = project.sourceRoots().get(0).resolve("com/example/Calculator.java");
         String source = Files.readString(calcFile);
-        int offset = LocatorResolver.resolve(new Locator.MethodName("add"), source, "Calculator.java");
 
-        Map<Path, String> changed = JdtRenamer.rename(project, calcFile, offset, "plus");
-        Map<String, String> inputs = fixtures.loadProjectSources("projects/rename-method/src/main/java");
+        int positionOffset = Fixtures.offsetOf(source, "public int add") + "public int ".length();
+        int namedOffset = LocatorResolver.resolve(new Locator.MethodName("add"), source, "Calculator.java");
 
-        Approvals.verify(
-            RenameStoryBoard.titled("Rename method by name: add → plus")
-                .inputProject(inputs)
-                .refactoring("rename method", "`Calculator.add` → `Calculator.plus`",
-                        "target: method 'add'")
-                .outputProject(changed)
-                .build()
-        );
+        assertThat(namedOffset).isEqualTo(positionOffset);
     }
 
     // -------------------------------------------------------------------------
@@ -64,19 +56,11 @@ class LocatorByNameTest {
 
         Path personFile = project.sourceRoots().get(0).resolve("com/example/Person.java");
         String source = Files.readString(personFile);
-        int offset = LocatorResolver.resolve(new Locator.FieldName("name"), source, "Person.java");
 
-        Map<Path, String> changed = JdtRenamer.rename(project, personFile, offset, "fullName");
-        Map<String, String> inputs = fixtures.loadProjectSources("projects/rename-field/src/main/java");
+        int positionOffset = Fixtures.offsetOf(source, "public String name") + "public String ".length();
+        int namedOffset = LocatorResolver.resolve(new Locator.FieldName("name"), source, "Person.java");
 
-        Approvals.verify(
-            RenameStoryBoard.titled("Rename field by name: name → fullName")
-                .inputProject(inputs)
-                .refactoring("rename field", "`Person.name` → `Person.fullName`",
-                        "target: field 'name'")
-                .outputProject(changed)
-                .build()
-        );
+        assertThat(namedOffset).isEqualTo(positionOffset);
     }
 
     // -------------------------------------------------------------------------
@@ -90,19 +74,11 @@ class LocatorByNameTest {
 
         Path rectFile = project.sourceRoots().get(0).resolve("com/example/Rectangle.java");
         String source = Files.readString(rectFile);
-        int offset = LocatorResolver.resolve(new Locator.TypeName("Rectangle"), source, "Rectangle.java");
 
-        Map<Path, String> changed = JdtRenamer.rename(project, rectFile, offset, "Rect");
-        Map<String, String> inputs = fixtures.loadProjectSources("projects/rename-type/src/main/java");
+        int positionOffset = Fixtures.offsetOf(source, "class Rectangle") + "class ".length();
+        int namedOffset = LocatorResolver.resolve(new Locator.TypeName("Rectangle"), source, "Rectangle.java");
 
-        Approvals.verify(
-            RenameStoryBoard.titled("Rename type by name: Rectangle → Rect")
-                .inputProject(inputs)
-                .refactoring("rename type", "`Rectangle` → `Rect`",
-                        "target: type 'Rectangle'")
-                .outputProject(changed)
-                .build()
-        );
+        assertThat(namedOffset).isEqualTo(positionOffset);
     }
 
     // -------------------------------------------------------------------------
