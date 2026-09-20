@@ -1,5 +1,6 @@
 package com.github.pfichtner.mcp;
 
+import com.github.pfichtner.JdtConvertAnonymousToNested;
 import com.github.pfichtner.JdtExtractConstant;
 import com.github.pfichtner.JdtMoveClass;
 import com.github.pfichtner.JdtRenamePackage;
@@ -89,7 +90,8 @@ public class RefactoringServer {
                         convertToRecord(),
                         changeMethodSignature(),
                         encapsulateField(),
-                        decomposeConditional()
+                        decomposeConditional(),
+                        convertAnonymousToNested()
                 )
                 .build();
     }
@@ -1383,6 +1385,38 @@ public class RefactoringServer {
                         int offset = resolveOffset(args, source, file.getFileName().toString());
                         String result = JdtDecomposeConditional.decomposeConditional(
                                 source, file.getFileName().toString(), offset, methodName);
+                        return ok(result);
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
+    }
+
+    // Tool: convert_anonymous_to_nested
+    static SyncToolSpecification convertAnonymousToNested() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("convert_anonymous_to_nested", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                                "file",              Map.of("type", "string", "description", "Source file (absolute or relative to project_root)"),
+                                "line",              Map.of("type", "integer", "description", "1-based line inside the anonymous class"),
+                                "column",            Map.of("type", "integer", "description", "1-based column inside the anonymous class"),
+                                "nested_class_name", Map.of("type", "string",  "description", "Simple name for the new nested class")
+                        ),
+                        "required", List.of("file", "line", "column", "nested_class_name")
+                ))
+                .description("Convert an anonymous class at the given position to a private named nested class.")
+                .build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        Path file         = Path.of((String) args.get("file"));
+                        String source     = Files.readString(file);
+                        int offset        = resolveOffset(args, source, file.getFileName().toString());
+                        String nestedName = (String) args.get("nested_class_name");
+                        String result     = JdtConvertAnonymousToNested.convert(
+                                source, file.getFileName().toString(), offset, nestedName);
                         return ok(result);
                     } catch (Exception e) {
                         return error(e.getMessage());

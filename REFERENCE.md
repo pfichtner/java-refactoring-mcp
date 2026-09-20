@@ -506,7 +506,16 @@ A well-prompted agent will call `analyze_refactoring` first (dry-run), show you 
 | M22 | Change method signature (param reorder + return type) — **implemented** |
 | M23 | Encapsulate field (getter/setter + project-wide access rewrite) — **implemented** |
 | M24 | Decompose conditional (extract condition into named boolean method) — **implemented** |
-| M25+ | Abstract method, introduce null object, replace conditional with polymorphism, … |
+| M25 | Convert anonymous class → named nested class (`ConvertAnonymousToNestedRefactoring`) |
+| M26 | Convert nested/member type → top-level class in its own file (`ConvertMemberTypeToTopLevelRefactoring`) |
+| M27 | Promote local variable → field (`PromoteTempToFieldRefactoring`) |
+| M28 | Move static member (method or field) to another class (`MoveStaticMembersRefactoring`) |
+| M29 | Introduce indirection — add a delegating wrapper method (`IntroduceIndirectionRefactoring`) |
+| M30 | Use supertype where possible — broaden declared types to a supertype (`UseSupertypeWherePossibleRefactoring`) |
+| M31 | Generalize declared type — widen a variable's declared type (`GeneralizeTypeRefactoring`) |
+| M32 | Infer generic type arguments — add missing `<T>` parameters (`InferTypeArgumentsRefactoring`) |
+| M33 | Extract class from fields — group selected fields into a new value object (`ExtractClassRefactoring`) |
+| M34 | Rename type parameter — rename a generic type parameter `<T>` (`RenameTypeParameterRefactoring`) |
 
 ## Design Principles
 
