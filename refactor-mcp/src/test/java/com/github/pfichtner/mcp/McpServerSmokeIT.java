@@ -8,6 +8,8 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -22,7 +24,17 @@ class McpServerSmokeIT {
     void mcp_server_responds_to_initialize_and_lists_rename_tool() throws Exception {
         Path fatJar = Path.of(System.getProperty("fat.jar"));
 
-        Process proc = new ProcessBuilder("java", "-jar", fatJar.toString())
+        List<String> command = new ArrayList<>();
+        command.add("java");
+        String jacocoArgs = System.getProperty("jacoco.args");
+        if (jacocoArgs != null && !jacocoArgs.isBlank()) {
+            for (String token : jacocoArgs.trim().split("\\s+")) {
+                command.add(forwardJacocoDestfile(token));
+            }
+        }
+        command.add("-jar");
+        command.add(fatJar.toString());
+        Process proc = new ProcessBuilder(command)
                 .redirectError(ProcessBuilder.Redirect.DISCARD)
                 .start();
         try {
@@ -45,5 +57,18 @@ class McpServerSmokeIT {
             proc.destroy();
             proc.waitFor(5, TimeUnit.SECONDS);
         }
+    }
+
+    private static String forwardJacocoDestfile(String agentToken) {
+        if (System.getProperty("jacoco.destfile") == null) {
+            return agentToken;
+        }
+        int idx = agentToken.indexOf("destfile=");
+        if (idx < 0) {
+            return agentToken;
+        }
+        int end = agentToken.indexOf(',', idx);
+        return agentToken.substring(0, idx) + "destfile=" + System.getProperty("jacoco.destfile")
+                + (end >= 0 ? agentToken.substring(end) : "");
     }
 }
