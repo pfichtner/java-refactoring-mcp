@@ -15,6 +15,7 @@ import com.github.pfichtner.JdtConvertToRecord;
 import com.github.pfichtner.JdtIntroduceParameterObject;
 import com.github.pfichtner.JdtIntroduceStaticFactory;
 import com.github.pfichtner.JdtChangeMethodSignature;
+import com.github.pfichtner.JdtDecomposeConditional;
 import com.github.pfichtner.JdtEncapsulateField;
 import com.github.pfichtner.JdtPullUpField;
 import com.github.pfichtner.JdtPullUpMethod;
@@ -84,6 +85,7 @@ public class RefactoringServer {
         server.addTool(convertToRecord());
         server.addTool(changeMethodSignature());
         server.addTool(encapsulateField());
+        server.addTool(decomposeConditional());
 
         return server;
     }
@@ -1273,6 +1275,44 @@ public class RefactoringServer {
                         var changed = JdtEncapsulateField.encapsulateField(
                                 ProjectDetector.detect(root), file, offset, generateSetter);
                         return ok(formatPreview(changed));
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
+    }
+
+    // -------------------------------------------------------------------------
+    // Tool: decompose_conditional
+    // -------------------------------------------------------------------------
+
+    static SyncToolSpecification decomposeConditional() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("decompose_conditional", Map.of(
+                        "type", "object",
+                        "properties", Map.ofEntries(
+                                Map.entry("file",        Map.of("type", "string",  "description", "Absolute path to the source file.")),
+                                Map.entry("line",        Map.of("type", "integer", "description", "1-based line within the boolean condition.")),
+                                Map.entry("column",      Map.of("type", "integer", "description", "1-based column within the condition.")),
+                                Map.entry("method_name", Map.of("type", "string",  "description", "Name for the extracted boolean method (e.g. 'isAdultPremium')."))
+                        ),
+                        "required", List.of("file", "method_name")))
+                        .description("""
+                        Extract a compound boolean condition from an if/while/for statement
+                        into a private boolean method. Single-file operation.
+                        Returns the modified source; does not write to disk.
+                        """)
+                        .build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        Path file = Path.of((String) args.get("file"));
+                        String source = Files.readString(file);
+                        String methodName = (String) args.get("method_name");
+                        int offset = resolveOffset(args, source, file.getFileName().toString());
+                        String result = JdtDecomposeConditional.decomposeConditional(
+                                source, file.getFileName().toString(), offset, methodName);
+                        return ok(result);
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }

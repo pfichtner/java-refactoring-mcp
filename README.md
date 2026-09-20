@@ -26,6 +26,9 @@ AI coding agents are great at reading and generating Java — but they edit sour
 | Introduce static factory | Project-wide (all `new` call sites) |
 | Introduce parameter object | Project-wide |
 | Convert class to record | Project-wide (accessor call sites renamed) |
+| Change method signature (reorder params / return type) | Project-wide for param reorder; declaration-only for return type |
+| Encapsulate field (getter + optional setter) | Project-wide (all read/write access sites rewritten) |
+| Decompose conditional | Single file (extracts condition into named boolean method) |
 
 All operations follow **analyze → apply**: the agent can preview the exact diff before writing anything to disk.
 

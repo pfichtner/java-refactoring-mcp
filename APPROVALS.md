@@ -280,6 +280,14 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 |-----------|----------|
 | Dry run by method name prints preview | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliLocatorByNameTest.dry_run_by_method_name_prints_preview.approved.txt) |
 
+### Decompose conditional
+| Test case | Approval |
+|-----------|----------|
+| Decompose conditional: if (age >= 18 && premium) → isAdultPremium() | [→](refactor-core/src/test/java/com/github/pfichtner/DecomposeConditionalTest.decompose_if_condition_into_method.approved.md) |
+| Decompose conditional: while (count < max && max > 0) → shouldContinue() | [→](refactor-core/src/test/java/com/github/pfichtner/DecomposeConditionalTest.decompose_while_condition_into_method.approved.md) |
+| Decompose conditional rejected: condition is too simple (single name) | [→](refactor-core/src/test/java/com/github/pfichtner/DecomposeConditionalTest.rejected_when_condition_is_simple_name.approved.md) |
+| Decompose conditional rejected: method already exists | [→](refactor-core/src/test/java/com/github/pfichtner/DecomposeConditionalTest.rejected_when_method_already_exists.approved.md) |
+
 ### Encapsulate field
 | Test case | Approval |
 |-----------|----------|

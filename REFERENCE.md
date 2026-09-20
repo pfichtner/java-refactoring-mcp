@@ -503,7 +503,10 @@ A well-prompted agent will call `analyze_refactoring` first (dry-run), show you 
 
 | Milestone | Description |
 |-----------|-------------|
-| M22+ | abstract method, … |
+| M22 | Change method signature (param reorder + return type) — **implemented** |
+| M23 | Encapsulate field (getter/setter + project-wide access rewrite) — **implemented** |
+| M24 | Decompose conditional (extract condition into named boolean method) — **implemented** |
+| M25+ | Abstract method, introduce null object, replace conditional with polymorphism, … |
 
 ## Design Principles
 
