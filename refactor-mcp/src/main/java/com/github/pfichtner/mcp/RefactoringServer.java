@@ -2,6 +2,7 @@ package com.github.pfichtner.mcp;
 
 import com.github.pfichtner.JdtConvertAnonymousToNested;
 import com.github.pfichtner.JdtConvertNestedToTopLevel;
+import com.github.pfichtner.JdtMoveStaticMember;
 import com.github.pfichtner.JdtPromoteToField;
 import com.github.pfichtner.JdtExtractConstant;
 import com.github.pfichtner.JdtMoveClass;
@@ -95,7 +96,8 @@ public class RefactoringServer {
                         decomposeConditional(),
                         convertAnonymousToNested(),
                         convertNestedToTopLevel(),
-                        promoteToField()
+                        promoteToField(),
+                        moveStaticMember()
                 )
                 .build();
     }
@@ -1422,6 +1424,44 @@ public class RefactoringServer {
                         String result     = JdtConvertAnonymousToNested.convert(
                                 source, file.getFileName().toString(), offset, nestedName);
                         return ok(result);
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
+    }
+
+    // Tool: move_static_member
+    static SyncToolSpecification moveStaticMember() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("move_static_member", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                                "project_root",   Map.of("type", "string",  "description", "Absolute path to the Maven project root"),
+                                "file",           Map.of("type", "string",  "description", "Source file containing the static member (absolute path)"),
+                                "line",           Map.of("type", "integer", "description", "1-based line of the static member"),
+                                "column",         Map.of("type", "integer", "description", "1-based column of the static member"),
+                                "target_class",   Map.of("type", "string",  "description", "Simple name of the target class")
+                        ),
+                        "required", List.of("project_root", "file", "line", "column", "target_class")
+                ))
+                .description("Move a static method or static field to another class and update call sites.")
+                .build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        Path projectRoot  = Path.of((String) args.get("project_root"));
+                        Path file         = Path.of((String) args.get("file"));
+                        String source     = Files.readString(file);
+                        int offset        = resolveOffset(args, source, file.getFileName().toString());
+                        String target     = (String) args.get("target_class");
+                        var project = new com.github.pfichtner.project.MavenProject(projectRoot);
+                        java.util.Map<java.nio.file.Path, String> changed =
+                                JdtMoveStaticMember.moveStaticMember(project, file, offset, target);
+                        StringBuilder sb = new StringBuilder();
+                        changed.forEach((p, src) ->
+                                sb.append("=== ").append(p.getFileName()).append(" ===\n").append(src).append("\n"));
+                        return ok(sb.toString());
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }
