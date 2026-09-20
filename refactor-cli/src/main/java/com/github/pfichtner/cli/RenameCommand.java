@@ -1,5 +1,6 @@
 package com.github.pfichtner.cli;
 
+import com.github.pfichtner.FileChange;
 import com.github.pfichtner.JdtRenamer;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
@@ -10,7 +11,8 @@ import picocli.CommandLine.Model.CommandSpec;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 /**
@@ -52,7 +54,7 @@ public class RenameCommand implements Callable<Integer> {
         String source = Files.readString(absFile);
         int offset = locator.resolveOffset(source, absFile.getFileName().toString());
 
-        Map<Path, String> changed = JdtRenamer.rename(
+        List<FileChange> changed = JdtRenamer.rename(
                 project.resolve(absFile), absFile, offset, newName);
 
         if (dryRun) {
@@ -63,39 +65,46 @@ public class RenameCommand implements Callable<Integer> {
         return 0;
     }
 
-    private void printDryRun(Map<Path, String> changed) {
+    private void printDryRun(List<FileChange> changed) {
         var out = spec.commandLine().getOut();
         out.println("Dry run — no files written.");
         if (changed.isEmpty()) {
             out.println("No changes.");
             return;
         }
-        String names = changed.keySet().stream()
-                .map(p -> p.getFileName().toString())
+        String names = changed.stream()
+                .map(fc -> fc.newPath().getFileName().toString())
                 .sorted()
                 .reduce((a, b) -> a + ", " + b).orElse("");
         out.println("Would change (" + changed.size() + "): " + names);
-        changed.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
-                .forEach(e -> {
+        changed.stream()
+                .sorted(Comparator.comparing(fc -> fc.newPath().toString()))
+                .forEach(fc -> {
                     out.println();
-                    out.println("=== " + e.getKey().getFileName() + " ===");
-                    out.println(e.getValue().stripTrailing());
+                    out.println("=== " + fc.newPath().getFileName() + " ===");
+                    out.println(fc.newSource().stripTrailing());
                 });
     }
 
-    private void applyChanges(Map<Path, String> changed) throws IOException {
+    private void applyChanges(List<FileChange> changed) throws IOException {
         var out = spec.commandLine().getOut();
         if (changed.isEmpty()) {
             out.println("No changes.");
             return;
         }
-        for (Map.Entry<Path, String> entry : changed.entrySet()) {
-            Files.writeString(entry.getKey(), entry.getValue());
+        for (FileChange fc : changed) {
+            Files.createDirectories(fc.newPath().getParent());
+            Files.writeString(fc.newPath(), fc.newSource());
+            if (fc.pathChanged()) Files.deleteIfExists(fc.oldPath());
         }
         out.println("Renamed in " + changed.size() + " file(s):");
-        changed.keySet().stream()
-                .sorted()
-                .forEach(p -> out.println("  " + p.getFileName()));
+        changed.stream()
+                .sorted(Comparator.comparing(fc -> fc.newPath().toString()))
+                .forEach(fc -> {
+                    if (fc.pathChanged())
+                        out.println("  " + fc.oldPath().getFileName() + " → " + fc.newPath().getFileName());
+                    else
+                        out.println("  " + fc.newPath().getFileName());
+                });
     }
 }

@@ -31,12 +31,6 @@ import java.util.List;
  */
 public class JdtRenamePackage {
 
-    /** A file whose source and/or location changed. */
-    public record FileChange(Path oldPath, Path newPath, String newSource) {
-        /** {@code true} when the file also moves to a new directory. */
-        public boolean pathChanged() { return !oldPath.equals(newPath); }
-    }
-
     public record Result(List<FileChange> changedFiles) {}
 
     /**

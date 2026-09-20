@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -37,7 +38,7 @@ class RenameEdgeCaseTest {
         // "compute(int a, int b)" first occurrence (NOT the 3-arg version)
         int offset = Fixtures.offsetOf(source, "compute(int a, int b)");
 
-        Map<Path, String> changed = JdtRenamer.rename(project, overloadedFile, offset, "add");
+        var changed = JdtRenamer.rename(project, overloadedFile, offset, "add");
 
         Map<String, String> inputs = fixtures.loadProjectSources(
                 "projects/rename-overloaded/src/main/java");
@@ -65,7 +66,7 @@ class RenameEdgeCaseTest {
 
         int offset = Fixtures.offsetOf(source, "void speak") + "void ".length();
 
-        Map<Path, String> changed = JdtRenamer.rename(project, animalFile, offset, "makeSound");
+        var changed = JdtRenamer.rename(project, animalFile, offset, "makeSound");
 
         Map<String, String> inputs = fixtures.loadProjectSources(
                 "projects/rename-inheritance/src/main/java");
@@ -94,7 +95,7 @@ class RenameEdgeCaseTest {
 
         int offset = Fixtures.offsetOf(source, "getValue") ;
 
-        Map<Path, String> changed = JdtRenamer.rename(project, containerFile, offset, "get");
+        var changed = JdtRenamer.rename(project, containerFile, offset, "get");
 
         Map<String, String> inputs = fixtures.loadProjectSources(
                 "projects/rename-generics/src/main/java");
@@ -122,7 +123,7 @@ class RenameEdgeCaseTest {
 
         int offset = Fixtures.offsetOf(source, "square");
 
-        Map<Path, String> changed = JdtRenamer.rename(project, calcFile, offset, "squared");
+        var changed = JdtRenamer.rename(project, calcFile, offset, "squared");
 
         Map<String, String> inputs = fixtures.loadProjectSources(
                 "projects/rename-lambda/src/main/java");
@@ -150,7 +151,7 @@ class RenameEdgeCaseTest {
 
         int offset = Fixtures.offsetOf(source, "Greeter");
 
-        Map<Path, String> changed = JdtRenamer.rename(project, greeterFile, offset, "HelloService");
+        var changed = JdtRenamer.rename(project, greeterFile, offset, "HelloService");
 
         Map<String, String> inputs = fixtures.loadProjectSources(
                 "projects/rename-javadoc-type/src/main/java");
@@ -161,6 +162,7 @@ class RenameEdgeCaseTest {
                 .refactoring("rename type", "`Greeter` → `HelloService`",
                         "{@link Greeter} and @see Greeter in App.java Javadoc must be updated")
                 .outputProject(changed)
+                .filesystemSection(changed)
                 .build()
         );
     }
@@ -174,7 +176,7 @@ class RenameEdgeCaseTest {
 
         int offset = Fixtures.offsetOf(source, "compute");
 
-        Map<Path, String> changed = JdtRenamer.rename(project, calcFile, offset, "add");
+        var changed = JdtRenamer.rename(project, calcFile, offset, "add");
 
         Map<String, String> inputs = fixtures.loadProjectSources(
                 "projects/rename-javadoc-method/src/main/java");
@@ -203,7 +205,7 @@ class RenameEdgeCaseTest {
         // Target: Task.execute() — the interface declaration
         int offset = Fixtures.offsetOf(source, "void execute") + "void ".length();
 
-        Map<Path, String> changed = JdtRenamer.rename(project, runnerFile, offset, "perform");
+        var changed = JdtRenamer.rename(project, runnerFile, offset, "perform");
 
         Map<String, String> inputs = fixtures.loadProjectSources(
                 "projects/rename-anonymous/src/main/java");

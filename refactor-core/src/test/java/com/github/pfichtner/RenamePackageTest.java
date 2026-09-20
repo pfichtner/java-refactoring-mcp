@@ -53,7 +53,7 @@ class RenamePackageTest {
         JdtRenamePackage.Result result = JdtRenamePackage.renamePackage(
                 project, "com.example.service", "com.example.util");
 
-        JdtRenamePackage.FileChange calcChange = result.changedFiles().stream()
+        FileChange calcChange = result.changedFiles().stream()
                 .filter(fc -> fc.oldPath().getFileName().toString().equals("Calculator.java"))
                 .findFirst().orElseThrow();
 
@@ -68,7 +68,7 @@ class RenamePackageTest {
         JdtRenamePackage.Result result = JdtRenamePackage.renamePackage(
                 project, "com.example.service", "com.example.util");
 
-        JdtRenamePackage.FileChange appChange = result.changedFiles().stream()
+        FileChange appChange = result.changedFiles().stream()
                 .filter(fc -> fc.oldPath().getFileName().toString().equals("App.java"))
                 .findFirst().orElseThrow();
 

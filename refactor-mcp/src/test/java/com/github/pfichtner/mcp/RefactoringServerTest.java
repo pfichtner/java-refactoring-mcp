@@ -91,8 +91,10 @@ class RefactoringServerTest {
         );
 
         var changed = RefactoringServer.executeRename(args);
-        for (var entry : changed.entrySet()) {
-            Files.writeString(entry.getKey(), entry.getValue());
+        for (var fc : changed) {
+            Files.createDirectories(fc.newPath().getParent());
+            Files.writeString(fc.newPath(), fc.newSource());
+            if (fc.pathChanged()) Files.deleteIfExists(fc.oldPath());
         }
         String summary = RefactoringServer.formatSummary(changed);
 

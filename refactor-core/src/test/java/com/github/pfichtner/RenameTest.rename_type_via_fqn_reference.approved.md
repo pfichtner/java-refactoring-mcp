@@ -50,7 +50,7 @@ public class App {
 }
 ```
 
-### Output: Rectangle.java:
+### Output: Rect.java:
 ```java
 package com.example.service;
 
@@ -68,3 +68,6 @@ public class Rect {
     }
 }
 ```
+
+### Filesystem:
+- `Rectangle.java` → `Rect.java`

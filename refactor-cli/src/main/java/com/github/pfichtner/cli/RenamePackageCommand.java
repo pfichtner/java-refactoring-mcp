@@ -1,5 +1,6 @@
 package com.github.pfichtner.cli;
 
+import com.github.pfichtner.FileChange;
 import com.github.pfichtner.JdtRenamePackage;
 import com.github.pfichtner.project.JavaProject;
 import com.github.pfichtner.project.ProjectDetector;
@@ -43,14 +44,14 @@ public class RenamePackageCommand implements Callable<Integer> {
         var out = spec.commandLine().getOut();
         if (dryRun) {
             out.println("Dry run — no files written.");
-            for (JdtRenamePackage.FileChange fc : result.changedFiles()) {
+            for (FileChange fc : result.changedFiles()) {
                 if (fc.pathChanged()) out.println(" MOVE " + fc.oldPath().getFileName() + " → " + fc.newPath());
                 else out.println(" UPDATE " + fc.oldPath().getFileName());
                 out.println(fc.newSource().stripTrailing());
                 out.println();
             }
         } else {
-            for (JdtRenamePackage.FileChange fc : result.changedFiles()) {
+            for (FileChange fc : result.changedFiles()) {
                 Files.createDirectories(fc.newPath().getParent());
                 Files.writeString(fc.newPath(), fc.newSource());
                 if (fc.pathChanged()) Files.deleteIfExists(fc.oldPath());

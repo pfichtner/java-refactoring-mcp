@@ -1,9 +1,11 @@
 package com.github.pfichtner.support;
 
+import com.github.pfichtner.FileChange;
 import org.approvaltests.MarkdownStoryBoard;
 
 import java.nio.file.Path;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -67,6 +69,35 @@ public class RefactoringStoryBoard {
                 .forEach(e -> board.addCustomMarkdown(
                         "\n\n### Output: " + e.getKey().getFileName() + ":\n```java\n"
                         + e.getValue().stripTrailing() + "\n```"));
+        return this;
+    }
+
+    /**
+     * Adds one {@code ### Output: filename:} java block per changed file (using new path),
+     * sorted by new filename.
+     */
+    public RefactoringStoryBoard outputProject(List<FileChange> changes) {
+        changes.stream()
+                .sorted(Comparator.comparing(fc -> fc.newPath().getFileName().toString()))
+                .forEach(fc -> board.addCustomMarkdown(
+                        "\n\n### Output: " + fc.newPath().getFileName() + ":\n```java\n"
+                        + fc.newSource().stripTrailing() + "\n```"));
+        return this;
+    }
+
+    /**
+     * Adds a {@code ### Filesystem:} section listing files whose path changed (e.g. class rename).
+     * No-op when no paths changed.
+     */
+    public RefactoringStoryBoard filesystemSection(List<FileChange> changes) {
+        List<FileChange> moved = changes.stream().filter(FileChange::pathChanged).toList();
+        if (moved.isEmpty()) return this;
+        StringBuilder sb = new StringBuilder();
+        moved.stream()
+                .sorted(Comparator.comparing(fc -> fc.oldPath().getFileName().toString()))
+                .forEach(fc -> sb.append("- `").append(fc.oldPath().getFileName())
+                        .append("` → `").append(fc.newPath().getFileName()).append("`\n"));
+        board.addCustomMarkdown("\n\n### Filesystem:\n" + sb.toString().stripTrailing());
         return this;
     }
 

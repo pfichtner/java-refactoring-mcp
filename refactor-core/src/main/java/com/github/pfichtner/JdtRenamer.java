@@ -36,12 +36,13 @@ public class JdtRenamer {
      * @param sourceFile file containing the target symbol (must be inside the project)
      * @param offset     character offset of any character within the name to rename
      * @param newName    the replacement identifier
-     * @return map of {@code path → new source} for every changed file;
-     *         paths are absolute and normalised
+     * @return list of {@link FileChange} for every changed file;
+     *         paths are absolute and normalised; when a public type is renamed
+     *         the entry's {@code newPath} reflects the new filename
      * @throws IllegalArgumentException if the binding cannot be resolved or the
      *                                  element type is not supported
      */
-    public static Map<Path, String> rename(
+    public static List<FileChange> rename(
             JavaProject project, Path sourceFile, int offset, String newName)
             throws IOException, InterruptedException {
 
@@ -71,7 +72,7 @@ public class JdtRenamer {
 
         validateRenameTarget(binding, offset);
 
-        Map<Path, String> changed = new LinkedHashMap<>();
+        List<FileChange> changed = new ArrayList<>();
         for (Map.Entry<Path, CompilationUnit> entry : cus.entrySet()) {
             Path filePath = entry.getKey();
             CompilationUnit cu = entry.getValue();
@@ -87,7 +88,8 @@ public class JdtRenamer {
                 Document doc = new Document(sources.get(filePath));
                 TextEdit edits = rewrite.rewriteAST(doc, null);
                 edits.apply(doc);
-                changed.put(filePath, doc.get());
+                Path newPath = computeNewPath(binding, targetName, filePath, absTarget, newName);
+                changed.add(new FileChange(filePath, newPath, doc.get()));
             } catch (Exception e) {
                 throw new RuntimeException("Failed to apply rename in " + filePath, e);
             }
@@ -103,14 +105,25 @@ public class JdtRenamer {
     public static String renameLocalVariable(
             JavaProject project, Path sourceFile, int offset, String newName)
             throws IOException, InterruptedException {
-        Map<Path, String> changed = rename(project, sourceFile, offset, newName);
+        List<FileChange> changed = rename(project, sourceFile, offset, newName);
         Path abs = sourceFile.toAbsolutePath().normalize();
-        String result = changed.get(abs);
-        if (result == null) {
-            throw new IllegalStateException(
-                    "Rename produced no change in " + sourceFile.getFileName());
+        return changed.stream()
+                .filter(fc -> fc.oldPath().equals(abs))
+                .map(FileChange::newSource)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(
+                        "Rename produced no change in " + sourceFile.getFileName()));
+    }
+
+    private static Path computeNewPath(
+            IBinding binding, SimpleName targetName, Path filePath, Path absTarget, String newName) {
+        if (binding instanceof ITypeBinding && filePath.equals(absTarget)) {
+            String oldFileName = filePath.getFileName().toString();
+            if (oldFileName.equals(targetName.getIdentifier() + ".java")) {
+                return filePath.resolveSibling(newName + ".java");
+            }
         }
-        return result;
+        return filePath;
     }
 
     /**

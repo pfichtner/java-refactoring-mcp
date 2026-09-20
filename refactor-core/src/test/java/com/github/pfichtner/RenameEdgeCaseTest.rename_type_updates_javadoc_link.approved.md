@@ -54,7 +54,7 @@ public class App {
 }
 ```
 
-### Output: Greeter.java:
+### Output: HelloService.java:
 ```java
 package com.example;
 
@@ -64,3 +64,6 @@ public class HelloService {
     }
 }
 ```
+
+### Filesystem:
+- `Greeter.java` → `HelloService.java`

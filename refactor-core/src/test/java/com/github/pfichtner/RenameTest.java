@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -125,7 +126,7 @@ class RenameTest {
         String source = Files.readString(personFile);
         int offset = Fixtures.offsetOf(source, "public String name") + "public String ".length();
 
-        Map<Path, String> changed = JdtRenamer.rename(project, personFile, offset, "fullName");
+        var changed = JdtRenamer.rename(project, personFile, offset, "fullName");
 
         Map<String, String> inputs = fixtures.loadProjectSources(
                 "projects/rename-field/src/main/java");
@@ -151,7 +152,7 @@ class RenameTest {
         String source = Files.readString(calcFile);
         int offset = Fixtures.offsetOf(source, "public int add") + "public int ".length();
 
-        Map<Path, String> changed = JdtRenamer.rename(project, calcFile, offset, "plus");
+        var changed = JdtRenamer.rename(project, calcFile, offset, "plus");
 
         Map<String, String> inputs = fixtures.loadProjectSources(
                 "projects/rename-method/src/main/java");
@@ -177,7 +178,7 @@ class RenameTest {
         String source = Files.readString(rectFile);
         int offset = Fixtures.offsetOf(source, "class Rectangle") + "class ".length();
 
-        Map<Path, String> changed = JdtRenamer.rename(project, rectFile, offset, "Rect");
+        var changed = JdtRenamer.rename(project, rectFile, offset, "Rect");
 
         Map<String, String> inputs = fixtures.loadProjectSources(
                 "projects/rename-type/src/main/java");
@@ -188,6 +189,7 @@ class RenameTest {
                 .refactoring("rename type", "`Rectangle` → `Rect`",
                         "target: " + Fixtures.lineCol(source, offset) + " in Rectangle.java")
                 .outputProject(changed)
+                .filesystemSection(changed)
                 .build()
         );
     }
@@ -203,7 +205,7 @@ class RenameTest {
         String source = Files.readString(rectFile);
         int offset = Fixtures.offsetOf(source, "class Rectangle") + "class ".length();
 
-        Map<Path, String> changed = JdtRenamer.rename(project, rectFile, offset, "Rect");
+        var changed = JdtRenamer.rename(project, rectFile, offset, "Rect");
 
         Map<String, String> inputs = fixtures.loadProjectSources(
                 "projects/rename-type-fqn/src/main/java");
@@ -215,6 +217,7 @@ class RenameTest {
                         "`com.example.service.Rectangle` → `com.example.service.Rect`",
                         "target: " + Fixtures.lineCol(source, offset) + " in Rectangle.java")
                 .outputProject(changed)
+                .filesystemSection(changed)
                 .build()
         );
     }

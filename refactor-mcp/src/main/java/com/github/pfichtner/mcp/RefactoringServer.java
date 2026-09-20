@@ -22,6 +22,7 @@ import com.github.pfichtner.JdtMoveMethod;
 import com.github.pfichtner.JdtPullUpMethod;
 import com.github.pfichtner.JdtPushDownField;
 import com.github.pfichtner.JdtPushDownMethod;
+import com.github.pfichtner.FileChange;
 import com.github.pfichtner.JdtRenamer;
 import com.github.pfichtner.locator.Locator;
 import com.github.pfichtner.locator.LocatorResolver;
@@ -38,6 +39,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -175,8 +177,10 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var changed = executeRename(request.arguments());
-                        for (var entry : changed.entrySet()) {
-                            Files.writeString(entry.getKey(), entry.getValue());
+                        for (FileChange fc : changed) {
+                            Files.createDirectories(fc.newPath().getParent());
+                            Files.writeString(fc.newPath(), fc.newSource());
+                            if (fc.pathChanged()) Files.deleteIfExists(fc.oldPath());
                         }
                         return ok(formatSummary(changed));
                     } catch (Exception e) {
@@ -269,7 +273,7 @@ public class RefactoringServer {
                                 (String) args.get("old_package"),
                                 (String) args.get("new_package"));
                         StringBuilder sb = new StringBuilder();
-                        for (JdtRenamePackage.FileChange fc : result.changedFiles()) {
+                        for (FileChange fc : result.changedFiles()) {
                             sb.append("=== ").append(fc.newPath().getFileName());
                             if (fc.pathChanged()) sb.append(" (moved from ").append(fc.oldPath().getFileName()).append(")");
                             sb.append(" ===\n").append(fc.newSource().stripTrailing()).append("\n\n");
@@ -753,7 +757,7 @@ public class RefactoringServer {
     // Shared engine call
     // -------------------------------------------------------------------------
 
-    static Map<Path, String> executeRename(Map<String, Object> args)
+    static List<FileChange> executeRename(Map<String, Object> args)
             throws Exception {
         String projectRoot = (String) args.get("project_root");
         String file        = (String) args.get("file");
@@ -870,12 +874,37 @@ public class RefactoringServer {
         return sb.toString();
     }
 
-    static String formatSummary(Map<Path, String> changed) {
+    static String formatPreview(List<FileChange> changed) {
+        if (changed.isEmpty()) return "No changes.";
+        var sb = new StringBuilder();
+        sb.append("Dry run — no files written.\n");
+        String names = changed.stream()
+                .map(fc -> fc.newPath().getFileName().toString())
+                .sorted()
+                .reduce((a, b) -> a + ", " + b).orElse("");
+        sb.append("Would change (").append(changed.size()).append("): ").append(names).append("\n");
+        changed.stream()
+                .sorted(Comparator.comparing(fc -> fc.newPath().toString()))
+                .forEach(fc -> {
+                    sb.append("\n=== ").append(fc.newPath().getFileName()).append(" ===\n");
+                    sb.append(fc.newSource().stripTrailing()).append("\n");
+                });
+        return sb.toString();
+    }
+
+    static String formatSummary(List<FileChange> changed) {
         if (changed.isEmpty()) return "No changes.";
         var sb = new StringBuilder();
         sb.append("Renamed in ").append(changed.size()).append(" file(s):\n");
-        changed.keySet().stream().sorted()
-                .forEach(p -> sb.append("  ").append(p.getFileName()).append("\n"));
+        changed.stream()
+                .sorted(Comparator.comparing(fc -> fc.newPath().toString()))
+                .forEach(fc -> {
+                    if (fc.pathChanged())
+                        sb.append("  ").append(fc.oldPath().getFileName())
+                          .append(" → ").append(fc.newPath().getFileName()).append("\n");
+                    else
+                        sb.append("  ").append(fc.newPath().getFileName()).append("\n");
+                });
         return sb.toString();
     }
 

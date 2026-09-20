@@ -60,8 +60,11 @@ class RefactoringServerByNameTest {
 
         // Both approaches should produce identical output for every changed file
         assertThat(resultByName.size()).as("Same number of changed files expected").isEqualTo(resultByPosition.size());
-        for (Path p : resultByPosition.keySet()) {
-            assertThat(resultByName.get(p)).as("Content mismatch for " + p.getFileName()).isEqualTo(resultByPosition.get(p));
+        for (int i = 0; i < resultByPosition.size(); i++) {
+            var fcByPos  = resultByPosition.get(i);
+            var fcByName = resultByName.get(i);
+            assertThat(fcByName.oldPath()).as("Path mismatch for entry " + i).isEqualTo(fcByPos.oldPath());
+            assertThat(fcByName.newSource()).as("Content mismatch for " + fcByPos.oldPath().getFileName()).isEqualTo(fcByPos.newSource());
         }
     }
 
