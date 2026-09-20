@@ -394,7 +394,7 @@ mvn package -DskipTests
 The fat jar is at:
 
 ```
-refactor-mcp/target/refactor-mcp-0.1.0-SNAPSHOT.jar
+refactor-mcp/target/refactor-mcp-0.1.0-fat.jar
 ```
 
 Use the absolute path to this jar in every config below.
@@ -408,7 +408,7 @@ Use the absolute path to this jar in every config below.
 One-liner:
 
 ```bash
-claude mcp add java-refactoring -- java -jar /absolute/path/to/refactor-mcp-0.1.0-SNAPSHOT.jar
+claude mcp add java-refactoring -- java -jar /absolute/path/to/refactor-mcp-0.1.0-fat.jar
 ```
 
 Or add it manually to `.claude/settings.json` (project-scoped) or `~/.claude/settings.json` (global):
@@ -418,7 +418,7 @@ Or add it manually to `.claude/settings.json` (project-scoped) or `~/.claude/set
   "mcpServers": {
     "java-refactoring": {
       "command": "java",
-      "args": ["-jar", "/absolute/path/to/refactor-mcp-0.1.0-SNAPSHOT.jar"]
+      "args": ["-jar", "/absolute/path/to/refactor-mcp-0.1.0-fat.jar"]
     }
   }
 }
@@ -433,7 +433,7 @@ Add to `~/.config/opencode.json`:
   "mcp": {
     "java-refactoring": {
       "command": "java",
-      "args": ["-jar", "/absolute/path/to/refactor-mcp-0.1.0-SNAPSHOT.jar"]
+      "args": ["-jar", "/absolute/path/to/refactor-mcp-0.1.0-fat.jar"]
     }
   }
 }
@@ -448,7 +448,7 @@ Most editors that support MCP use the same `mcpServers` schema. Add to the edito
   "mcpServers": {
     "java-refactoring": {
       "command": "java",
-      "args": ["-jar", "/absolute/path/to/refactor-mcp-0.1.0-SNAPSHOT.jar"]
+      "args": ["-jar", "/absolute/path/to/refactor-mcp-0.1.0-fat.jar"]
     }
   }
 }
