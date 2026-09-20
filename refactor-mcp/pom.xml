@@ -51,6 +51,9 @@
             </testResource>
             <testResource>
                 <directory>../refactor-core/src/test/resources</directory>
+                <excludes>
+                    <exclude>META-INF/**</exclude>
+                </excludes>
             </testResource>
         </testResources>
         <plugins>
