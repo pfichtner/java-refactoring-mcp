@@ -1,5 +1,13 @@
 # java-refactoring-mcp
 
+[![License](https://img.shields.io/github/license/pfichtner/java-refactoring-mcp)](https://github.com/pfichtner/java-refactoring-mcp/blob/main/LICENSE)
+[![Java](https://img.shields.io/badge/java-21-orange)](https://github.com/pfichtner/java-refactoring-mcp)
+[![Maven](https://img.shields.io/badge/maven-3.8%2B-red.svg)](http://maven.apache.org)
+[![Build](https://github.com/pfichtner/java-refactoring-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/pfichtner/java-refactoring-mcp/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/pfichtner/java-refactoring-mcp)](https://github.com/pfichtner/java-refactoring-mcp/releases)
+[![Codecov](https://codecov.io/gh/pfichtner/java-refactoring-mcp/graph/badge.svg)](https://codecov.io/gh/pfichtner/java-refactoring-mcp)
+[![Powered by Eclipse JDT](https://img.shields.io/badge/powered%20by-Eclipse%20JDT-00a3e0)](https://eclipse.dev/jdt/)
+
 **The IDE your coding agent never had** — semantic Java refactoring for AI agents.
 
 AI coding agents are great at reading and generating Java — but they edit source files as plain text. When you ask an agent to rename a method, it searches for strings; when you ask it to move a class, it guesses import paths. On small files this works. On real projects it breaks.
