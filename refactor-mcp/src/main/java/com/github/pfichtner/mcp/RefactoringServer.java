@@ -61,6 +61,7 @@ public class RefactoringServer {
         server.addTool(applyRefactoring());
         server.addTool(extractMethod());
         server.addTool(inlineVariable());
+        server.addTool(inlineConstant());
         server.addTool(extractVariable());
         server.addTool(inlineMethod());
         server.addTool(extractConstant());
@@ -687,6 +688,49 @@ public class RefactoringServer {
                         int offset    = JdtRenamer.toOffset(source, line, col);
                         String result = JdtInliner.inlineVariable(
                                 source, Path.of(file).getFileName().toString(), offset);
+                        return ok(result);
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
+    }
+
+    // -------------------------------------------------------------------------
+    // Tool: inline_constant
+    // -------------------------------------------------------------------------
+
+    static SyncToolSpecification inlineConstant() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("inline_constant", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                                "file",               Map.of("type", "string",  "description", "Absolute path to the source file."),
+                                "line",               Map.of("type", "integer", "description", "1-based line number of the constant reference or declaration."),
+                                "column",             Map.of("type", "integer", "description", "1-based column number of the constant name."),
+                                "all_occurrences",    Map.of("type", "boolean", "description", "Replace all references in the file (default: only the reference at line/column)."),
+                                "remove_declaration", Map.of("type", "boolean", "description", "Also delete the field declaration (requires all_occurrences=true).")
+                        ),
+                        "required", List.of("file", "line", "column")))
+                        .description("""
+                        Inline a static final constant: replace one or all references with its
+                        initializer expression, and optionally remove the field declaration.
+                        Returns the rewritten source; does not write to disk.
+                        """)
+                        .build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        String file    = (String) args.get("file");
+                        int line       = ((Number) args.get("line")).intValue();
+                        int col        = ((Number) args.get("column")).intValue();
+                        boolean allOcc = Boolean.TRUE.equals(args.get("all_occurrences"));
+                        boolean removeDecl = Boolean.TRUE.equals(args.get("remove_declaration"));
+
+                        String source = Files.readString(Path.of(file));
+                        int offset    = JdtRenamer.toOffset(source, line, col);
+                        String result = JdtInliner.inlineConstant(
+                                source, Path.of(file).getFileName().toString(), offset, allOcc, removeDecl);
                         return ok(result);
                     } catch (Exception e) {
                         return error(e.getMessage());

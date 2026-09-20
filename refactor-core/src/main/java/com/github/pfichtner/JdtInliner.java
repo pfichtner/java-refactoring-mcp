@@ -103,9 +103,111 @@ public class JdtInliner {
         return sb.toString();
     }
 
+    /**
+     * Inlines a {@code static final} constant at {@code offset} and returns the rewritten source.
+     *
+     * @param source            full source text
+     * @param unitName          file name for binding resolution (e.g. {@code "Foo.java"})
+     * @param offset            character offset of any character within the constant name (use or declaration)
+     * @param allOccurrences    if {@code true}, every reference in the file is replaced;
+     *                          if {@code false}, only the single reference at {@code offset} is replaced
+     * @param removeDeclaration if {@code true}, the {@code FieldDeclaration} is also deleted
+     *                          (requires {@code allOccurrences = true})
+     * @return rewritten source
+     * @throws IllegalArgumentException if the inline cannot be performed safely
+     */
+    public static String inlineConstant(String source, String unitName, int offset,
+                                        boolean allOccurrences, boolean removeDeclaration) {
+        if (removeDeclaration && !allOccurrences) {
+            throw new IllegalArgumentException(
+                    "removeDeclaration requires allOccurrences=true — "
+                    + "cannot remove declaration when only one occurrence is inlined.");
+        }
+
+        CompilationUnit cu = parse(source, unitName);
+        SimpleName target = findSimpleName(cu, offset);
+
+        IBinding binding = target.resolveBinding();
+        if (!(binding instanceof IVariableBinding vb)) {
+            throw new IllegalArgumentException("No variable found at offset " + offset + ".");
+        }
+        if (!vb.isField() || vb.isEnumConstant()) {
+            throw new IllegalArgumentException(
+                    "'" + vb.getName() + "' is not a field. Use inline_variable for local variables.");
+        }
+        int mods = vb.getModifiers();
+        if (!Modifier.isStatic(mods) || !Modifier.isFinal(mods)) {
+            throw new IllegalArgumentException(
+                    "Cannot inline field '" + vb.getName()
+                    + "': only static final constants are supported.");
+        }
+
+        String bindingKey = vb.getKey();
+
+        FieldDeclaration fieldDecl = findFieldDeclaration(cu, bindingKey);
+        if (fieldDecl == null) {
+            throw new IllegalArgumentException(
+                    "Constant '" + vb.getName() + "' is not declared in this file.");
+        }
+        @SuppressWarnings("unchecked") List<VariableDeclarationFragment> fragments =
+                fieldDecl.fragments();
+        if (fragments.size() > 1) {
+            throw new IllegalArgumentException(
+                    "Cannot inline '" + vb.getName()
+                    + "': declaration contains multiple constants. Split it first.");
+        }
+
+        VariableDeclarationFragment fragment = fragments.get(0);
+        Expression init = fragment.getInitializer();
+        if (init == null) {
+            throw new IllegalArgumentException(
+                    "Cannot inline '" + vb.getName() + "': constant has no initializer.");
+        }
+
+        SimpleName declName = fragment.getName();
+        if (target == declName && !allOccurrences) {
+            throw new IllegalArgumentException(
+                    "Offset points to the constant declaration; "
+                    + "invoke on a use, or use allOccurrences=true.");
+        }
+
+        String initText = source.substring(
+                init.getStartPosition(), init.getStartPosition() + init.getLength());
+        String safeInit = needsParens(init) ? "(" + initText + ")" : initText;
+
+        List<Edit> edits = new ArrayList<>();
+
+        if (allOccurrences) {
+            for (SimpleName use : collectUses(cu, bindingKey, declName)) {
+                edits.add(new Edit(use.getStartPosition(),
+                        use.getStartPosition() + use.getLength(), safeInit));
+            }
+        } else {
+            edits.add(new Edit(target.getStartPosition(),
+                    target.getStartPosition() + target.getLength(), safeInit));
+        }
+
+        if (removeDeclaration) {
+            int declStart = fieldDecl.getStartPosition();
+            int lineStart = declStart;
+            while (lineStart > 0 && source.charAt(lineStart - 1) != '\n') lineStart--;
+            int lineEnd = declStart + fieldDecl.getLength();
+            while (lineEnd < source.length() && source.charAt(lineEnd) != '\n') lineEnd++;
+            if (lineEnd < source.length()) lineEnd++;
+            edits.add(new Edit(lineStart, lineEnd, ""));
+        }
+
+        edits.sort((a, b) -> b.start() - a.start());
+        StringBuilder sb = new StringBuilder(source);
+        for (Edit ed : edits) sb.replace(ed.start(), ed.end(), ed.replacement());
+        return sb.toString();
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    private record Edit(int start, int end, String replacement) {}
 
     private static List<SimpleName> collectUses(
             CompilationUnit cu, String bindingKey, SimpleName declarationName) {
@@ -130,6 +232,25 @@ public class JdtInliner {
         cu.accept(new ASTVisitor() {
             @Override
             public boolean visit(VariableDeclarationStatement node) {
+                for (Object o : node.fragments()) {
+                    VariableDeclarationFragment f = (VariableDeclarationFragment) o;
+                    IVariableBinding b = f.resolveBinding();
+                    if (b != null && bindingKey.equals(b.getKey())) {
+                        found[0] = node;
+                        return false;
+                    }
+                }
+                return found[0] == null;
+            }
+        });
+        return found[0];
+    }
+
+    private static FieldDeclaration findFieldDeclaration(CompilationUnit cu, String bindingKey) {
+        FieldDeclaration[] found = {null};
+        cu.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(FieldDeclaration node) {
                 for (Object o : node.fragments()) {
                     VariableDeclarationFragment f = (VariableDeclarationFragment) o;
                     IVariableBinding b = f.resolveBinding();
