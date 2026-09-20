@@ -191,13 +191,6 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Push down method: Animal.speak → Dog (FQN extends clause) | [→](refactor-core/src/test/java/com/github/pfichtner/PushDownMethodTest.push_down_handles_fqn_extends_clause.approved.md) |
 | Push down method rejected: Dog has no subclasses | [→](refactor-core/src/test/java/com/github/pfichtner/PushDownMethodTest.reject_no_subclasses_in_project.approved.md) |
 
-### Move method
-| Test case | Approval |
-|-----------|----------|
-| Move method: Printer.format → Report | [→](refactor-core/src/test/java/com/github/pfichtner/MoveMethodTest.move_method_moves_to_target_class.approved.md) |
-| Move method rejected: Report already declares describe(Report) | [→](refactor-core/src/test/java/com/github/pfichtner/MoveMethodTest.reject_duplicate_method_in_target.approved.md) |
-| Move method rejected: target class not found | [→](refactor-core/src/test/java/com/github/pfichtner/MoveMethodTest.reject_target_class_not_found.approved.md) |
-
 ### Push down field
 | Test case | Approval |
 |-----------|----------|
@@ -301,6 +294,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Test case | Approval |
 |-----------|----------|
 | Move method: Printer.format → Report | [→](refactor-core/src/test/java/com/github/pfichtner/MoveMethodTest.move_method_moves_to_target_class.approved.md) |
+| Move method to named target: Printer.byline(Report, Author) → Report | [→](refactor-core/src/test/java/com/github/pfichtner/MoveMethodTest.move_method_with_multiple_parameter_types_to_named_target.approved.md) |
 | Move method rejected: Report already declares describe(Report) | [→](refactor-core/src/test/java/com/github/pfichtner/MoveMethodTest.reject_duplicate_method_in_target.approved.md) |
 | Move method rejected: target class not found | [→](refactor-core/src/test/java/com/github/pfichtner/MoveMethodTest.reject_target_class_not_found.approved.md) |
 

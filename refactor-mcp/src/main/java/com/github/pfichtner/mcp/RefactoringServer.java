@@ -60,39 +60,38 @@ public class RefactoringServer {
     public static McpSyncServer build() {
         var transport = new StdioServerTransportProvider(McpJsonDefaults.getMapper());
 
-        McpSyncServer server = McpServer.sync(transport)
+        return McpServer.sync(transport)
                 .serverInfo(SERVER_NAME, SERVER_VERSION)
                 .capabilities(ServerCapabilities.builder().tools(true).build())
+                .tools(
+                        listRefactorings(),
+                        analyzeRefactoring(),
+                        applyRefactoring(),
+                        extractMethod(),
+                        inlineVariable(),
+                        inlineConstant(),
+                        extractVariable(),
+                        inlineMethod(),
+                        extractConstant(),
+                        introduceParam(),
+                        removeParam(),
+                        extractInterface(),
+                        extractSuperclass(),
+                        moveClass(),
+                        renamePackage(),
+                        pullUpMethod(),
+                        pushDownMethod(),
+                        moveMethod(),
+                        pullUpField(),
+                        pushDownField(),
+                        introduceStaticFactory(),
+                        introduceParameterObject(),
+                        convertToRecord(),
+                        changeMethodSignature(),
+                        encapsulateField(),
+                        decomposeConditional()
+                )
                 .build();
-
-        server.addTool(listRefactorings());
-        server.addTool(analyzeRefactoring());
-        server.addTool(applyRefactoring());
-        server.addTool(extractMethod());
-        server.addTool(inlineVariable());
-        server.addTool(inlineConstant());
-        server.addTool(extractVariable());
-        server.addTool(inlineMethod());
-        server.addTool(extractConstant());
-        server.addTool(introduceParam());
-        server.addTool(removeParam());
-        server.addTool(extractInterface());
-        server.addTool(extractSuperclass());
-        server.addTool(moveClass());
-        server.addTool(renamePackage());
-        server.addTool(pullUpMethod());
-        server.addTool(pushDownMethod());
-        server.addTool(moveMethod());
-        server.addTool(pullUpField());
-        server.addTool(pushDownField());
-        server.addTool(introduceStaticFactory());
-        server.addTool(introduceParameterObject());
-        server.addTool(convertToRecord());
-        server.addTool(changeMethodSignature());
-        server.addTool(encapsulateField());
-        server.addTool(decomposeConditional());
-
-        return server;
     }
 
     // -------------------------------------------------------------------------
