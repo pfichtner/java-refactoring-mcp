@@ -1,6 +1,7 @@
 package com.github.pfichtner.mcp;
 
 import com.github.pfichtner.JdtConvertAnonymousToNested;
+import com.github.pfichtner.JdtConvertNestedToTopLevel;
 import com.github.pfichtner.JdtExtractConstant;
 import com.github.pfichtner.JdtMoveClass;
 import com.github.pfichtner.JdtRenamePackage;
@@ -91,7 +92,8 @@ public class RefactoringServer {
                         changeMethodSignature(),
                         encapsulateField(),
                         decomposeConditional(),
-                        convertAnonymousToNested()
+                        convertAnonymousToNested(),
+                        convertNestedToTopLevel()
                 )
                 .build();
     }
@@ -1418,6 +1420,41 @@ public class RefactoringServer {
                         String result     = JdtConvertAnonymousToNested.convert(
                                 source, file.getFileName().toString(), offset, nestedName);
                         return ok(result);
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
+    }
+
+    // Tool: convert_nested_to_top_level
+    static SyncToolSpecification convertNestedToTopLevel() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("convert_nested_to_top_level", Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                                "file",   Map.of("type", "string",  "description", "Source file containing the nested type (absolute path)"),
+                                "line",   Map.of("type", "integer", "description", "1-based line inside the nested type"),
+                                "column", Map.of("type", "integer", "description", "1-based column inside the nested type")
+                        ),
+                        "required", List.of("file", "line", "column")
+                ))
+                .description("Convert a nested (member) type to a top-level type. Returns both the modified outer source and the new type's source.")
+                .build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        Path file   = Path.of((String) args.get("file"));
+                        String source = Files.readString(file);
+                        int offset  = resolveOffset(args, source, file.getFileName().toString());
+                        JdtConvertNestedToTopLevel.Result result =
+                                JdtConvertNestedToTopLevel.convert(
+                                        source, file.getFileName().toString(), offset);
+                        String out = "=== " + file.getFileName() + " (modified) ===\n"
+                                + result.outerSource()
+                                + "\n=== " + result.newTypeName() + ".java (new file) ===\n"
+                                + result.newTypeSource();
+                        return ok(out);
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }
