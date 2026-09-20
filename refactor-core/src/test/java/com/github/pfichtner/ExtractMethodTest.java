@@ -5,7 +5,7 @@ import com.github.pfichtner.support.RenameStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * Approval tests for Extract Method.
@@ -85,9 +85,9 @@ class ExtractMethodTest {
         // Find the "}" that closes the if block — it appears before "return n * 2"
         int end = source.indexOf("}\n        return n * 2;") + "}".length();
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() ->
                 JdtExtractor.extractMethod(source, "Computation.java",
-                        start, end - start, "validate"));
+                        start, end - start, "validate")).actual();
 
         Approvals.verify(
             RenameStoryBoard.titled("Extract method — rejected: selection contains return")
@@ -106,9 +106,9 @@ class ExtractMethodTest {
         int start = Fixtures.offsetOf(source, "int a = 3;");
         int end   = Fixtures.offsetOf(source, "int b = 4;") + "int b = 4;".length();
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() ->
                 JdtExtractor.extractMethod(source, "Computation.java",
-                        start, end - start, "init"));
+                        start, end - start, "init")).actual();
 
         Approvals.verify(
             RenameStoryBoard.titled("Extract method — rejected: multiple variables used after selection")

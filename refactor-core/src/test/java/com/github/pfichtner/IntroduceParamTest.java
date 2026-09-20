@@ -10,8 +10,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * Approval tests for Introduce Parameter.
@@ -139,10 +139,9 @@ class IntroduceParamTest {
         int start = Fixtures.offsetOf(source, "println");
         int len   = "println".length();
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> JdtIntroduceParam.introduceParam(
-                        project, greeterFile, start, len, "printer", null));
-        assertTrue(ex.getMessage().contains("simple name"), ex.getMessage());
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtIntroduceParam.introduceParam(
+                project, greeterFile, start, len, "printer", null)).actual();
+        assertThat(ex.getMessage()).contains("simple name");
 
         Approvals.verify(
             RenameStoryBoard.titled("Introduce parameter — rejected: selection is a simple name")

@@ -9,7 +9,8 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * Approval tests for Move Class.
@@ -33,11 +34,10 @@ class MoveClassTest {
                 project, calcFile, "com.example.util");
 
         // Verify new path
-        assertTrue(result.newFilePath().toString().endsWith("com/example/util/Calculator.java"),
-                "New path: " + result.newFilePath());
+        assertThat(result.newFilePath().toString().endsWith("com/example/util/Calculator.java")).as("New path: " + result.newFilePath()).isTrue();
 
         // Verify App.java import was updated
-        assertEquals(1, result.changedImports().size());
+        assertThat(result.changedImports().size()).isEqualTo(1);
         String updatedApp = result.changedImports().values().iterator().next();
 
         // Storyboard approval
@@ -69,7 +69,7 @@ class MoveClassTest {
         JdtMoveClass.Result result = JdtMoveClass.moveClass(
                 project, calcFile, "com.example.util");
 
-        assertEquals(1, result.changedImports().size());
+        assertThat(result.changedImports().size()).isEqualTo(1);
         String updatedApp = result.changedImports().values().iterator().next();
 
         Approvals.verify(
@@ -94,8 +94,7 @@ class MoveClassTest {
                 .resolve("com/example/service/Calculator.java");
         String calcSource = Files.readString(calcFile);
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> JdtMoveClass.moveClass(project, calcFile, "com.example.service"));
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtMoveClass.moveClass(project, calcFile, "com.example.service")).actual();
 
         Approvals.verify(
             RenameStoryBoard.titled("Move class rejected: already in target package")

@@ -10,7 +10,7 @@ import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration tests for the CLI layer.
@@ -53,9 +53,8 @@ class CliRenameTest {
                 "--name", "plus",
                 "--dry-run");
 
-        assertEquals(0, exit, "Expected exit code 0");
-        assertTrue(Files.readString(calcFile).contains("add"),
-                "Dry-run must not modify the file on disk");
+        assertThat(exit).as("Expected exit code 0").isEqualTo(0);
+        assertThat(Files.readString(calcFile)).as("Dry-run must not modify the file on disk").contains("add");
 
         Approvals.verify(out.toString());
     }
@@ -78,7 +77,7 @@ class CliRenameTest {
                 "--line", "4", "--column", "16",
                 "--name", "plus");
 
-        assertEquals(0, exit, "Expected exit code 0");
+        assertThat(exit).as("Expected exit code 0").isEqualTo(0);
 
         // Verify summary output
         Approvals.verify(out.toString());
@@ -88,10 +87,10 @@ class CliRenameTest {
         String updatedApp  = Files.readString(
                 tmp.resolve("src/main/java/com/example/App.java"));
 
-        assertFalse(updatedCalc.contains(" add("), "Declaration should be renamed");
-        assertTrue(updatedCalc.contains(" plus("), "Declaration should be 'plus'");
-        assertFalse(updatedApp.contains(".add("), "Call site should be renamed");
-        assertTrue(updatedApp.contains(".plus("), "Call site should be 'plus'");
+        assertThat(updatedCalc).as("Declaration should be renamed").doesNotContain(" add(");
+        assertThat(updatedCalc).as("Declaration should be 'plus'").contains(" plus(");
+        assertThat(updatedApp).as("Call site should be renamed").doesNotContain(".add(");
+        assertThat(updatedApp).as("Call site should be 'plus'").contains(".plus(");
     }
 
     // -------------------------------------------------------------------------
@@ -107,7 +106,7 @@ class CliRenameTest {
                 "--line", "1", "--column", "1",
                 "--name", "bar");
 
-        assertEquals(1, exit);
+        assertThat(exit).isEqualTo(1);
     }
 
     // -------------------------------------------------------------------------
@@ -116,13 +115,13 @@ class CliRenameTest {
 
     @Test
     void toOffset_first_line() {
-        assertEquals(4, com.github.pfichtner.JdtRenamer.toOffset("abcde", 1, 5));
+        assertThat(com.github.pfichtner.JdtRenamer.toOffset("abcde", 1, 5)).isEqualTo(4);
     }
 
     @Test
     void toOffset_second_line() {
         // "abcd\nefgh": line 2 starts at index 5; col 2 → index 6 ('f')
-        assertEquals(6, com.github.pfichtner.JdtRenamer.toOffset("abcd\nefgh", 2, 2));
+        assertThat(com.github.pfichtner.JdtRenamer.toOffset("abcd\nefgh", 2, 2)).isEqualTo(6);
     }
 
     // -------------------------------------------------------------------------

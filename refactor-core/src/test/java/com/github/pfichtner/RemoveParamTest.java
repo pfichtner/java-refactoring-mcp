@@ -10,8 +10,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * Approval tests for Remove Parameter.
@@ -109,9 +109,8 @@ class RemoveParamTest {
         // Use "(int a" to avoid matching "int add" (same "int a" substring)
         int offset = Fixtures.offsetOf(source, "(int a") + "(int ".length();
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> JdtRemoveParam.removeParam(project, computationFile, offset));
-        assertTrue(ex.getMessage().contains("referenced in the method body"), ex.getMessage());
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtRemoveParam.removeParam(project, computationFile, offset)).actual();
+        assertThat(ex.getMessage()).contains("referenced in the method body");
 
         Approvals.verify(
             RenameStoryBoard.titled("Remove parameter — rejected: parameter used in body")

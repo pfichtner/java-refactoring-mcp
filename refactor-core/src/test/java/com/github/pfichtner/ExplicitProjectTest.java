@@ -10,8 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests for ExplicitProject — project constructed from caller-supplied source roots,
@@ -28,10 +27,10 @@ class ExplicitProjectTest {
 
         ExplicitProject project = new ExplicitProject(projectRoot, List.of(srcRoot), "17", new String[0]);
 
-        assertEquals("17", project.javaVersion());
-        assertEquals(List.of(srcRoot.toAbsolutePath()), project.sourceRoots());
-        assertEquals(0, project.classpath().length);
-        assertTrue(Files.isDirectory(project.sourceRoots().get(0)));
+        assertThat(project.javaVersion()).isEqualTo("17");
+        assertThat(project.sourceRoots()).isEqualTo(List.of(srcRoot.toAbsolutePath()));
+        assertThat(project.classpath().length).isEqualTo(0);
+        assertThat(Files.isDirectory(project.sourceRoots().get(0))).isTrue();
     }
 
     @Test

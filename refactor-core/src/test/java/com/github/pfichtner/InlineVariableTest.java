@@ -5,8 +5,8 @@ import com.github.pfichtner.support.RenameStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * Approval tests for Inline Variable.
@@ -72,9 +72,8 @@ class InlineVariableTest {
         String source = fixtures.load("inline-var/invalid-no-init/input/Foo.java");
         int offset = Fixtures.offsetOf(source, "int x;") + "int ".length();
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> JdtInliner.inlineVariable(source, "Foo.java", offset));
-        assertTrue(ex.getMessage().contains("no initializer"));
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtInliner.inlineVariable(source, "Foo.java", offset)).actual();
+        assertThat(ex.getMessage()).contains("no initializer");
 
         Approvals.verify(
             RenameStoryBoard.titled("Inline variable — rejected: no initializer")
@@ -91,9 +90,8 @@ class InlineVariableTest {
         String source = fixtures.load("inline-var/invalid-multiple-fragments/input/Foo.java");
         int offset = Fixtures.offsetOf(source, "int x = 1") + "int ".length();
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> JdtInliner.inlineVariable(source, "Foo.java", offset));
-        assertTrue(ex.getMessage().contains("multiple variables"));
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtInliner.inlineVariable(source, "Foo.java", offset)).actual();
+        assertThat(ex.getMessage()).contains("multiple variables");
 
         Approvals.verify(
             RenameStoryBoard.titled("Inline variable — rejected: multiple fragments in declaration")

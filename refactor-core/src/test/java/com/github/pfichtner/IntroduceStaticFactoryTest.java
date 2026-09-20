@@ -10,7 +10,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 class IntroduceStaticFactoryTest {
 
@@ -32,12 +33,12 @@ class IntroduceStaticFactoryTest {
         Map<Path, String> changed = JdtIntroduceStaticFactory.introduceStaticFactory(
                 project, counterFile, offset, "of", false);
 
-        assertEquals(2, changed.size(), "Counter.java and App.java should change");
+        assertThat(changed.size()).as("Counter.java and App.java should change").isEqualTo(2);
 
         Path absCounter = counterFile.toAbsolutePath().normalize();
         Path absApp     = appFile.toAbsolutePath().normalize();
-        assertTrue(changed.containsKey(absCounter), "Counter.java must be in result");
-        assertTrue(changed.containsKey(absApp),     "App.java must be in result");
+        assertThat(changed.containsKey(absCounter)).as("Counter.java must be in result").isTrue();
+        assertThat(changed.containsKey(absApp)).as("App.java must be in result").isTrue();
 
         Approvals.verify(
             RenameStoryBoard.titled("Introduce static factory: Counter.of (constructor stays public)")
@@ -87,10 +88,9 @@ class IntroduceStaticFactoryTest {
         // Point at a regular method, not the constructor
         int offset = Fixtures.offsetOf(source, "value()");
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-            () -> JdtIntroduceStaticFactory.introduceStaticFactory(
-                    project, counterFile, offset, "of", false));
-        assertTrue(ex.getMessage().contains("No constructor"), ex.getMessage());
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtIntroduceStaticFactory.introduceStaticFactory(
+                project, counterFile, offset, "of", false)).actual();
+        assertThat(ex.getMessage()).contains("No constructor");
 
         Approvals.verify(
             RenameStoryBoard.titled("Introduce static factory rejected: no constructor at offset")
@@ -122,10 +122,9 @@ class IntroduceStaticFactoryTest {
 
         // Point at the constructor in the modified source
         int offset2 = Fixtures.offsetOf(modifiedSource, "Counter(int");
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-            () -> JdtIntroduceStaticFactory.introduceStaticFactory(
-                    project, tmp, offset2, "of", false));
-        assertTrue(ex.getMessage().contains("already has a method"), ex.getMessage());
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtIntroduceStaticFactory.introduceStaticFactory(
+                project, tmp, offset2, "of", false)).actual();
+        assertThat(ex.getMessage()).contains("already has a method");
 
         Files.deleteIfExists(tmp);
 

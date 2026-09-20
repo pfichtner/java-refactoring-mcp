@@ -10,7 +10,8 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * Tests for ProjectDetector walk-up detection.
@@ -22,13 +23,13 @@ class ProjectDetectorTest {
     @Test
     void detects_maven_for_pom_xml() throws Exception {
         Path projectRoot = fixtures.projectPath("projects/simple");
-        assertInstanceOf(MavenProject.class, ProjectDetector.detect(projectRoot));
+        assertThat(ProjectDetector.detect(projectRoot)).isInstanceOf(MavenProject.class);
     }
 
     @Test
     void detects_gradle_for_build_gradle() throws Exception {
         Path projectRoot = fixtures.projectPath("projects/simple-gradle");
-        assertInstanceOf(GradleProject.class, ProjectDetector.detect(projectRoot));
+        assertThat(ProjectDetector.detect(projectRoot)).isInstanceOf(GradleProject.class);
     }
 
     @Test
@@ -37,7 +38,7 @@ class ProjectDetectorTest {
         Path nested = Files.createDirectories(tempDir.resolve("src/main/java/com/example"));
         Path javaFile = Files.writeString(nested.resolve("Foo.java"), "class Foo {}");
 
-        assertInstanceOf(MavenProject.class, ProjectDetector.detect(javaFile));
+        assertThat(ProjectDetector.detect(javaFile)).isInstanceOf(MavenProject.class);
     }
 
     @Test
@@ -46,24 +47,24 @@ class ProjectDetectorTest {
         Path nested = Files.createDirectories(tempDir.resolve("src/main/java"));
         Path javaFile = Files.writeString(nested.resolve("Foo.java"), "class Foo {}");
 
-        assertInstanceOf(GradleProject.class, ProjectDetector.detect(javaFile));
+        assertThat(ProjectDetector.detect(javaFile)).isInstanceOf(GradleProject.class);
     }
 
     @Test
     void detects_gradle_kts(@TempDir Path tempDir) throws Exception {
         Files.writeString(tempDir.resolve("build.gradle.kts"), "plugins { java }");
-        assertInstanceOf(GradleProject.class, ProjectDetector.detect(tempDir));
+        assertThat(ProjectDetector.detect(tempDir)).isInstanceOf(GradleProject.class);
     }
 
     @Test
     void prefers_maven_when_both_pom_and_gradle_present(@TempDir Path tempDir) throws Exception {
         Files.writeString(tempDir.resolve("pom.xml"), "<project/>");
         Files.writeString(tempDir.resolve("build.gradle"), "plugins { id 'java' }");
-        assertInstanceOf(MavenProject.class, ProjectDetector.detect(tempDir));
+        assertThat(ProjectDetector.detect(tempDir)).isInstanceOf(MavenProject.class);
     }
 
     @Test
     void throws_when_no_build_file_found(@TempDir Path tempDir) {
-        assertThrows(IllegalStateException.class, () -> ProjectDetector.detect(tempDir));
+        assertThatExceptionOfType(IllegalStateException.class).isThrownBy(() -> ProjectDetector.detect(tempDir));
     }
 }

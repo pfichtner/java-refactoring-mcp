@@ -7,8 +7,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * Approval tests for Extract Superclass.
@@ -58,10 +58,9 @@ class ExtractSuperclassTest {
     void extract_rejected_when_class_already_extends() throws Exception {
         String source = fixtures.load("extract-superclass/invalid-already-extends/input/Dog.java");
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> JdtExtractSuperclass.extractSuperclass(
-                        source, "Dog.java", "Canine", List.of()));
-        assertTrue(ex.getMessage().contains("already extends"), ex.getMessage());
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtExtractSuperclass.extractSuperclass(
+                source, "Dog.java", "Canine", List.of())).actual();
+        assertThat(ex.getMessage()).contains("already extends");
 
         Approvals.verify(
             RenameStoryBoard.titled("Extract superclass — rejected: class already extends")

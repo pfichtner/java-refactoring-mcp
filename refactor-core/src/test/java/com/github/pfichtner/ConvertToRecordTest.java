@@ -10,7 +10,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 class ConvertToRecordTest {
 
@@ -32,8 +33,8 @@ class ConvertToRecordTest {
         Path absPoint = pointFile.toAbsolutePath().normalize();
         Path absApp   = appFile.toAbsolutePath().normalize();
 
-        assertTrue(changed.containsKey(absPoint), "Point.java must be in result");
-        assertTrue(changed.containsKey(absApp),   "App.java must be in result");
+        assertThat(changed.containsKey(absPoint)).as("Point.java must be in result").isTrue();
+        assertThat(changed.containsKey(absApp)).as("App.java must be in result").isTrue();
 
         Approvals.verify(
             RenameStoryBoard.titled("Convert class to record: Point (getters renamed at call sites)")
@@ -53,9 +54,8 @@ class ConvertToRecordTest {
         Path derivedFile  = project.sourceRoots().get(0).resolve("com/example/Derived.java");
         String source     = Files.readString(derivedFile);
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> JdtConvertToRecord.convertToRecord(project, derivedFile));
-        assertTrue(ex.getMessage().contains("extends"), ex.getMessage());
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtConvertToRecord.convertToRecord(project, derivedFile)).actual();
+        assertThat(ex.getMessage()).contains("extends");
 
         Approvals.verify(
             RenameStoryBoard.titled("Convert to record rejected: class has extends clause")
@@ -74,9 +74,8 @@ class ConvertToRecordTest {
         Path mutableFile   = project.sourceRoots().get(0).resolve("com/example/Mutable.java");
         String source      = Files.readString(mutableFile);
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> JdtConvertToRecord.convertToRecord(project, mutableFile));
-        assertTrue(ex.getMessage().contains("private final"), ex.getMessage());
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtConvertToRecord.convertToRecord(project, mutableFile)).actual();
+        assertThat(ex.getMessage()).contains("private final");
 
         Approvals.verify(
             RenameStoryBoard.titled("Convert to record rejected: no private final fields")

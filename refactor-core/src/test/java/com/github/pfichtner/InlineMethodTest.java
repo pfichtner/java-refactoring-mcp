@@ -10,7 +10,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * Approval tests for Inline Method.
@@ -113,8 +114,7 @@ class InlineMethodTest {
         int offset = Fixtures.offsetOf(appSource, ".add(") + 1;
         Map<Path, String> changed = JdtInlineMethod.inlineMethod(project, appFile, offset, true);
 
-        assertTrue(changed.containsKey(calcFile.toAbsolutePath().normalize()),
-                "Calculator.java must be changed when removeDeclaration=true");
+        assertThat(changed.containsKey(calcFile.toAbsolutePath().normalize())).as("Calculator.java must be changed when removeDeclaration=true").isTrue();
 
         Approvals.verify(
             RenameStoryBoard.titled("Inline method: add (multi-file, declaration removed)")
@@ -183,9 +183,8 @@ class InlineMethodTest {
         String source = fixtures.load("inline-method/void-no-params/input/Foo.java");
         int offset = Fixtures.offsetOf(source, "greet()");
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> JdtInlineMethod.inlineMethod(source, "Foo.java", offset, false, true));
-        assertTrue(ex.getMessage().contains("allOccurrences=true"));
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtInlineMethod.inlineMethod(source, "Foo.java", offset, false, true)).actual();
+        assertThat(ex.getMessage()).contains("allOccurrences=true");
 
         Approvals.verify(
             RenameStoryBoard.titled("Inline method — rejected: removeDeclaration without allOccurrences")
@@ -204,9 +203,8 @@ class InlineMethodTest {
         String source = fixtures.load("inline-method/invalid-multiple-returns/input/Foo.java");
         int offset = Fixtures.offsetOf(source, "compute(5)");
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> JdtInlineMethod.inlineMethod(source, "Foo.java", offset));
-        assertTrue(ex.getMessage().contains("exactly one statement"));
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtInlineMethod.inlineMethod(source, "Foo.java", offset)).actual();
+        assertThat(ex.getMessage()).contains("exactly one statement");
 
         Approvals.verify(
             RenameStoryBoard.titled("Inline method — rejected: multi-statement body in value context")
@@ -224,9 +222,8 @@ class InlineMethodTest {
         // Target System.out.println — defined in java.io.PrintStream, not in this file
         int offset = Fixtures.offsetOf(source, "println");
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> JdtInlineMethod.inlineMethod(source, "Foo.java", offset));
-        assertTrue(ex.getMessage().contains("not declared in this file"));
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtInlineMethod.inlineMethod(source, "Foo.java", offset)).actual();
+        assertThat(ex.getMessage()).contains("not declared in this file");
 
         Approvals.verify(
             RenameStoryBoard.titled("Inline method — rejected: method not in this file")

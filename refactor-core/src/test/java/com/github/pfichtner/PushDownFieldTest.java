@@ -10,7 +10,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 class PushDownFieldTest {
 
@@ -32,7 +33,7 @@ class PushDownFieldTest {
         int offset = Fixtures.offsetOf(vehicleSrc, "maxSpeed");
         Map<Path, String> changed = JdtPushDownField.pushDown(project, vehicleFile, offset);
 
-        assertEquals(3, changed.size());
+        assertThat(changed.size()).isEqualTo(3);
 
         Path absVehicle = vehicleFile.toAbsolutePath().normalize();
         Path absCar     = carFile.toAbsolutePath().normalize();
@@ -62,9 +63,8 @@ class PushDownFieldTest {
         String source  = Files.readString(carFile);
         int offset     = Fixtures.offsetOf(source, "doors");
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-            () -> JdtPushDownField.pushDown(project, carFile, offset));
-        assertTrue(ex.getMessage().contains("No direct subclasses"), ex.getMessage());
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtPushDownField.pushDown(project, carFile, offset)).actual();
+        assertThat(ex.getMessage()).contains("No direct subclasses");
 
         Approvals.verify(
             RenameStoryBoard.titled("Push down field rejected: Car has no subclasses")

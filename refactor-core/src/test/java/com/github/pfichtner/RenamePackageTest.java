@@ -11,7 +11,8 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * Approval tests for Rename Package.
@@ -56,11 +57,9 @@ class RenamePackageTest {
                 .filter(fc -> fc.oldPath().getFileName().toString().equals("Calculator.java"))
                 .findFirst().orElseThrow();
 
-        assertTrue(calcChange.newPath().toString().contains("com/example/util/Calculator.java"),
-                "New path: " + calcChange.newPath());
-        assertTrue(calcChange.pathChanged(), "Path must change");
-        assertTrue(calcChange.newSource().contains("package com.example.util;"),
-                "Package declaration must be updated");
+        assertThat(calcChange.newPath().toString()).as("New path: " + calcChange.newPath()).contains("com/example/util/Calculator.java");
+        assertThat(calcChange.pathChanged()).as("Path must change").isTrue();
+        assertThat(calcChange.newSource()).as("Package declaration must be updated").contains("package com.example.util;");
     }
 
     @Test
@@ -73,19 +72,16 @@ class RenamePackageTest {
                 .filter(fc -> fc.oldPath().getFileName().toString().equals("App.java"))
                 .findFirst().orElseThrow();
 
-        assertFalse(appChange.pathChanged(), "App.java path should not change");
-        assertTrue(appChange.newSource().contains("import com.example.util.Calculator;"),
-                "Single import must be updated");
-        assertTrue(appChange.newSource().contains("import com.example.util.*;"),
-                "Wildcard import must be updated");
+        assertThat(appChange.pathChanged()).as("App.java path should not change").isFalse();
+        assertThat(appChange.newSource()).as("Single import must be updated").contains("import com.example.util.Calculator;");
+        assertThat(appChange.newSource()).as("Wildcard import must be updated").contains("import com.example.util.*;");
     }
 
     @Test
     void rename_package_rejected_when_same_name() throws Exception {
         var project = new MavenProject(fixtures.projectPath("projects/rename-package"));
-        assertThrows(IllegalArgumentException.class,
-                () -> JdtRenamePackage.renamePackage(
-                        project, "com.example.service", "com.example.service"));
+        assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtRenamePackage.renamePackage(
+                project, "com.example.service", "com.example.service"));
     }
 
     @Test
@@ -141,11 +137,9 @@ class RenamePackageTest {
     // Unit test for remapPackage helper
     @Test
     void remapPackage_handles_direct_and_subpackage() {
-        assertEquals("com.example.util",
-                JdtRenamePackage.remapPackage("com.example.service", "com.example.service", "com.example.util"));
-        assertEquals("com.example.util.impl",
-                JdtRenamePackage.remapPackage("com.example.service.impl", "com.example.service", "com.example.util"));
-        assertNull(JdtRenamePackage.remapPackage("com.example.other", "com.example.service", "com.example.util"));
-        assertNull(JdtRenamePackage.remapPackage("com.example.serviceable", "com.example.service", "com.example.util"));
+        assertThat(JdtRenamePackage.remapPackage("com.example.service", "com.example.service", "com.example.util")).isEqualTo("com.example.util");
+        assertThat(JdtRenamePackage.remapPackage("com.example.service.impl", "com.example.service", "com.example.util")).isEqualTo("com.example.util.impl");
+        assertThat(JdtRenamePackage.remapPackage("com.example.other", "com.example.service", "com.example.util")).isNull();
+        assertThat(JdtRenamePackage.remapPackage("com.example.serviceable", "com.example.service", "com.example.util")).isNull();
     }
 }

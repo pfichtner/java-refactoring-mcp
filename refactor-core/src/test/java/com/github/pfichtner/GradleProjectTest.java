@@ -9,8 +9,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests for the Gradle project model and project-context rename.
@@ -24,14 +23,12 @@ class GradleProjectTest {
         Path projectRoot = fixtures.projectPath("projects/simple-gradle");
         GradleProject project = new GradleProject(projectRoot);
 
-        assertEquals("21", project.javaVersion());
+        assertThat(project.javaVersion()).isEqualTo("21");
 
         var sourceRoots = project.sourceRoots();
-        assertEquals(1, sourceRoots.size());
-        assertTrue(sourceRoots.get(0).endsWith(Path.of("src/main/java")),
-                "Expected src/main/java, got: " + sourceRoots.get(0));
-        assertTrue(Files.isDirectory(sourceRoots.get(0)),
-                "Source root must exist on disk: " + sourceRoots.get(0));
+        assertThat(sourceRoots.size()).isEqualTo(1);
+        assertThat(sourceRoots.get(0).endsWith(Path.of("src/main/java"))).as("Expected src/main/java, got: " + sourceRoots.get(0)).isTrue();
+        assertThat(Files.isDirectory(sourceRoots.get(0))).as("Source root must exist on disk: " + sourceRoots.get(0)).isTrue();
     }
 
     @Test

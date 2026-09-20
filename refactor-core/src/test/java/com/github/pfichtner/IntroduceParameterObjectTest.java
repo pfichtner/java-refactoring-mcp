@@ -11,7 +11,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 class IntroduceParameterObjectTest {
 
@@ -36,12 +37,9 @@ class IntroduceParameterObjectTest {
                 List.of("x", "y"), "Coordinate", "coordinate");
 
         Path coordFile = printerFile.getParent().resolve("Coordinate.java");
-        assertTrue(changed.containsKey(coordFile.toAbsolutePath().normalize()),
-                "Coordinate.java must be created");
-        assertTrue(changed.containsKey(printerFile.toAbsolutePath().normalize()),
-                "Printer.java must be in result");
-        assertTrue(changed.containsKey(appFile.toAbsolutePath().normalize()),
-                "App.java must be in result");
+        assertThat(changed.containsKey(coordFile.toAbsolutePath().normalize())).as("Coordinate.java must be created").isTrue();
+        assertThat(changed.containsKey(printerFile.toAbsolutePath().normalize())).as("Printer.java must be in result").isTrue();
+        assertThat(changed.containsKey(appFile.toAbsolutePath().normalize())).as("App.java must be in result").isTrue();
 
         Map<String, String> inputs = Map.of(
                 "App.java", appSrc, "Printer.java", printerSrc);
@@ -65,11 +63,10 @@ class IntroduceParameterObjectTest {
         String source    = Files.readString(printerFile);
         int offset       = Fixtures.offsetOf(source, "print");
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-            () -> JdtIntroduceParameterObject.introduce(
-                    project, printerFile, offset,
-                    List.of("x"), "Coordinate", "coordinate"));
-        assertTrue(ex.getMessage().contains("At least 2"), ex.getMessage());
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtIntroduceParameterObject.introduce(
+                project, printerFile, offset,
+                List.of("x"), "Coordinate", "coordinate")).actual();
+        assertThat(ex.getMessage()).contains("At least 2");
 
         Approvals.verify(
             RenameStoryBoard.titled("Introduce parameter object rejected: fewer than 2 params")
@@ -90,11 +87,10 @@ class IntroduceParameterObjectTest {
         String source    = Files.readString(printerFile);
         int offset       = Fixtures.offsetOf(source, "print");
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-            () -> JdtIntroduceParameterObject.introduce(
-                    project, printerFile, offset,
-                    List.of("x", "unknown"), "Coordinate", "coordinate"));
-        assertTrue(ex.getMessage().contains("not found"), ex.getMessage());
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtIntroduceParameterObject.introduce(
+                project, printerFile, offset,
+                List.of("x", "unknown"), "Coordinate", "coordinate")).actual();
+        assertThat(ex.getMessage()).contains("not found");
 
         Approvals.verify(
             RenameStoryBoard.titled("Introduce parameter object rejected: unknown param name")

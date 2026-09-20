@@ -10,7 +10,7 @@ import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration tests for name-based locator options in the CLI layer.
@@ -51,9 +51,8 @@ class CliLocatorByNameTest {
                 "--name", "plus",
                 "--dry-run");
 
-        assertEquals(0, exit, "Expected exit code 0: " + out);
-        assertTrue(Files.readString(calcFile).contains("add"),
-                "Dry-run must not modify the file on disk");
+        assertThat(exit).as("Expected exit code 0: " + out).isEqualTo(0);
+        assertThat(Files.readString(calcFile)).as("Dry-run must not modify the file on disk").contains("add");
 
         Approvals.verify(out.toString());
     }
@@ -75,14 +74,14 @@ class CliLocatorByNameTest {
                 "--method", "add",
                 "--name", "plus");
 
-        assertEquals(0, exit, "Expected exit code 0: " + out);
+        assertThat(exit).as("Expected exit code 0: " + out).isEqualTo(0);
 
         String calc = Files.readString(calcFile);
-        assertFalse(calc.contains(" add("), "Declaration should be renamed");
-        assertTrue(calc.contains(" plus("), "Declaration should be 'plus'");
+        assertThat(calc).as("Declaration should be renamed").doesNotContain(" add(");
+        assertThat(calc).as("Declaration should be 'plus'").contains(" plus(");
 
         String app = Files.readString(tmp.resolve("src/main/java/com/example/App.java"));
-        assertTrue(app.contains(".plus("), "Call site should be updated");
+        assertThat(app).as("Call site should be updated").contains(".plus(");
     }
 
     // -------------------------------------------------------------------------
@@ -102,7 +101,7 @@ class CliLocatorByNameTest {
                 "--name", "plus",
                 "--dry-run");
 
-        assertNotEquals(0, exit, "Expected non-zero exit when both locators given");
+        assertThat(exit).as("Expected non-zero exit when both locators given").isNotEqualTo(0);
     }
 
     @Test
@@ -116,7 +115,7 @@ class CliLocatorByNameTest {
                 "--name", "plus",
                 "--dry-run");
 
-        assertNotEquals(0, exit, "Expected non-zero exit when no locator given");
+        assertThat(exit).as("Expected non-zero exit when no locator given").isNotEqualTo(0);
     }
 
     // -------------------------------------------------------------------------

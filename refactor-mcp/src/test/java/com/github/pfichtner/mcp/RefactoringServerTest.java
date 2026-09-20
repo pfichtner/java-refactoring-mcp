@@ -7,7 +7,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * Tests for the MCP tool handlers.
@@ -41,10 +42,10 @@ class RefactoringServerTest {
                 .callHandler()
                 .apply(null, fakeRequest(Map.of()));
 
-        assertFalse(result.isError());
+        assertThat(result.isError()).isFalse();
         String text = textOf(result);
-        assertTrue(text.contains("rename"), "Should mention 'rename'");
-        assertTrue(text.contains("project_root"), "Should describe required args");
+        assertThat(text).as("Should mention 'rename'").contains("rename");
+        assertThat(text).as("Should describe required args").contains("project_root");
     }
 
     // -------------------------------------------------------------------------
@@ -68,8 +69,7 @@ class RefactoringServerTest {
 
         RefactoringServer.executeRename(renameMethodArgs());
 
-        assertEquals(before, Files.readString(calcFile),
-                "analyze must not modify files on disk");
+        assertThat(Files.readString(calcFile)).as("analyze must not modify files on disk").isEqualTo(before);
     }
 
     // -------------------------------------------------------------------------
@@ -100,11 +100,11 @@ class RefactoringServerTest {
 
         // Verify disk state
         String calc = Files.readString(tmp.resolve("src/main/java/com/example/Calculator.java"));
-        assertTrue(calc.contains("plus"), "Calculator.java should contain 'plus'");
-        assertFalse(calc.contains(" add("), "Calculator.java should not contain 'add'");
+        assertThat(calc).as("Calculator.java should contain 'plus'").contains("plus");
+        assertThat(calc).as("Calculator.java should not contain 'add'").doesNotContain(" add(");
 
         String app = Files.readString(tmp.resolve("src/main/java/com/example/App.java"));
-        assertTrue(app.contains(".plus("), "App.java call site should be updated");
+        assertThat(app).as("App.java call site should be updated").contains(".plus(");
     }
 
     // -------------------------------------------------------------------------
@@ -121,9 +121,8 @@ class RefactoringServerTest {
                 "new_name", "helper"
         );
 
-        var ex = assertThrows(IllegalArgumentException.class,
-                () -> RefactoringServer.executeRename(args));
-        assertTrue(ex.getMessage().contains("extract_method"));
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> RefactoringServer.executeRename(args)).actual();
+        assertThat(ex.getMessage()).contains("extract_method");
     }
 
     // -------------------------------------------------------------------------

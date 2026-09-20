@@ -2,7 +2,8 @@ package com.github.pfichtner.locator;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * Unit tests for {@link LocatorResolver}.
@@ -21,7 +22,7 @@ class LocatorResolverTest {
         String source = "package foo;\npublic class Bar {}";
         // "Bar" is at line 2, col 14 → offset = 13 ("package foo;\n") + 13 = 26
         int offset = resolve(new Locator.Position(2, 14), source);
-        assertEquals("Bar", tokenAt(source, offset, 3));
+        assertThat(tokenAt(source, offset, 3)).isEqualTo("Bar");
     }
 
     // -------------------------------------------------------------------------
@@ -36,7 +37,7 @@ class LocatorResolverTest {
                 }
                 """;
         int offset = resolve(new Locator.MethodName("add"), source);
-        assertEquals("add", tokenAt(source, offset, 3));
+        assertThat(tokenAt(source, offset, 3)).isEqualTo("add");
     }
 
     @Test
@@ -52,7 +53,7 @@ class LocatorResolverTest {
         // Verify the resolved "add" is from the second declaration (character index > first one)
         int firstAdd = source.indexOf("add");
         int secondAdd = source.indexOf("add", firstAdd + 1);
-        assertEquals(secondAdd, offset);
+        assertThat(offset).isEqualTo(secondAdd);
     }
 
     @Test
@@ -64,7 +65,7 @@ class LocatorResolverTest {
                 }
                 """;
         int offset = resolve(new Locator.MethodName("reset()"), source);
-        assertEquals("reset", tokenAt(source, offset, 5));
+        assertThat(tokenAt(source, offset, 5)).isEqualTo("reset");
     }
 
     @Test
@@ -81,7 +82,7 @@ class LocatorResolverTest {
         // The Inner.foo "foo" appears after Outer.foo "foo"
         int firstFoo = source.indexOf("foo");
         int innerFoo = source.indexOf("foo", firstFoo + 1);
-        assertEquals(innerFoo, offset);
+        assertThat(offset).isEqualTo(innerFoo);
     }
 
     @Test
@@ -92,18 +93,16 @@ class LocatorResolverTest {
                     public int add(int a, int b) { return a + b; }
                 }
                 """;
-        var ex = assertThrows(IllegalArgumentException.class,
-                () -> resolve(new Locator.MethodName("add"), source));
-        assertTrue(ex.getMessage().contains("Ambiguous"), ex.getMessage());
-        assertTrue(ex.getMessage().contains("add"), ex.getMessage());
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> resolve(new Locator.MethodName("add"), source)).actual();
+        assertThat(ex.getMessage()).contains("Ambiguous");
+        assertThat(ex.getMessage()).contains("add");
     }
 
     @Test
     void unknown_method_throws() {
         String source = "public class Foo { public void bar() {} }";
-        var ex = assertThrows(IllegalArgumentException.class,
-                () -> resolve(new Locator.MethodName("baz"), source));
-        assertTrue(ex.getMessage().contains("baz"), ex.getMessage());
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> resolve(new Locator.MethodName("baz"), source)).actual();
+        assertThat(ex.getMessage()).contains("baz");
     }
 
     // -------------------------------------------------------------------------
@@ -119,7 +118,7 @@ class LocatorResolverTest {
                 }
                 """;
         int offset = resolve(new Locator.FieldName("name"), source);
-        assertEquals("name", tokenAt(source, offset, 4));
+        assertThat(tokenAt(source, offset, 4)).isEqualTo("name");
     }
 
     @Test
@@ -133,15 +132,14 @@ class LocatorResolverTest {
         int offset = resolve(new Locator.FieldName("count", "B"), source);
         int firstCount = source.indexOf("count");
         int secondCount = source.indexOf("count", firstCount + 1);
-        assertEquals(secondCount, offset);
+        assertThat(offset).isEqualTo(secondCount);
     }
 
     @Test
     void unknown_field_throws() {
         String source = "public class Foo { int bar; }";
-        var ex = assertThrows(IllegalArgumentException.class,
-                () -> resolve(new Locator.FieldName("baz"), source));
-        assertTrue(ex.getMessage().contains("baz"), ex.getMessage());
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> resolve(new Locator.FieldName("baz"), source)).actual();
+        assertThat(ex.getMessage()).contains("baz");
     }
 
     // -------------------------------------------------------------------------
@@ -152,15 +150,14 @@ class LocatorResolverTest {
     void type_name_resolves_class() {
         String source = "package p; public class OrderService {}";
         int offset = resolve(new Locator.TypeName("OrderService"), source);
-        assertEquals("OrderService", tokenAt(source, offset, 12));
+        assertThat(tokenAt(source, offset, 12)).isEqualTo("OrderService");
     }
 
     @Test
     void unknown_type_throws() {
         String source = "public class Foo {}";
-        var ex = assertThrows(IllegalArgumentException.class,
-                () -> resolve(new Locator.TypeName("Bar"), source));
-        assertTrue(ex.getMessage().contains("Bar"), ex.getMessage());
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> resolve(new Locator.TypeName("Bar"), source)).actual();
+        assertThat(ex.getMessage()).contains("Bar");
     }
 
     // -------------------------------------------------------------------------
@@ -175,7 +172,7 @@ class LocatorResolverTest {
                 }
                 """;
         int offset = resolve(new Locator.ParameterInMethod("setName", "unused"), source);
-        assertEquals("unused", tokenAt(source, offset, 6));
+        assertThat(tokenAt(source, offset, 6)).isEqualTo("unused");
     }
 
     @Test
@@ -187,15 +184,14 @@ class LocatorResolverTest {
                 }
                 """;
         int offset = resolve(new Locator.ParameterInMethod("process(int, String)", "name"), source);
-        assertEquals("name", tokenAt(source, offset, 4));
+        assertThat(tokenAt(source, offset, 4)).isEqualTo("name");
     }
 
     @Test
     void unknown_parameter_throws() {
         String source = "public class Svc { public void foo(int x) {} }";
-        var ex = assertThrows(IllegalArgumentException.class,
-                () -> resolve(new Locator.ParameterInMethod("foo", "y"), source));
-        assertTrue(ex.getMessage().contains("y"), ex.getMessage());
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> resolve(new Locator.ParameterInMethod("foo", "y"), source)).actual();
+        assertThat(ex.getMessage()).contains("y");
     }
 
     // -------------------------------------------------------------------------
@@ -213,24 +209,22 @@ class LocatorResolverTest {
                 }
                 """;
         int offset = resolve(new Locator.VariableName("result"), source);
-        assertEquals("result", tokenAt(source, offset, 6));
+        assertThat(tokenAt(source, offset, 6)).isEqualTo("result");
     }
 
     @Test
     void variable_does_not_match_field() {
         String source = "public class Foo { int val; public void m() { int x = 1; } }";
         // "val" is a field, should not match VariableName
-        var ex = assertThrows(IllegalArgumentException.class,
-                () -> resolve(new Locator.VariableName("val"), source));
-        assertTrue(ex.getMessage().contains("val"), ex.getMessage());
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> resolve(new Locator.VariableName("val"), source)).actual();
+        assertThat(ex.getMessage()).contains("val");
     }
 
     @Test
     void unknown_variable_throws() {
         String source = "public class Foo { public void m() { int x = 1; } }";
-        var ex = assertThrows(IllegalArgumentException.class,
-                () -> resolve(new Locator.VariableName("missing"), source));
-        assertTrue(ex.getMessage().contains("missing"), ex.getMessage());
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> resolve(new Locator.VariableName("missing"), source)).actual();
+        assertThat(ex.getMessage()).contains("missing");
     }
 
     // -------------------------------------------------------------------------

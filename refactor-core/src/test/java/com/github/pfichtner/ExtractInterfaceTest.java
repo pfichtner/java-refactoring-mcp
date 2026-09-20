@@ -7,8 +7,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * Approval tests for Extract Interface.
@@ -76,10 +76,9 @@ class ExtractInterfaceTest {
     void extract_rejected_when_no_public_methods() throws Exception {
         String source = fixtures.load("extract-interface/invalid-no-public-methods/input/Foo.java");
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> JdtExtractInterface.extractInterface(
-                        source, "Foo.java", "FooInterface", List.of()));
-        assertTrue(ex.getMessage().contains("No public non-static methods"), ex.getMessage());
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtExtractInterface.extractInterface(
+                source, "Foo.java", "FooInterface", List.of())).actual();
+        assertThat(ex.getMessage()).contains("No public non-static methods");
 
         Approvals.verify(
             RenameStoryBoard.titled("Extract interface — rejected: no public non-static methods")

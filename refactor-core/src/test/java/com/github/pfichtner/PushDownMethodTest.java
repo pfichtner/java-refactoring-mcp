@@ -10,7 +10,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 class PushDownMethodTest {
 
@@ -32,7 +33,7 @@ class PushDownMethodTest {
         int offset = Fixtures.offsetOf(shapeSource, "area");
         Map<Path, String> changed = JdtPushDownMethod.pushDown(project, shapeFile, offset);
 
-        assertEquals(3, changed.size());
+        assertThat(changed.size()).isEqualTo(3);
 
         Path absShape  = shapeFile.toAbsolutePath().normalize();
         Path absCircle = circleFile.toAbsolutePath().normalize();
@@ -61,9 +62,8 @@ class PushDownMethodTest {
         String dogSrc = Files.readString(dogFile);
         int offset    = Fixtures.offsetOf(dogSrc, "speak");
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-            () -> JdtPushDownMethod.pushDown(project, dogFile, offset));
-        assertTrue(ex.getMessage().contains("No direct subclasses"), ex.getMessage());
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtPushDownMethod.pushDown(project, dogFile, offset)).actual();
+        assertThat(ex.getMessage()).contains("No direct subclasses");
 
         Approvals.verify(
             RenameStoryBoard.titled("Push down method rejected: Dog has no subclasses")
@@ -88,7 +88,7 @@ class PushDownMethodTest {
         int offset = Fixtures.offsetOf(animalSource, "speak");
         Map<Path, String> changed = JdtPushDownMethod.pushDown(project, animalFile, offset);
 
-        assertEquals(2, changed.size());
+        assertThat(changed.size()).isEqualTo(2);
 
         Approvals.verify(
             RenameStoryBoard.titled("Push down method: Animal.speak → Dog (FQN extends clause)")

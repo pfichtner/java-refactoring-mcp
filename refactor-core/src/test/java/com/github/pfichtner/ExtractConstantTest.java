@@ -5,8 +5,8 @@ import com.github.pfichtner.support.RenameStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * Approval tests for Extract Constant.
@@ -60,10 +60,9 @@ class ExtractConstantTest {
         int start = Fixtures.offsetOf(source, "int x") + "int ".length();
         int len   = "x".length();
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> JdtExtractConstant.extractConstant(
-                        source, "Foo.java", start, len, "X", false));
-        assertTrue(ex.getMessage().contains("simple name"));
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtExtractConstant.extractConstant(
+                source, "Foo.java", start, len, "X", false)).actual();
+        assertThat(ex.getMessage()).contains("simple name");
 
         Approvals.verify(
             RenameStoryBoard.titled("Extract constant — rejected: selection is a simple name")

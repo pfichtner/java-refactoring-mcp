@@ -8,7 +8,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * Integration tests for name-based locator support in the MCP layer.
@@ -58,11 +59,9 @@ class RefactoringServerByNameTest {
         var resultByName     = RefactoringServer.executeRename(byName);
 
         // Both approaches should produce identical output for every changed file
-        assertEquals(resultByPosition.size(), resultByName.size(),
-                "Same number of changed files expected");
+        assertThat(resultByName.size()).as("Same number of changed files expected").isEqualTo(resultByPosition.size());
         for (Path p : resultByPosition.keySet()) {
-            assertEquals(resultByPosition.get(p), resultByName.get(p),
-                    "Content mismatch for " + p.getFileName());
+            assertThat(resultByName.get(p)).as("Content mismatch for " + p.getFileName()).isEqualTo(resultByPosition.get(p));
         }
     }
 
@@ -95,8 +94,7 @@ class RefactoringServerByNameTest {
                 "new_name",     "plus"
         ));
 
-        assertEquals(before, Files.readString(calcFile),
-                "analyze (no write) must not modify files on disk");
+        assertThat(Files.readString(calcFile)).as("analyze (no write) must not modify files on disk").isEqualTo(before);
     }
 
     // -------------------------------------------------------------------------
@@ -106,46 +104,41 @@ class RefactoringServerByNameTest {
     @Test
     void no_locator_at_all_throws() {
         Map<String, Object> empty = new java.util.HashMap<>();
-        var ex = assertThrows(IllegalArgumentException.class,
-                () -> RefactoringServer.resolveOffset(empty, "class Foo {}", "Foo.java"));
-        assertTrue(ex.getMessage().contains("Specify either"), ex.getMessage());
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> RefactoringServer.resolveOffset(empty, "class Foo {}", "Foo.java")).actual();
+        assertThat(ex.getMessage()).contains("Specify either");
     }
 
     @Test
     void position_and_name_together_throws() {
         Map<String, Object> args = new java.util.HashMap<>();
         args.put("line", 1); args.put("column", 1); args.put("method", "foo");
-        var ex = assertThrows(IllegalArgumentException.class,
-                () -> RefactoringServer.resolveOffset(args, "class Foo { void foo() {} }", "Foo.java"));
-        assertTrue(ex.getMessage().contains("not both"), ex.getMessage());
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> RefactoringServer.resolveOffset(args, "class Foo { void foo() {} }", "Foo.java")).actual();
+        assertThat(ex.getMessage()).contains("not both");
     }
 
     @Test
     void only_line_without_column_throws() {
         Map<String, Object> args = new java.util.HashMap<>();
         args.put("line", 1);
-        var ex = assertThrows(IllegalArgumentException.class,
-                () -> RefactoringServer.resolveOffset(args, "class Foo {}", "Foo.java"));
-        assertTrue(ex.getMessage().toLowerCase().contains("column"), ex.getMessage());
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> RefactoringServer.resolveOffset(args, "class Foo {}", "Foo.java")).actual();
+        assertThat(ex.getMessage()).containsIgnoringCase("column");
     }
 
     @Test
     void parameter_without_method_throws() {
         Map<String, Object> args = new java.util.HashMap<>();
         args.put("parameter", "unused");
-        var ex = assertThrows(IllegalArgumentException.class,
-                () -> RefactoringServer.resolveOffset(
-                        args, "class Foo { void bar(int unused) {} }", "Foo.java"));
-        assertTrue(ex.getMessage().contains("'method'"), ex.getMessage());
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> RefactoringServer.resolveOffset(
+                args, "class Foo { void bar(int unused) {} }", "Foo.java")).actual();
+        assertThat(ex.getMessage()).contains("'method'");
     }
 
     @Test
     void two_name_kinds_together_throws() {
         Map<String, Object> args = new java.util.HashMap<>();
         args.put("method", "foo"); args.put("field", "bar");
-        var ex = assertThrows(IllegalArgumentException.class,
-                () -> RefactoringServer.resolveOffset(
-                        args, "class Foo { void foo() {} int bar; }", "Foo.java"));
-        assertTrue(ex.getMessage().contains("only one"), ex.getMessage());
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> RefactoringServer.resolveOffset(
+                args, "class Foo { void foo() {} int bar; }", "Foo.java")).actual();
+        assertThat(ex.getMessage()).contains("only one");
     }
 }

@@ -10,7 +10,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 class PullUpFieldTest {
 
@@ -30,12 +31,12 @@ class PullUpFieldTest {
         int offset = Fixtures.offsetOf(dogSource, "breed");
         Map<Path, String> changed = JdtPullUpField.pullUp(project, dogFile, offset);
 
-        assertEquals(2, changed.size());
+        assertThat(changed.size()).isEqualTo(2);
 
         Path absAnimal = animalFile.toAbsolutePath().normalize();
         Path absDog    = dogFile.toAbsolutePath().normalize();
-        assertTrue(changed.containsKey(absAnimal), "superclass must be in result");
-        assertTrue(changed.containsKey(absDog),    "subclass must be in result");
+        assertThat(changed.containsKey(absAnimal)).as("superclass must be in result").isTrue();
+        assertThat(changed.containsKey(absDog)).as("subclass must be in result").isTrue();
 
         Approvals.verify(
             RenameStoryBoard.titled("Pull up field: Dog.breed → Animal")
@@ -57,9 +58,8 @@ class PullUpFieldTest {
         String source   = Files.readString(animalFile);
         int offset      = Fixtures.offsetOf(source, "name");
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-            () -> JdtPullUpField.pullUp(project, animalFile, offset));
-        assertTrue(ex.getMessage().contains("no explicit superclass"), ex.getMessage());
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtPullUpField.pullUp(project, animalFile, offset)).actual();
+        assertThat(ex.getMessage()).contains("no explicit superclass");
 
         Approvals.verify(
             RenameStoryBoard.titled("Pull up field rejected: Animal has no superclass")
@@ -80,9 +80,8 @@ class PullUpFieldTest {
         // "name" exists in both Dog and Animal — should be rejected
         int offset = Fixtures.offsetOf(source, "name");
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-            () -> JdtPullUpField.pullUp(project, dogFile, offset));
-        assertTrue(ex.getMessage().contains("already declares"), ex.getMessage());
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtPullUpField.pullUp(project, dogFile, offset)).actual();
+        assertThat(ex.getMessage()).contains("already declares");
 
         Approvals.verify(
             RenameStoryBoard.titled("Pull up field rejected: superclass already has name")

@@ -5,8 +5,8 @@ import com.github.pfichtner.support.RenameStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * Approval tests for Extract Variable.
@@ -80,10 +80,9 @@ class ExtractVariableTest {
         int start = Fixtures.offsetOf(source, "int x") + "int ".length();
         int len   = "x".length();
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> JdtExtractVariable.extractVariable(
-                        source, "Foo.java", start, len, "y", false));
-        assertTrue(ex.getMessage().contains("simple name"));
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtExtractVariable.extractVariable(
+                source, "Foo.java", start, len, "y", false)).actual();
+        assertThat(ex.getMessage()).contains("simple name");
 
         Approvals.verify(
             RenameStoryBoard.titled("Extract variable — rejected: selection is a simple name")
@@ -102,10 +101,9 @@ class ExtractVariableTest {
         int start = Fixtures.offsetOf(source, "x = 2");
         int len   = "x = 2".length();
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> JdtExtractVariable.extractVariable(
-                        source, "Foo.java", start, len, "val", false));
-        assertTrue(ex.getMessage().contains("assignment"));
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtExtractVariable.extractVariable(
+                source, "Foo.java", start, len, "val", false)).actual();
+        assertThat(ex.getMessage()).contains("assignment");
 
         Approvals.verify(
             RenameStoryBoard.titled("Extract variable — rejected: selection is an assignment")

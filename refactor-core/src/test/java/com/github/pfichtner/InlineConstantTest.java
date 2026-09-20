@@ -5,7 +5,8 @@ import com.github.pfichtner.support.RenameStoryBoard;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * Approval tests for Inline Constant.
@@ -89,9 +90,8 @@ class InlineConstantTest {
         String source = fixtures.load("inline-constant/int-constant/input/Foo.java");
         int offset = Fixtures.offsetOf(source, "MAX");
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> JdtInliner.inlineConstant(source, "Foo.java", offset, false, true));
-        assertTrue(ex.getMessage().contains("allOccurrences=true"));
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtInliner.inlineConstant(source, "Foo.java", offset, false, true)).actual();
+        assertThat(ex.getMessage()).contains("allOccurrences=true");
 
         Approvals.verify(
             RenameStoryBoard.titled("Inline constant — rejected: removeDeclaration without allOccurrences")
@@ -108,9 +108,8 @@ class InlineConstantTest {
         String source = fixtures.load("inline-constant/invalid-mutable/input/Foo.java");
         int offset = Fixtures.offsetOf(source, "count");
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> JdtInliner.inlineConstant(source, "Foo.java", offset, true, false));
-        assertTrue(ex.getMessage().contains("static final"));
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtInliner.inlineConstant(source, "Foo.java", offset, true, false)).actual();
+        assertThat(ex.getMessage()).contains("static final");
 
         Approvals.verify(
             RenameStoryBoard.titled("Inline constant — rejected: mutable field")
@@ -127,9 +126,8 @@ class InlineConstantTest {
         String source = fixtures.load("inline-constant/invalid-multiple-fragments/input/Foo.java");
         int offset = Fixtures.offsetOf(source, "return X") + "return ".length();
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> JdtInliner.inlineConstant(source, "Foo.java", offset, true, false));
-        assertTrue(ex.getMessage().contains("multiple constants"));
+        IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtInliner.inlineConstant(source, "Foo.java", offset, true, false)).actual();
+        assertThat(ex.getMessage()).contains("multiple constants");
 
         Approvals.verify(
             RenameStoryBoard.titled("Inline constant — rejected: multiple constants in one declaration")
