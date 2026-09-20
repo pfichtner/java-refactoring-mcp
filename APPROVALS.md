@@ -219,25 +219,6 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 
 ---
 
-## Build system / project type
-
-### Maven project
-| Test case | Approval |
-|-----------|----------|
-| Rename local variable in Maven project: result → sum | [→](refactor-core/src/test/java/com/github/pfichtner/MavenProjectTest.rename_local_variable_in_maven_project.approved.md) |
-
-### Gradle project
-| Test case | Approval |
-|-----------|----------|
-| Rename local variable in Gradle project: result → sum | [→](refactor-core/src/test/java/com/github/pfichtner/GradleProjectTest.rename_local_variable_in_gradle_project.approved.md) |
-
-### Explicit project
-| Test case | Approval |
-|-----------|----------|
-| Rename local variable with ExplicitProject: result → total | [→](refactor-core/src/test/java/com/github/pfichtner/ExplicitProjectTest.rename_local_variable_with_explicit_project.approved.md) |
-
----
-
 ## CLI
 
 | Test case | Approval |
@@ -308,9 +289,6 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Push down field by name: Vehicle.maxSpeed | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.push_down_field_by_name.approved.md) |
 | Push down method by name: Shape.area | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.push_down_method_by_name.approved.md) |
 | Remove param by name: add.c | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.remove_param_by_name.approved.md) |
-| Rename field by name: name → fullName | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.rename_field_by_name.approved.md) |
-| Rename method by name: add → plus | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.rename_method_by_name.approved.md) |
-| Rename type by name: Rectangle → Rect | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.rename_type_by_name.approved.md) |
 
 ### Refactoring server by name
 | Test case | Approval |
