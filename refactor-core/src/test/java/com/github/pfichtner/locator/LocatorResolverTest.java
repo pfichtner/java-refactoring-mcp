@@ -227,6 +227,22 @@ class LocatorResolverTest {
         assertThat(ex.getMessage()).contains("missing");
     }
 
+    @Test
+    void variable_name_ambiguous_when_same_name_in_multiple_loops_throws() {
+        String source = """
+                public class Loops {
+                    public void run() {
+                        for (int i = 0; i < 10; i++) {}
+                        for (int i = 0; i < 20; i++) {}
+                    }
+                }
+                """;
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> resolve(new Locator.VariableName("i"), source)).actual();
+        assertThat(ex.getMessage()).containsIgnoringCase("ambiguous");
+        assertThat(ex.getMessage()).contains("i");
+    }
+
     // -------------------------------------------------------------------------
     // LineOnly
     // -------------------------------------------------------------------------
