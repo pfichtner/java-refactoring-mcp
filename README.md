@@ -151,7 +151,7 @@ Every tool call requires:
 
 | Parameter | Example |
 |-----------|---------|
-| `project_root` | `/home/me/myproject` — Maven root (contains `pom.xml`) |
+| `project_root` | `/home/me/myproject` — project root (auto-detects Maven `pom.xml` or Gradle `build.gradle`/`build.gradle.kts`) |
 | `file` | `src/main/java/com/example/Calculator.java` |
 | `line` | `4` |
 | `column` | `16` |
