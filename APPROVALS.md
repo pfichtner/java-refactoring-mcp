@@ -397,6 +397,11 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Change method signature: reorder params + return type Object | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.reorder_and_return_type_change_applied_together.approved.md) |
 | Change method signature: reorder params convert(int,String) → convert(String,int) | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.reorder_params_updates_declaration_and_call_sites.approved.md) |
 
+### Cli remove method
+| Test case | Approval |
+|-----------|----------|
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliRemoveMethodTest.dry_run_prints_preview_without_writing.approved.txt) |
+
 ### Convert anonymous to nested
 | Test case | Approval |
 |-----------|----------|
@@ -500,4 +505,12 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Tool push down method returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_push_down_method_returns_preview.approved.txt) |
 | Tool remove param returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_remove_param_returns_preview.approved.txt) |
 | Tool rename package returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_rename_package_returns_preview.approved.txt) |
+
+### Remove method
+| Test case | Approval |
+|-----------|----------|
+| Remove method: print() from class — cascades to subclasses | [→](refactor-core/src/test/java/com/github/pfichtner/RemoveMethodTest.remove_class_method_cascades_to_subclasses.approved.md) |
+| Remove method: print() from interface — cascades to all implementors | [→](refactor-core/src/test/java/com/github/pfichtner/RemoveMethodTest.remove_interface_method_cascades_to_all_implementors.approved.md) |
+| Remove method: describe() from interface — only one implementor | [→](refactor-core/src/test/java/com/github/pfichtner/RemoveMethodTest.remove_interface_method_with_single_implementor.approved.md) |
+| Remove method: print() from Document only — cascade=false | [→](refactor-core/src/test/java/com/github/pfichtner/RemoveMethodTest.remove_method_no_cascade.approved.md) |
 

@@ -11,6 +11,7 @@ import com.github.pfichtner.JdtRenamePackage;
 import com.github.pfichtner.JdtExtractInterface;
 import com.github.pfichtner.JdtExtractSuperclass;
 import com.github.pfichtner.JdtIntroduceParam;
+import com.github.pfichtner.JdtRemoveMethod;
 import com.github.pfichtner.JdtRemoveParam;
 import com.github.pfichtner.JdtExtractVariable;
 import com.github.pfichtner.JdtExtractor;
@@ -80,6 +81,7 @@ public class RefactoringServer {
                         extractConstant(),
                         introduceParam(),
                         removeParam(),
+                        removeMethod(),
                         extractInterface(),
                         extractSuperclass(),
                         moveClass(),
@@ -466,6 +468,52 @@ public class RefactoringServer {
                                 ProjectDetector.detect(
                                         Path.of((String) args.get("project_root"))),
                                 Path.of(file), offset);
+                        return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                                .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
+                                        + e.getValue().stripTrailing() + "\n\n")
+                                .collect(Collectors.joining()).stripTrailing());
+                    } catch (Exception e) {
+                        return error(e.getMessage());
+                    }
+                })
+                .build();
+    }
+
+    // -------------------------------------------------------------------------
+    // Tool: remove_method
+    // -------------------------------------------------------------------------
+
+    static SyncToolSpecification removeMethod() {
+        return SyncToolSpecification.builder()
+                .tool(Tool.builder("remove_method", Map.of(
+                        "type", "object",
+                        "properties", Map.ofEntries(
+                                Map.entry("project_root", Map.of("type", "string",  "description", "Absolute project root (Maven or Gradle).")),
+                                Map.entry("file",         Map.of("type", "string",  "description", "Absolute path to the file containing the method.")),
+                                Map.entry("line",         Map.of("type", "integer", "description", "1-based line of the method name. Use with 'column' OR use the 'method' name-based locator.")),
+                                Map.entry("column",       Map.of("type", "integer", "description", "1-based column of the method name. Use with 'line'.")),
+                                Map.entry("method",       Map.of("type", "string",  "description", "Name-based locator: method name, e.g. \"print\" or \"print()\". Use instead of line/column.")),
+                                Map.entry("class",        Map.of("type", "string",  "description", "Optional: restrict name-based search to this class when the file has multiple types.")),
+                                Map.entry("cascade",      Map.of("type", "boolean", "description", "If true (default), also remove overriding methods in subclasses and implementing methods in implementing classes."))
+                        ),
+                        "required", List.of("project_root", "file")))
+                        .description("""
+                        Remove a method from a class or interface.
+                        When cascade is true (the default), also removes every overriding method
+                        in subclasses and every implementing method in implementing classes.
+                        Returns a map of filename → new source for each changed file.
+                        """)
+                        .build())
+                .callHandler((exchange, request) -> {
+                    try {
+                        Map<String, Object> args = request.arguments();
+                        String file   = (String) args.get("file");
+                        String source = Files.readString(Path.of(file));
+                        int offset    = resolveOffset(args, source, Path.of(file).getFileName().toString());
+                        boolean cascade = args.get("cascade") == null || Boolean.TRUE.equals(args.get("cascade"));
+                        var changed = JdtRemoveMethod.removeMethod(
+                                ProjectDetector.detect(Path.of((String) args.get("project_root"))),
+                                Path.of(file), offset, cascade);
                         return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
                                 .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
                                         + e.getValue().stripTrailing() + "\n\n")
