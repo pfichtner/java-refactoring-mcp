@@ -452,10 +452,12 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 ### Move method
 | Test case | Approval |
 |-----------|----------|
-| Move method: Printer.format → Report | [→](refactor-core/src/test/java/com/github/pfichtner/MoveMethodTest.move_method_moves_to_target_class.approved.md) |
-| Move method to named target: Printer.byline(Report, Author) → Report | [→](refactor-core/src/test/java/com/github/pfichtner/MoveMethodTest.move_method_with_multiple_parameter_types_to_named_target.approved.md) |
+| Move method: FQN selects com.example.Report over com.other.Report | [→](refactor-core/src/test/java/com/github/pfichtner/MoveMethodTest.disambiguates_target_by_fully_qualified_name.approved.md) |
+| Move method: Printer.format → com.example.Report | [→](refactor-core/src/test/java/com/github/pfichtner/MoveMethodTest.move_method_moves_to_target_class.approved.md) |
+| Move method to named target: Printer.byline(Report, Author) → com.example.Report | [→](refactor-core/src/test/java/com/github/pfichtner/MoveMethodTest.move_method_with_multiple_parameter_types_to_named_target.approved.md) |
 | Move method rejected: Report already declares describe(Report) | [→](refactor-core/src/test/java/com/github/pfichtner/MoveMethodTest.reject_duplicate_method_in_target.approved.md) |
 | Move method rejected: target class not found | [→](refactor-core/src/test/java/com/github/pfichtner/MoveMethodTest.reject_target_class_not_found.approved.md) |
+| Move method rejected: com.other.Report already declares format | [→](refactor-core/src/test/java/com/github/pfichtner/MoveMethodTest.reject_when_target_in_other_package_already_has_same_method.approved.md) |
 
 ### Move static member
 | Test case | Approval |
