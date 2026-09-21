@@ -70,6 +70,7 @@ public class JdtRenamePackage {
                     "No files found in package '" + oldPackage + "' or importing from it.");
         }
 
+        changes.sort(Comparator.comparing(fc -> fc.oldPath().toString()));
         return new Result(changes);
     }
 
