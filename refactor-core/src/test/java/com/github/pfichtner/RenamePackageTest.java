@@ -1,10 +1,7 @@
 package com.github.pfichtner;
 
-import com.github.pfichtner.project.MavenProject;
-import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RefactoringStoryBoard;
-import org.approvaltests.Approvals;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.nio.file.Path;
 import java.util.Comparator;
@@ -12,8 +9,12 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import org.approvaltests.Approvals;
+import org.junit.jupiter.api.Test;
+
+import com.github.pfichtner.project.MavenProject;
+import com.github.pfichtner.support.Fixtures;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 
 /**
  * Approval tests for Rename Package.

@@ -1,13 +1,14 @@
 package com.github.pfichtner.support;
 
-import com.github.pfichtner.FileChange;
-import org.approvaltests.MarkdownStoryBoard;
-
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.approvaltests.MarkdownStoryBoard;
+
+import com.github.pfichtner.FileChange;
 
 /**
  * Fluent builder for rename approval storyboards.

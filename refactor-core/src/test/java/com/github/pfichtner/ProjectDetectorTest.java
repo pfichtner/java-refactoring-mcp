@@ -1,17 +1,18 @@
 package com.github.pfichtner;
 
-import com.github.pfichtner.project.GradleProject;
-import com.github.pfichtner.project.MavenProject;
-import com.github.pfichtner.project.ProjectDetector;
-import com.github.pfichtner.support.Fixtures;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import com.github.pfichtner.project.GradleProject;
+import com.github.pfichtner.project.MavenProject;
+import com.github.pfichtner.project.ProjectDetector;
+import com.github.pfichtner.support.Fixtures;
 
 /**
  * Tests for ProjectDetector walk-up detection.

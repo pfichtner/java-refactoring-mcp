@@ -1,15 +1,21 @@
 package com.github.pfichtner;
 
-import com.github.pfichtner.project.JavaProject;
-
-import org.eclipse.jdt.core.dom.*;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.PackageDeclaration;
+import org.eclipse.jdt.core.dom.QualifiedName;
+
+import com.github.pfichtner.project.JavaProject;
 
 /**
  * Headless Rename Package refactoring.

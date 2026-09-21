@@ -1,15 +1,16 @@
 package com.github.pfichtner.cli;
 
-import com.github.pfichtner.JdtConvertAnonymousToNested;
-import com.github.pfichtner.JdtRenamer;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
-import picocli.CommandLine.Spec;
-import picocli.CommandLine.Model.CommandSpec;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.Callable;
+
+import com.github.pfichtner.JdtConvertAnonymousToNested;
+import com.github.pfichtner.JdtRenamer;
+
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Model.CommandSpec;
+import picocli.CommandLine.Option;
+import picocli.CommandLine.Spec;
 
 /**
  * CLI subcommand for converting an anonymous class to a named nested class.

@@ -1,16 +1,17 @@
 package com.github.pfichtner;
 
-import com.github.pfichtner.project.MavenProject;
-import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RefactoringStoryBoard;
-import org.approvaltests.Approvals;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.approvaltests.Approvals;
+import org.junit.jupiter.api.Test;
+
+import com.github.pfichtner.project.MavenProject;
+import com.github.pfichtner.support.Fixtures;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 
 /**
  * Approval tests for Remove Method.

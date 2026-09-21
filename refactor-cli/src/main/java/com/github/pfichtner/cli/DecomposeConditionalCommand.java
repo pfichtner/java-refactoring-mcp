@@ -1,15 +1,16 @@
 package com.github.pfichtner.cli;
 
-import com.github.pfichtner.JdtDecomposeConditional;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Mixin;
-import picocli.CommandLine.Option;
-import picocli.CommandLine.Spec;
-import picocli.CommandLine.Model.CommandSpec;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.Callable;
+
+import com.github.pfichtner.JdtDecomposeConditional;
+
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Mixin;
+import picocli.CommandLine.Model.CommandSpec;
+import picocli.CommandLine.Option;
+import picocli.CommandLine.Spec;
 
 /** CLI subcommand for decompose-conditional refactoring. Logic lives in {@link JdtDecomposeConditional}. */
 @Command(

@@ -1,15 +1,15 @@
 package com.github.pfichtner;
 
-import com.github.pfichtner.project.MavenProject;
-import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RefactoringStoryBoard;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
+import com.github.pfichtner.project.MavenProject;
+import com.github.pfichtner.support.Fixtures;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 
 /**
  * M3 edge-case approval tests: overloaded methods, inheritance, generics,

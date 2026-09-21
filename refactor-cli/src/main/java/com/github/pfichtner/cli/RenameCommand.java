@@ -1,13 +1,5 @@
 package com.github.pfichtner.cli;
 
-import com.github.pfichtner.FileChange;
-import com.github.pfichtner.JdtRenamer;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Mixin;
-import picocli.CommandLine.Option;
-import picocli.CommandLine.Spec;
-import picocli.CommandLine.Model.CommandSpec;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,6 +7,15 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
+
+import com.github.pfichtner.FileChange;
+import com.github.pfichtner.JdtRenamer;
+
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Mixin;
+import picocli.CommandLine.Model.CommandSpec;
+import picocli.CommandLine.Option;
+import picocli.CommandLine.Spec;
 
 /**
  * CLI subcommand for rename refactoring. Logic lives in {@link JdtRenamer}.

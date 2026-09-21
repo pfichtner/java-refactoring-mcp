@@ -1,16 +1,17 @@
 package com.github.pfichtner.cli;
 
-import org.approvaltests.Approvals;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import picocli.CommandLine;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.approvaltests.Approvals;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import picocli.CommandLine;
 
 /**
  * Integration tests for the {@code remove-param} CLI subcommand.

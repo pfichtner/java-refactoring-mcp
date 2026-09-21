@@ -1,11 +1,12 @@
 package com.github.pfichtner.cli;
 
+import java.nio.file.Path;
+
 import com.github.pfichtner.locator.Locator;
 import com.github.pfichtner.locator.LocatorResolver;
+
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Option;
-
-import java.nio.file.Path;
 
 /**
  * Picocli mixin that provides a name-based alternative to {@code --line}/{@code --column}.

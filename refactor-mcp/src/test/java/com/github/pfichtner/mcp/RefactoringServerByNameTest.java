@@ -1,15 +1,14 @@
 package com.github.pfichtner.mcp;
 
-import org.approvaltests.Approvals;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import org.approvaltests.Approvals;
+import org.junit.jupiter.api.Test;
 
 /**
  * Integration tests for name-based locator support in the MCP layer.

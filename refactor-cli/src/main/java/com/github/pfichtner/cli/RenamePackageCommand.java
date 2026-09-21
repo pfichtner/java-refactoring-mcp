@@ -1,17 +1,18 @@
 package com.github.pfichtner.cli;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.concurrent.Callable;
+
 import com.github.pfichtner.FileChange;
 import com.github.pfichtner.JdtRenamePackage;
 import com.github.pfichtner.project.JavaProject;
 import com.github.pfichtner.project.ProjectDetector;
+
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
-import picocli.CommandLine.Model.CommandSpec;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.concurrent.Callable;
 
 /** CLI subcommand rename-package. Logic lives in {@link JdtRenamePackage}. */
 @Command(

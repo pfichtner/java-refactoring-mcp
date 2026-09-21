@@ -1,10 +1,19 @@
 package com.github.pfichtner;
 
-import org.eclipse.jdt.core.dom.*;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.NodeFinder;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
 
 /**
  * Headless Convert-Anonymous-Class-to-Named-Nested-Class refactoring using JDT ASTParser.

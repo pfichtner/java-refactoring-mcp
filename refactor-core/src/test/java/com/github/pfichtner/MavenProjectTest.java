@@ -1,15 +1,16 @@
 package com.github.pfichtner;
 
-import com.github.pfichtner.project.MavenProject;
-import com.github.pfichtner.support.Fixtures;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import com.github.pfichtner.project.MavenProject;
+import com.github.pfichtner.support.Fixtures;
 
 /**
  * Tests for the Maven project model and project-context rename.
