@@ -1,0 +1,8 @@
+public class Counter {
+    private int count;
+
+    void reset() {
+        count = 0;
+        System.out.println(count);
+    }
+}

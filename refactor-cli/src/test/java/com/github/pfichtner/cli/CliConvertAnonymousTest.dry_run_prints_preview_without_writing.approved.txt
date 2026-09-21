@@ -1,0 +1,19 @@
+Dry run — no file written.
+
+public class Outer {
+
+    void start() {
+        Runnable r = new Worker();
+        r.run();
+    }
+
+
+    private class Worker implements Runnable {
+
+        @Override
+        public void run() {
+            System.out.println("running");
+        }
+    }
+}
+

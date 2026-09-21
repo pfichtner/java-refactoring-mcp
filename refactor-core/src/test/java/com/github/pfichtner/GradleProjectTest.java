@@ -3,9 +3,11 @@ package com.github.pfichtner;
 import com.github.pfichtner.project.GradleProject;
 import com.github.pfichtner.support.Fixtures;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -43,5 +45,69 @@ class GradleProjectTest {
         String withoutProject = JdtRenamer.renameLocalVariable(source, "Calculator.java", offset, "sum");
 
         assertThat(withProject).isEqualTo(withoutProject);
+    }
+
+    @Test
+    void reads_version_from_build_gradle_kts(@TempDir Path tmp) throws Exception {
+        Files.writeString(tmp.resolve("build.gradle.kts"), """
+                plugins { java }
+                java {
+                    sourceCompatibility = JavaVersion.VERSION_17
+                }
+                """);
+
+        GradleProject project = new GradleProject(tmp);
+        assertThat(project.javaVersion()).isEqualTo("17");
+        assertThat(project.sourceRoots()).isEqualTo(List.of(tmp.resolve("src/main/java").toAbsolutePath()));
+    }
+
+    @Test
+    void honors_single_string_src_dirs_declaration(@TempDir Path tmp) throws Exception {
+        Files.writeString(tmp.resolve("build.gradle"), """
+                plugins { id 'java' }
+                sourceSets {
+                    main { java.srcDirs = 'src/gen' }
+                }
+                """);
+
+        GradleProject project = new GradleProject(tmp);
+        assertThat(project.sourceRoots()).isEqualTo(List.of(tmp.resolve("src/gen").toAbsolutePath()));
+    }
+
+    @Test
+    void defaults_to_release_21_and_main_java_root_when_no_build_script(@TempDir Path tmp) {
+        GradleProject project = new GradleProject(tmp);
+
+        assertThat(project.javaVersion()).isEqualTo("21");
+        assertThat(project.sourceRoots()).isEqualTo(List.of(tmp.resolve("src/main/java").toAbsolutePath()));
+    }
+
+    @Test
+    void defaults_to_main_java_root_when_no_src_dirs_declared(@TempDir Path tmp) throws Exception {
+        Files.writeString(tmp.resolve("build.gradle"), "plugins { id 'java' }");
+
+        GradleProject project = new GradleProject(tmp);
+        assertThat(project.sourceRoots()).isEqualTo(List.of(tmp.resolve("src/main/java").toAbsolutePath()));
+    }
+
+    @Test
+    void adds_test_source_root_when_present(@TempDir Path tmp) throws Exception {
+        Files.writeString(tmp.resolve("build.gradle"), "plugins { id 'java' }");
+        Files.createDirectories(tmp.resolve("src/test/java"));
+
+        GradleProject project = new GradleProject(tmp);
+        assertThat(project.sourceRoots())
+                .contains(tmp.resolve("src/main/java").toAbsolutePath())
+                .contains(tmp.resolve("src/test/java").toAbsolutePath());
+    }
+
+    @Test
+    void empty_classpath_when_build_script_has_no_dependencies(@TempDir Path tmp) throws Exception {
+        Files.writeString(tmp.resolve("build.gradle"), """
+                plugins { id 'java' }
+                sourceCompatibility = '21'
+                """);
+
+        assertThat(new GradleProject(tmp).classpath()).isEmpty();
     }
 }

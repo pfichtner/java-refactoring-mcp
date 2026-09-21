@@ -1,0 +1,14 @@
+Dry run — no file written.
+
+public class Greeter {
+    public void run() {
+        sayHi();
+        int x = 42;
+    }
+
+    private void sayHi() {
+        System.out.println("Hello");
+        System.out.println("World");
+    }
+}
+

@@ -1,0 +1,20 @@
+Dry run — no files written.
+
+=== App.java ===
+package com.example;
+
+public class App {
+    public static void main(String[] args) {
+        Greeter g = new Greeter();
+        g.greet("World");
+    }
+}
+
+=== Greeter.java ===
+package com.example;
+
+public class Greeter {
+    public void greet(java.lang.String whom) {
+        System.out.println("Hello, " + whom);
+    }
+}

@@ -1,0 +1,22 @@
+Dry run — no files written.
+Would change (2): App.java, Converter.java
+
+=== App.java ===
+package com.example;
+
+public class App {
+    public static void main(String[] args) {
+        Converter c = new Converter();
+        System.out.println(c.convert("val:", 42));
+        System.out.println(c.convert("id:", 7));
+    }
+}
+
+=== Converter.java ===
+package com.example;
+
+public class Converter {
+    public Object convert(String prefix, int value) {
+        return prefix + value;
+    }
+}

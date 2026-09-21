@@ -1,0 +1,26 @@
+=== MathUtils.java ===
+package com.example;
+
+public class MathUtils {
+}
+
+=== Helpers.java ===
+package com.example;
+
+public class Helpers {
+
+    public static int square(int x) {
+        return x * x;
+    }
+}
+
+=== Client.java ===
+package com.example;
+
+public class Client {
+
+    public int compute() {
+        return Helpers.square(5);
+    }
+}
+

@@ -1,0 +1,16 @@
+=== App.java ===
+package com.example;
+
+public class App {
+    public static void main(String[] args) {
+        Calculator calc = new Calculator();
+        int result = 1 + 2;
+        System.out.println(result);
+    }
+}
+
+=== Calculator.java ===
+package com.example;
+
+public class Calculator {
+}

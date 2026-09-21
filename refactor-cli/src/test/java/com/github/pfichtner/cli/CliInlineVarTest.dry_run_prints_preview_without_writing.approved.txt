@@ -1,0 +1,9 @@
+Dry run — no file written.
+
+public class Foo {
+    public void run() {
+        System.out.println("Hello");
+        System.err.println("Hello");
+    }
+}
+

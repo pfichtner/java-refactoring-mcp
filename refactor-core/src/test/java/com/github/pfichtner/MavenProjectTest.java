@@ -3,9 +3,11 @@ package com.github.pfichtner;
 import com.github.pfichtner.project.MavenProject;
 import com.github.pfichtner.support.Fixtures;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -43,5 +45,88 @@ class MavenProjectTest {
         String withoutProject = JdtRenamer.renameLocalVariable(source, "Calculator.java", offset, "sum");
 
         assertThat(withProject).isEqualTo(withoutProject);
+    }
+
+    @Test
+    void honors_custom_sourceDirectory_from_pom(@TempDir Path tmp) throws Exception {
+        Files.writeString(tmp.resolve("pom.xml"), """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <project>
+                    <modelVersion>4.0.0</modelVersion>
+                    <groupId>com.example</groupId>
+                    <artifactId>custom-src</artifactId>
+                    <version>1.0</version>
+                    <build>
+                        <sourceDirectory>src/custom</sourceDirectory>
+                    </build>
+                </project>
+                """);
+
+        MavenProject project = new MavenProject(tmp);
+        assertThat(project.sourceRoots()).isEqualTo(List.of(tmp.resolve("src/custom").toAbsolutePath()));
+    }
+
+    @Test
+    void falls_back_to_maven_compiler_source_when_no_release(@TempDir Path tmp) throws Exception {
+        Files.writeString(tmp.resolve("pom.xml"), """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <project>
+                    <modelVersion>4.0.0</modelVersion>
+                    <groupId>com.example</groupId>
+                    <artifactId>java11</artifactId>
+                    <version>1.0</version>
+                    <properties>
+                        <maven.compiler.source>11</maven.compiler.source>
+                    </properties>
+                </project>
+                """);
+
+        assertThat(new MavenProject(tmp).javaVersion()).isEqualTo("11");
+    }
+
+    @Test
+    void defaults_to_release_21_when_pom_has_no_compiler_version(@TempDir Path tmp) throws Exception {
+        Files.writeString(tmp.resolve("pom.xml"), """
+                <project>
+                    <modelVersion>4.0.0</modelVersion>
+                    <groupId>com.example</groupId>
+                    <artifactId>no-version</artifactId>
+                </project>
+                """);
+
+        assertThat(new MavenProject(tmp).javaVersion()).isEqualTo("21");
+    }
+
+    @Test
+    void defaults_to_main_java_root_when_no_source_directory(@TempDir Path tmp) throws Exception {
+        Files.writeString(tmp.resolve("pom.xml"), "<project/>");
+
+        MavenProject project = new MavenProject(tmp);
+        assertThat(project.sourceRoots()).isEqualTo(List.of(tmp.resolve("src/main/java").toAbsolutePath()));
+    }
+
+    @Test
+    void empty_classpath_without_invoking_maven_when_no_deps_and_no_parent(@TempDir Path tmp)
+            throws Exception {
+        Files.writeString(tmp.resolve("pom.xml"), """
+                <project>
+                    <modelVersion>4.0.0</modelVersion>
+                    <groupId>com.example</groupId>
+                    <artifactId>no-deps</artifactId>
+                </project>
+                """);
+
+        assertThat(new MavenProject(tmp).classpath()).isEmpty();
+    }
+
+    @Test
+    void adds_test_source_root_when_present(@TempDir Path tmp) throws Exception {
+        Files.writeString(tmp.resolve("pom.xml"), "<project/>");
+        Files.createDirectories(tmp.resolve("src/test/java"));
+
+        MavenProject project = new MavenProject(tmp);
+        assertThat(project.sourceRoots())
+                .contains(tmp.resolve("src/main/java").toAbsolutePath())
+                .contains(tmp.resolve("src/test/java").toAbsolutePath());
     }
 }

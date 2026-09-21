@@ -1,0 +1,9 @@
+Dry run — no file written.
+
+public class Foo {
+    public int compute() {
+        int answer = 6 * 7;
+        return answer;
+    }
+}
+

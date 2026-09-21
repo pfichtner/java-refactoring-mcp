@@ -1,0 +1,25 @@
+=== Outer.java (modified) ===
+package com.example;
+
+public class Outer {
+
+    private String name;
+
+    public Outer(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
+}
+
+=== Helper.java (new file) ===
+package com.example;
+
+public class Helper {
+
+    static int doubleIt(int x) {
+        return x * 2;
+    }
+}

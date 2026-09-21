@@ -1,0 +1,10 @@
+public class Foo {
+
+    public boolean isValid(int x) {
+        return x <= 100;
+    }
+
+    public int clamp(int x) {
+        return Math.min(x, 100);
+    }
+}

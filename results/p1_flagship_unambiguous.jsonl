@@ -1,0 +1,8 @@
+{"run":"P1_flagship_pilot","status":"HONEST_PARTIAL_1OF108",
+ "cells_required_full_matrix":108,"cells_completed_scored":1,"cells_pending":107,
+ "flagship_cell":"javapoet/typebox_A_r1","arm":"A",
+ "api_calls":23,"input_tokens":111584,"output_tokens":2000,
+ "cache_read":191105,"cache_write":0,"latency_s":831.0,
+ "|R|":13,"|G|":13,"|R_inter_G|":13,"precision":1.0,"recall":1.0,"f1":1.0,
+ "verdict":"cell PASS","matrix_complete":false,
+ "note":"One flagship Approach-A cell genuinely ran end-to-end (live opencode, 13-file semantic rename, events archived, scored P=R=F1=1.0). 107 cells NOT executed this session; they are intentionally not fabricated into the matrix."}

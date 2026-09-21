@@ -1,0 +1,38 @@
+Dry run — no files written.
+Would change (3): App.java, Point.java, Printer.java
+
+=== App.java ===
+package com.example;
+
+public class App {
+    public static void main(String[] args) {
+        Printer p = new Printer();
+        p.print(new Point(10, 20), "A");
+        p.print(new Point(0, 0), "origin");
+    }
+}
+
+=== Point.java ===
+package com.example;
+
+public class Point {
+    private final int x;
+    private final int y;
+
+    public Point(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    public int getX() { return x; }
+    public int getY() { return y; }
+}
+
+=== Printer.java ===
+package com.example;
+
+public class Printer {
+    public void print(Point point, String label) {
+        System.out.println(label + " at (" + point.getX() + ", " + point.getY() + ")");
+    }
+}
