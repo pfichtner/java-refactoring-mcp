@@ -34,7 +34,7 @@ class MoveStaticMemberTest {
         int offset = Fixtures.offsetOf(mathSource, "square");
 
         Map<Path, String> result = JdtMoveStaticMember.moveStaticMember(
-                project, mathFile, offset, "Helpers");
+                project, mathFile, offset, "com.example.Helpers");
 
         assertThat(result).containsKey(mathFile.toAbsolutePath().normalize());
         assertThat(result).containsKey(helpersFile.toAbsolutePath().normalize());
@@ -69,7 +69,7 @@ class MoveStaticMemberTest {
         int offset = Fixtures.offsetOf(mathSource, "class MathUtils");
 
         IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class)
-                .isThrownBy(() -> JdtMoveStaticMember.moveStaticMember(project, mathFile, offset, "Helpers"))
+                .isThrownBy(() -> JdtMoveStaticMember.moveStaticMember(project, mathFile, offset, "com.example.Helpers"))
                 .actual();
         assertThat(ex.getMessage()).contains("No static");
 

@@ -41,7 +41,7 @@ class CliMoveMethodTest {
                 "move-method",
                 "--file", printerFile.toString(),
                 "--method", "format",
-                "--target-class", "Report",
+                "--target-class", "com.example.Report",
                 "--dry-run");
 
         assertThat(exit).as("Expected exit code 0: " + out).isEqualTo(0);
@@ -62,7 +62,7 @@ class CliMoveMethodTest {
                 "move-method",
                 "--file", printerFile.toString(),
                 "--method", "format",
-                "--target-class", "Report");
+                "--target-class", "com.example.Report");
 
         assertThat(exit).as("Expected exit code 0: " + out).isEqualTo(0);
         assertThat(Files.readString(reportFile)).as("Target class should gain the method")

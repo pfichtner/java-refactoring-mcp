@@ -22,10 +22,10 @@ public class Printer {
 ```
 
 ### Refactoring:
-**move method** `Printer.format(Report)` → `NonExistent`  
+**move method** `Printer.format(Report)` → `com.example.NonExistent`  
 line 5, col 19
 
 ### Diagnostic:
 ```
-Source file for class 'NonExistent' not found in project source roots.
+Source file for class 'com.example.NonExistent' not found in project source roots.
 ```

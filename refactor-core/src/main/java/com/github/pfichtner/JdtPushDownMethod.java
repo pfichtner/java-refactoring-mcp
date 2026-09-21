@@ -24,8 +24,8 @@ import java.util.*;
  *
  * <p>Known limitations:
  * <ul>
- *   <li>Subclasses are found by scanning for {@code extends ClassName}; fully-qualified
- *       {@code extends} clauses (e.g. {@code extends com.example.Animal}) are not matched.</li>
+ *   <li>Subclasses resolved by checking import declarations and package context; wildcard
+ *       imports ({@code import pkg.*}) are not resolved.</li>
  *   <li>Only direct subclasses (single-level inheritance) are pushed to.</li>
  *   <li>{@code @Override} annotations on the method are copied verbatim.</li>
  * </ul>
@@ -55,16 +55,17 @@ public class JdtPushDownMethod {
         }
 
         TypeDeclaration type = findPrimaryType(cu);
-        String className = type.getName().getIdentifier();
+        String className  = type.getName().getIdentifier();
+        String classFqn   = JdtPullUpField.primaryTypeFqn(cu);
 
         String methodName = method.getName().getIdentifier();
         int paramCount    = method.parameters().size();
 
         // Find all direct subclasses in the project
-        List<Path> subclassFiles = findSubclasses(project, absSource, className);
+        List<Path> subclassFiles = findSubclasses(project, absSource, className, classFqn);
         if (subclassFiles.isEmpty()) {
             throw new IllegalArgumentException(
-                    "No direct subclasses of '" + className
+                    "No direct subclasses of '" + classFqn
                     + "' found in project source roots.");
         }
 
@@ -122,7 +123,7 @@ public class JdtPushDownMethod {
     }
 
     private static List<Path> findSubclasses(
-            JavaProject project, Path excludeFile, String superclassName)
+            JavaProject project, Path excludeFile, String superclassSimpleName, String superclassFqn)
             throws IOException, InterruptedException {
         List<Path> result = new ArrayList<>();
         for (Path root : project.sourceRoots()) {
@@ -137,27 +138,13 @@ public class JdtPushDownMethod {
             for (Path file : javaFiles) {
                 if (file.equals(excludeFile)) continue;
                 String src = Files.readString(file);
-                if (containsExtends(src, superclassName)) {
+                CompilationUnit cu = parse(src, "Unknown.java");
+                if (JdtPullUpField.extendsClass(cu, superclassFqn)) {
                     result.add(file);
                 }
             }
         }
         return result;
-    }
-
-    private static boolean containsExtends(String source, String superclassName) {
-        CompilationUnit cu = parse(source, "Unknown.java");
-        return ((List<?>) cu.types()).stream()
-                .filter(o -> o instanceof TypeDeclaration)
-                .map(o -> (TypeDeclaration) o)
-                .anyMatch(td -> {
-                    Type superType = td.getSuperclassType();
-                    if (superType == null) return false;
-                    String typeName = superType.toString();
-                    int dot = typeName.lastIndexOf('.');
-                    String simpleName = dot >= 0 ? typeName.substring(dot + 1) : typeName;
-                    return simpleName.equals(superclassName);
-                });
     }
 
     static TypeDeclaration findPrimaryType(CompilationUnit cu) {

@@ -1,4 +1,4 @@
-# Move method rejected: Report already declares describe(Report)
+# Move method rejected: com.other.Report already declares format
 
 
 ### Input: Printer.java:
@@ -22,10 +22,10 @@ public class Printer {
 ```
 
 ### Refactoring:
-**move method** `Printer.describe(Report)` → `com.example.Report`  
-line 9, col 19
+**move method** `Printer.format(Report)` → `com.other.Report`  
+line 5, col 19
 
 ### Diagnostic:
 ```
-Class 'com.example.Report' already declares 'describe' with 1 parameter(s).
+Class 'com.other.Report' already declares 'format' with 1 parameter(s).
 ```
