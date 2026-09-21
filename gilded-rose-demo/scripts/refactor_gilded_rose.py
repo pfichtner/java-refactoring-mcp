@@ -38,6 +38,8 @@ MOVE_TO = {
     "updateNormal": "RegularUpdater",
 }
 
+PACKAGE = "gildedrose"
+
 GILDEDROSE = SRC / "GildedRose.java"
 
 
@@ -98,7 +100,7 @@ def migrate(path):
                     project_root=str(DEMO),
                     file=str(GILDEDROSE),
                     method=helper,
-                    target_class=rule)
+                    target_class=f"{PACKAGE}.{rule}")
         blocks = parse_file_blocks(text)
         for name in (f"{rule}.java", "GildedRose.java"):
             assert name in blocks, text

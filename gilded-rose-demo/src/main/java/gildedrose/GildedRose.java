@@ -1,10 +1,14 @@
 package gildedrose;
 
+import java.util.List;
+
 public class GildedRose {
 
-    private static final String AGED_BRIE = "Aged Brie";
-    private static final String BACKSTAGE_PASS = "Backstage passes to a TAFKAL80ETC concert";
-    private static final String SULFURAS = "Sulfuras, Hand of Ragnaros";
+    private final List<ItemUpdater> chain = List.of(
+            new AgedBrieUpdater(),
+            new BackstagePassUpdater(),
+            new SulfurasUpdater(),
+            new RegularUpdater());
 
     Item[] items;
 
@@ -14,63 +18,17 @@ public class GildedRose {
 
     public void updateQuality() {
         for (int i = 0; i < items.length; i++) {
-            Item item = items[i];
-            if (AGED_BRIE.equals(item.name)) {
-                updateAgedBrie(item);
-            } else if (BACKSTAGE_PASS.equals(item.name)) {
-                updateBackstagePass(item);
-            } else if (SULFURAS.equals(item.name)) {
-                updateSulfuras(item);
-            } else {
-                updateNormal(item);
-            }
+            apply(items[i]);
         }
     }
 
-    private void updateAgedBrie(Item item) {
-        if (item.quality < 50) {
-            item.quality = item.quality + 1;
-        }
-        item.sellIn = item.sellIn - 1;
-        if (item.sellIn < 0) {
-            if (item.quality < 50) {
-                item.quality = item.quality + 1;
+    private void apply(Item item) {
+        for (ItemUpdater updater : chain) {
+            if (updater.canHandle(item)) {
+                updater.update(item);
+                return;
             }
         }
-    }
-
-    private void updateBackstagePass(Item item) {
-        if (item.quality < 50) {
-            item.quality = item.quality + 1;
-            if (item.sellIn < 11) {
-                if (item.quality < 50) {
-                    item.quality = item.quality + 1;
-                }
-            }
-            if (item.sellIn < 6) {
-                if (item.quality < 50) {
-                    item.quality = item.quality + 1;
-                }
-            }
-        }
-        item.sellIn = item.sellIn - 1;
-        if (item.sellIn < 0) {
-            item.quality = item.quality - item.quality;
-        }
-    }
-
-    private void updateSulfuras(Item item) {
-    }
-
-    private void updateNormal(Item item) {
-        if (item.quality > 0) {
-            item.quality = item.quality - 1;
-        }
-        item.sellIn = item.sellIn - 1;
-        if (item.sellIn < 0) {
-            if (item.quality > 0) {
-                item.quality = item.quality - 1;
-            }
-        }
+        throw new IllegalStateException("No updater for item: " + item.name);
     }
 }
