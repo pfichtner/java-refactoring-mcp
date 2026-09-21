@@ -23,5 +23,5 @@ line 5, col 19
 
 ### Diagnostic:
 ```
-Superclass 'Animal' already declares 'name' with 0 parameter(s).
+Superclass 'com.example.Animal' already declares 'name' with 0 parameter(s).
 ```

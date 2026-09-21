@@ -51,7 +51,7 @@ import java.util.stream.Collectors;
  *
  * <p>Limitations:
  * <ul>
- *   <li>Call-site matching uses the source class's simple name; members with the same
+ *   <li>Call-site matching uses the source class's simple name (as it appears in Java source); members with the same
  *       name in other classes are not affected.</li>
  *   <li>Qualified or wildcard-imported call sites are not updated.</li>
  *   <li>References to the member from within the source class body are not updated.</li>
@@ -61,12 +61,12 @@ public class JdtMoveStaticMember {
 
     /**
      * Moves the static member at {@code offset} from the class in {@code sourceFile}
-     * to the class named {@code targetClassName}.
+     * to the class identified by {@code targetClassName}.
      *
      * @param project         Maven project for enumerating source roots
      * @param sourceFile      file containing the static member to move
      * @param offset          character offset inside the member declaration
-     * @param targetClassName simple name of the target class
+     * @param targetClassName fully-qualified name of the target class (e.g. {@code "com.example.Helpers"})
      * @return {@code path → new source} for every changed file
      */
     public static Map<Path, String> moveStaticMember(
@@ -89,7 +89,7 @@ public class JdtMoveStaticMember {
         String sourceClassName = findPrimaryTypeName(sourceCu);
 
         // Find target class file
-        Path targetFile = JdtPullUpField.findClassFile(project, targetClassName);
+        Path targetFile = JdtPullUpField.findClassFileByFqn(project, targetClassName);
         if (targetFile == null) {
             throw new IllegalArgumentException(
                     "Source file for target class '" + targetClassName
@@ -99,6 +99,7 @@ public class JdtMoveStaticMember {
         String targetText = Files.readString(targetFile);
         CompilationUnit targetCu = parse(targetText, targetFile.getFileName().toString());
         TypeDeclaration targetType = JdtPullUpField.findPrimaryType(targetCu);
+        String targetSimpleName = targetType.getName().getIdentifier();
 
         // Check for name collision in target
         for (Object bd : targetType.bodyDeclarations()) {
@@ -130,7 +131,7 @@ public class JdtMoveStaticMember {
         result.put(targetFile, newTargetText);
 
         String callSitePattern = sourceClassName + "." + memberName;
-        String newCallSite     = targetClassName + "." + memberName;
+        String newCallSite     = targetSimpleName + "." + memberName;
 
         for (Path f : allFiles) {
             if (f.equals(absSource) || f.equals(targetFile)) continue;

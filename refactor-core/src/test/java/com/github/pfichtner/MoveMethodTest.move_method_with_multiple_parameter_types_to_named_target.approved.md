@@ -1,4 +1,4 @@
-# Move method to named target: Printer.byline(Report, Author) → Report
+# Move method to named target: Printer.byline(Report, Author) → com.example.Report
 
 
 ### Input: Printer.java:
@@ -44,8 +44,8 @@ public class Report {
 ```
 
 ### Refactoring:
-**move method** `Printer.byline(Report, Author)` → `Report` (not Author)  
-target class named explicitly; line 13, col 19 in Printer.java
+**move method** `Printer.byline(Report, Author)` → `com.example.Report` (not Author)  
+target class named explicitly by FQN; line 13, col 19 in Printer.java
 
 ### Output: Printer.java:
 ```java

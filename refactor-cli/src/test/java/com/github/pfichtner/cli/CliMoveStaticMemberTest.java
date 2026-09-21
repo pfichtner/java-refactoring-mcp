@@ -41,7 +41,7 @@ class CliMoveStaticMemberTest {
                 "move-static",
                 "--file", mathUtilsFile.toString(),
                 "--line", "5", "--column", "5",
-                "--target", "Helpers",
+                "--target", "com.example.Helpers",
                 "--dry-run");
 
         assertThat(exit).as("Expected exit code 0: " + out).isEqualTo(0);
@@ -62,7 +62,7 @@ class CliMoveStaticMemberTest {
                 "move-static",
                 "--file", mathUtilsFile.toString(),
                 "--line", "5", "--column", "5",
-                "--target", "Helpers");
+                "--target", "com.example.Helpers");
 
         assertThat(exit).as("Expected exit code 0: " + out).isEqualTo(0);
         assertThat(Files.readString(helpersFile)).as("Target class should gain the static member")

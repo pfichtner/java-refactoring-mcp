@@ -23,7 +23,6 @@ import java.util.*;
  *
  * <p>Known limitations:
  * <ul>
- *   <li>Target class located by simple name (file named {@code TargetClass.java}).</li>
  *   <li>References to {@code this} in the moved method remain unchanged — the caller
  *       is responsible for any semantic adjustments.</li>
  *   <li>Call sites in other files are not updated.</li>
@@ -37,7 +36,7 @@ public class JdtMoveMethod {
      * @param project    project used to enumerate source roots
      * @param sourceFile file containing the class with the method to move
      * @param offset     character offset in {@code sourceFile} pointing into the method
-     * @param targetClass simple name of the target class (e.g. {@code "Report"})
+     * @param targetClass fully-qualified name of the target class (e.g. {@code "com.example.Report"})
      * @return {@code path → new source} for the target file and the source file (2 entries)
      */
     public static Map<Path, String> moveMethod(
@@ -54,7 +53,7 @@ public class JdtMoveMethod {
                     "No method declaration found at the given offset.");
         }
 
-        Path targetFile = findClassFile(project, targetClass);
+        Path targetFile = JdtPullUpField.findClassFileByFqn(project, targetClass);
         if (targetFile == null) {
             throw new IllegalArgumentException(
                     "Source file for class '" + targetClass
@@ -105,21 +104,6 @@ public class JdtMoveMethod {
             }
         });
         return found[0];
-    }
-
-    private static Path findClassFile(JavaProject project, String simpleName)
-            throws IOException, InterruptedException {
-        String fileName = simpleName + ".java";
-        for (Path root : project.sourceRoots()) {
-            if (!Files.isDirectory(root)) continue;
-            try (var stream = Files.walk(root)) {
-                Optional<Path> found = stream
-                        .filter(p -> p.getFileName().toString().equals(fileName))
-                        .findFirst();
-                if (found.isPresent()) return found.get().toAbsolutePath().normalize();
-            }
-        }
-        return null;
     }
 
     private static CompilationUnit parse(String source, String unitName) {

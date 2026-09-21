@@ -25,8 +25,8 @@ import java.util.stream.Collectors;
  *
  * <p>Known limitations:
  * <ul>
- *   <li>Superclass located by simple name only; fully-qualified {@code extends} clauses
- *       across separate source roots may not resolve.</li>
+ *   <li>Superclass resolved via import declarations first, then same-package assumption;
+ *       wildcard imports ({@code import pkg.*}) are not resolved.</li>
  *   <li>Multi-fragment declarations (e.g. {@code int x, y;}) are moved as a unit.</li>
  * </ul>
  */
@@ -62,11 +62,13 @@ public class JdtPullUpField {
                     + "' has no explicit superclass — cannot pull up.");
         }
         String superSimpleName = extractSimpleName(superType);
+        String superFqn = resolveClassFqn(cu, superSimpleName);
 
-        Path superFile = findClassFile(project, superSimpleName);
+        Path superFile = findClassFileByFqn(project, superFqn);
+        if (superFile == null) superFile = findClassFile(project, superSimpleName);
         if (superFile == null) {
             throw new IllegalArgumentException(
-                    "Source file for superclass '" + superSimpleName
+                    "Source file for superclass '" + superFqn
                     + "' not found in project source roots.");
         }
 
@@ -185,6 +187,78 @@ public class JdtPullUpField {
                 .map(o -> (TypeDeclaration) o)
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("No type declaration found in source."));
+    }
+
+    /**
+     * Looks up a class file by its fully-qualified name (e.g. {@code "com.example.Report"}).
+     * Converts the FQN to a relative path and checks each source root for an exact match.
+     */
+    static Path findClassFileByFqn(JavaProject project, String fqn)
+            throws IOException, InterruptedException {
+        String relativePath = fqn.replace('.', '/') + ".java";
+        for (Path root : project.sourceRoots()) {
+            if (!Files.isDirectory(root)) continue;
+            Path candidate = root.resolve(relativePath).toAbsolutePath().normalize();
+            if (Files.isRegularFile(candidate)) return candidate;
+        }
+        return null;
+    }
+
+    /**
+     * Resolves a simple class name to its fully-qualified name by inspecting the
+     * import declarations of the given compilation unit.  If no matching import is
+     * found, the class is assumed to be in the same package as the compilation unit.
+     */
+    static String resolveClassFqn(CompilationUnit cu, String simpleName) {
+        for (Object o : cu.imports()) {
+            if (o instanceof ImportDeclaration id && !id.isStatic() && !id.isOnDemand()) {
+                String fqn = id.getName().getFullyQualifiedName();
+                if (fqn.endsWith("." + simpleName)) return fqn;
+            }
+        }
+        PackageDeclaration pkg = cu.getPackage();
+        return pkg != null ? pkg.getName().getFullyQualifiedName() + "." + simpleName : simpleName;
+    }
+
+    /**
+     * Returns the fully-qualified name of the primary type declared in the given
+     * compilation unit (package name + "." + simple type name).
+     */
+    static String primaryTypeFqn(CompilationUnit cu) {
+        String simpleName = findPrimaryType(cu).getName().getIdentifier();
+        PackageDeclaration pkg = cu.getPackage();
+        return pkg != null ? pkg.getName().getFullyQualifiedName() + "." + simpleName : simpleName;
+    }
+
+    /**
+     * Returns {@code true} if one of the top-level type declarations in {@code cu}
+     * has a superclass whose FQN matches {@code superclassFqn}.  Both the import
+     * list and the package declaration are consulted to resolve simple names.
+     */
+    static boolean extendsClass(CompilationUnit cu, String superclassFqn) {
+        String superSimpleName = superclassFqn.substring(superclassFqn.lastIndexOf('.') + 1);
+        String superPackage    = superclassFqn.contains(".")
+                ? superclassFqn.substring(0, superclassFqn.lastIndexOf('.')) : "";
+        for (Object o : cu.types()) {
+            if (!(o instanceof TypeDeclaration td)) continue;
+            Type superType = td.getSuperclassType();
+            if (superType == null) continue;
+            String typeName   = superType.toString();
+            int dot           = typeName.lastIndexOf('.');
+            String simpleExt  = dot >= 0 ? typeName.substring(dot + 1) : typeName;
+            if (!simpleExt.equals(superSimpleName)) continue;
+            // Fully-qualified in the extends clause?
+            if (typeName.equals(superclassFqn)) return true;
+            // Same package?
+            PackageDeclaration pkg = cu.getPackage();
+            if (pkg != null && pkg.getName().getFullyQualifiedName().equals(superPackage)) return true;
+            // Explicit import?
+            for (Object imp : cu.imports()) {
+                if (imp instanceof ImportDeclaration id && !id.isStatic() && !id.isOnDemand()
+                        && id.getName().getFullyQualifiedName().equals(superclassFqn)) return true;
+            }
+        }
+        return false;
     }
 
     static Path findClassFile(JavaProject project, String simpleName)

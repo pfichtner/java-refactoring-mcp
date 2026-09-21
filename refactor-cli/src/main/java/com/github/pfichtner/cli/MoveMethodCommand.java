@@ -26,7 +26,7 @@ public class MoveMethodCommand implements Callable<Integer> {
             description = "Source file containing the class with the method to move.") Path file;
     @Mixin LocatorOptions locator;
     @Option(names = {"--target-class", "-t"}, required = true,
-            description = "Simple name of the target class (e.g. 'Report').") String targetClass;
+            description = "Fully-qualified name of the target class (e.g. 'com.example.Report').") String targetClass;
     @Option(names = "--dry-run",
             description = "Print changed sources; do not write to disk.") boolean dryRun;
 

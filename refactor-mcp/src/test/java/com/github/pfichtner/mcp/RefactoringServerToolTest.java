@@ -162,7 +162,7 @@ class RefactoringServerToolTest {
                 "project_root", project("move-method"),
                 "file", project("move-method") + "/src/main/java/com/example/Printer.java",
                 "method", "format",
-                "target_class", "Report"));
+                "target_class", "com.example.Report"));
         Approvals.verify(text);
     }
 
@@ -263,7 +263,7 @@ class RefactoringServerToolTest {
                 "project_root", project("move-static"),
                 "file", project("move-static") + "/src/main/java/com/example/MathUtils.java",
                 "line", 5, "column", 5,
-                "target_class", "Helpers"));
+                "target_class", "com.example.Helpers"));
         Approvals.verify(text);
     }
 

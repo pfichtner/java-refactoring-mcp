@@ -38,7 +38,7 @@ public class MoveStaticMemberCommand implements Callable<Integer> {
     int column;
 
     @Option(names = {"--target", "-t"}, required = true,
-            description = "Simple name of the target class to move the member into.")
+            description = "Fully-qualified name of the target class to move the member into (e.g. 'com.example.Helpers').")
     String targetClassName;
 
     @Mixin ProjectOptions project;

@@ -24,8 +24,8 @@ import java.util.*;
  *
  * <p>Known limitations:
  * <ul>
- *   <li>Superclass located by simple name (file named {@code SuperclassName.java});
- *       fully-qualified {@code extends} clauses across separate source roots may not resolve.</li>
+ *   <li>Superclass resolved via import declarations first, then same-package assumption;
+ *       wildcard imports ({@code import pkg.*}) are not resolved.</li>
  *   <li>{@code @Override} annotations are copied verbatim — remove manually if unneeded.</li>
  *   <li>Method references to {@code this} fields absent in the superclass compile but
  *       may fail at runtime; caller's responsibility.</li>
@@ -68,11 +68,13 @@ public class JdtPullUpMethod {
                     + "' has no explicit superclass — cannot pull up.");
         }
         String superSimpleName = extractSimpleName(superType);
+        String superFqn = JdtPullUpField.resolveClassFqn(cu, superSimpleName);
 
-        Path superFile = findClassFile(project, superSimpleName);
+        Path superFile = JdtPullUpField.findClassFileByFqn(project, superFqn);
+        if (superFile == null) superFile = findClassFile(project, superSimpleName);
         if (superFile == null) {
             throw new IllegalArgumentException(
-                    "Source file for superclass '" + superSimpleName
+                    "Source file for superclass '" + superFqn
                     + "' not found in project source roots.");
         }
 
@@ -87,7 +89,7 @@ public class JdtPullUpMethod {
                 && md.getName().getIdentifier().equals(methodName)
                 && md.parameters().size() == paramCount))
             throw new IllegalArgumentException(
-                    "Superclass '" + superSimpleName + "' already declares '"
+                    "Superclass '" + superFqn + "' already declares '"
                     + methodName + "' with " + paramCount + " parameter(s).");
 
         String rawMethod = source.substring(

@@ -23,5 +23,5 @@ line 9, col 17
 
 ### Diagnostic:
 ```
-No direct subclasses of 'Dog' found in project source roots.
+No direct subclasses of 'com.example.Dog' found in project source roots.
 ```

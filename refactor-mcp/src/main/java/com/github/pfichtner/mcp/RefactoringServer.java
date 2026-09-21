@@ -1083,7 +1083,7 @@ public class RefactoringServer {
                         "properties", Map.ofEntries(
                                 Map.entry("project_root",  Map.of("type", "string", "description", "Absolute project root (Maven or Gradle).")),
                                 Map.entry("file",          Map.of("type", "string", "description", "Absolute path to the .java file containing the method to move.")),
-                                Map.entry("target_class",  Map.of("type", "string", "description", "Simple name of the target class, e.g. \"Report\".")),
+                                Map.entry("target_class",  Map.of("type", "string", "description", "Fully-qualified name of the target class, e.g. \"com.example.Report\".")),
                                 Map.entry("line",          Map.of("type", "integer", "description", "1-based line of the method to move. Use with 'column' OR use 'method' name-based locator.")),
                                 Map.entry("column",        Map.of("type", "integer", "description", "1-based column of the method name. Use with 'line'.")),
                                 Map.entry("method",        Map.of("type", "string",  "description", "Name-based locator: method name, e.g. \"format\" or \"format(Report)\".")),
@@ -1093,7 +1093,7 @@ public class RefactoringServer {
                         .description("""
                         Move a method from one class to another class within the project.
                         The method is removed from the source class and added to the target class.
-                        Target class is located by simple name within the project source roots.
+                        Target class is identified by its fully-qualified name (e.g. com.example.Report).
                         Call sites in other files are not updated.
                         Returns new source for both the target file and the source file.
                         Does not write to disk.
@@ -1523,7 +1523,7 @@ public class RefactoringServer {
                                 "file",           Map.of("type", "string",  "description", "Source file containing the static member (absolute path)"),
                                 "line",           Map.of("type", "integer", "description", "1-based line of the static member"),
                                 "column",         Map.of("type", "integer", "description", "1-based column of the static member"),
-                                "target_class",   Map.of("type", "string",  "description", "Simple name of the target class")
+                                "target_class",   Map.of("type", "string",  "description", "Fully-qualified name of the target class (e.g. \"com.example.Helpers\")")
                         ),
                         "required", List.of("project_root", "file", "line", "column", "target_class")
                 ))
