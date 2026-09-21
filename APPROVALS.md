@@ -221,32 +221,16 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 
 ## CLI
 
+### Cli rename
 | Test case | Approval |
 |-----------|----------|
 | Apply writes changed files | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliRenameTest.apply_writes_changed_files.approved.txt) |
 | Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliRenameTest.dry_run_prints_preview_without_writing.approved.txt) |
 
----
-
-## MCP server
-
+### Cli rename package
 | Test case | Approval |
 |-----------|----------|
-| Analyze refactoring rename method preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerTest.analyze_refactoring_rename_method_preview.approved.txt) |
-| Apply refactoring writes files and returns summary | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerTest.apply_refactoring_writes_files_and_returns_summary.approved.txt) |
-
----
-
-## Other
-
-### Change method signature
-| Test case | Approval |
-|-----------|----------|
-| Change method signature: change return type String → Object | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.change_return_type_updates_declaration_only.approved.md) |
-| Change method signature rejected: nothing to change | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.rejected_when_nothing_to_change.approved.md) |
-| Change method signature rejected: wrong paramOrder length | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.rejected_when_param_order_length_wrong.approved.md) |
-| Change method signature: reorder params + return type Object | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.reorder_and_return_type_change_applied_together.approved.md) |
-| Change method signature: reorder params convert(int,String) → convert(String,int) | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.reorder_params_updates_declaration_and_call_sites.approved.md) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliRenamePackageTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Cli change method signature
 | Test case | Approval |
@@ -391,10 +375,27 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 |-----------|----------|
 | Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliRemoveParamTest.dry_run_prints_preview_without_writing.approved.txt) |
 
-### Cli rename package
+---
+
+## MCP server
+
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliRenamePackageTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Analyze refactoring rename method preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerTest.analyze_refactoring_rename_method_preview.approved.txt) |
+| Apply refactoring writes files and returns summary | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerTest.apply_refactoring_writes_files_and_returns_summary.approved.txt) |
+
+---
+
+## Other
+
+### Change method signature
+| Test case | Approval |
+|-----------|----------|
+| Change method signature: change return type String → Object | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.change_return_type_updates_declaration_only.approved.md) |
+| Change method signature rejected: nothing to change | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.rejected_when_nothing_to_change.approved.md) |
+| Change method signature rejected: wrong paramOrder length | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.rejected_when_param_order_length_wrong.approved.md) |
+| Change method signature: reorder params + return type Object | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.reorder_and_return_type_change_applied_together.approved.md) |
+| Change method signature: reorder params convert(int,String) → convert(String,int) | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.reorder_params_updates_declaration_and_call_sites.approved.md) |
 
 ### Convert anonymous to nested
 | Test case | Approval |

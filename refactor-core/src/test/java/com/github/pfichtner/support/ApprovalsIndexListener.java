@@ -32,7 +32,22 @@ public class ApprovalsIndexListener implements TestExecutionListener {
             Map.entry("Convert to record", List.of("ConvertToRecordTest")),
             Map.entry("Build system / project type", List.of(
                     "MavenProjectTest", "GradleProjectTest", "ExplicitProjectTest")),
-            Map.entry("CLI", List.of("CliRenameTest")),
+            Map.entry("CLI", List.of(
+                    "CliRenameTest", "CliRenamePackageTest",
+                    "CliChangeMethodSignatureTest",
+                    "CliConvertAnonymousTest", "CliConvertNestedTest", "CliConvertToRecordTest",
+                    "CliDecomposeConditionalTest", "CliEncapsulateFieldTest",
+                    "CliExtractConstTest", "CliExtractInterfaceTest", "CliExtractSuperclassTest",
+                    "CliExtractTest", "CliExtractVarTest",
+                    "CliInlineConstTest", "CliInlineMethodTest", "CliInlineVarTest",
+                    "CliIntroduceIndirectionTest", "CliIntroduceParamObjectTest",
+                    "CliIntroduceParamTest", "CliIntroduceStaticFactoryTest",
+                    "CliLocatorByNameTest",
+                    "CliMoveClassTest", "CliMoveMethodTest", "CliMoveStaticMemberTest",
+                    "CliPromoteToFieldTest",
+                    "CliPullUpFieldTest", "CliPullUpMethodTest",
+                    "CliPushDownFieldTest", "CliPushDownMethodTest",
+                    "CliRemoveParamTest")),
             Map.entry("MCP server", List.of("RefactoringServerTest")));
 
     @Override
