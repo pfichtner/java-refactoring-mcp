@@ -1,6 +1,8 @@
 package com.github.pfichtner.cli;
 
 import org.approvaltests.Approvals;
+import org.approvaltests.core.Options;
+import org.approvaltests.core.Scrubber;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import picocli.CommandLine;
@@ -46,7 +48,12 @@ class CliMoveClassTest {
         assertThat(exit).as("Expected exit code 0: " + out).isEqualTo(0);
         assertThat(Files.readString(calculatorFile)).as("Dry-run must not modify file on disk").isEqualTo(before);
 
-        Approvals.verify(out.toString());
+        Approvals.verify(out.toString(), new Options().withScrubber(scrubProjectRoot()));
+    }
+
+    private static Scrubber scrubProjectRoot() {
+        String projectRoot = Path.of("").toAbsolutePath().normalize().toString();
+        return input -> input.replace(projectRoot + java.io.File.separator, "{ROOT}/");
     }
 
     @Test

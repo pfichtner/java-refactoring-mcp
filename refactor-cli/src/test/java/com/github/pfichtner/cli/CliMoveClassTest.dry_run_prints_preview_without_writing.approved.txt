@@ -1,5 +1,5 @@
 Dry run — no files written.
-New path: /workspace/refactor-cli/target/test-classes/fixtures/projects/move-class/src/main/java/com/example/util/Calculator.java
+New path: {ROOT}/target/test-classes/fixtures/projects/move-class/src/main/java/com/example/util/Calculator.java
 
 === Calculator.java (new) ===
 package com.example.util;

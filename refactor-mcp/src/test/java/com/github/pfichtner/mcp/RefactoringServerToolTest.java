@@ -5,6 +5,8 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import org.approvaltests.Approvals;
+import org.approvaltests.core.Options;
+import org.approvaltests.core.Scrubber;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
@@ -280,7 +282,12 @@ class RefactoringServerToolTest {
                 "project_root", project("move-class"),
                 "file", project("move-class") + "/src/main/java/com/example/service/Calculator.java",
                 "new_package", "com.example.util"));
-        Approvals.verify(text);
+        Approvals.verify(text, new Options().withScrubber(scrubProjectRoot()));
+    }
+
+    private static Scrubber scrubProjectRoot() {
+        String projectRoot = Path.of("").toAbsolutePath().normalize().toString();
+        return input -> input.replace(projectRoot + java.io.File.separator, "{ROOT}/");
     }
 
     // -------------------------------------------------------------------------
