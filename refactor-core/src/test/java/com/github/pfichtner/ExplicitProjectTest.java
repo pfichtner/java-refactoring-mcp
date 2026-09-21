@@ -1,14 +1,15 @@
 package com.github.pfichtner;
 
-import com.github.pfichtner.project.ExplicitProject;
-import com.github.pfichtner.support.Fixtures;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
+
+import com.github.pfichtner.project.ExplicitProject;
+import com.github.pfichtner.support.Fixtures;
 
 /**
  * Tests for ExplicitProject — project constructed from caller-supplied source roots,

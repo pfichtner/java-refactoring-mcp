@@ -1,18 +1,19 @@
 package com.github.pfichtner.cli;
 
-import com.github.pfichtner.JdtIntroduceParameterObject;
-import com.github.pfichtner.JdtRenamer;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Mixin;
-import picocli.CommandLine.Option;
-import picocli.CommandLine.Spec;
-import picocli.CommandLine.Model.CommandSpec;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+
+import com.github.pfichtner.JdtIntroduceParameterObject;
+import com.github.pfichtner.JdtRenamer;
+
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Mixin;
+import picocli.CommandLine.Model.CommandSpec;
+import picocli.CommandLine.Option;
+import picocli.CommandLine.Spec;
 
 /** CLI subcommand for introduce-parameter-object refactoring. Logic lives in {@link JdtIntroduceParameterObject}. */
 @Command(

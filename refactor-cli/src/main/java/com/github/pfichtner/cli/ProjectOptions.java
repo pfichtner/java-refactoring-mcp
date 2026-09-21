@@ -1,13 +1,14 @@
 package com.github.pfichtner.cli;
 
-import com.github.pfichtner.project.ExplicitProject;
-import com.github.pfichtner.project.JavaProject;
-import com.github.pfichtner.project.ProjectDetector;
-import picocli.CommandLine.Option;
-
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
+
+import com.github.pfichtner.project.ExplicitProject;
+import com.github.pfichtner.project.JavaProject;
+import com.github.pfichtner.project.ProjectDetector;
+
+import picocli.CommandLine.Option;
 
 /**
  * Picocli mixin that provides project-discovery options shared by all commands.

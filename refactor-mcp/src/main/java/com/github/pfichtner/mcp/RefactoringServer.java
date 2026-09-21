@@ -1,38 +1,46 @@
 package com.github.pfichtner.mcp;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import com.github.pfichtner.FileChange;
+import com.github.pfichtner.JdtChangeMethodSignature;
 import com.github.pfichtner.JdtConvertAnonymousToNested;
 import com.github.pfichtner.JdtConvertNestedToTopLevel;
-import com.github.pfichtner.JdtIntroduceIndirection;
-import com.github.pfichtner.JdtMoveStaticMember;
-import com.github.pfichtner.JdtPromoteToField;
+import com.github.pfichtner.JdtConvertToRecord;
+import com.github.pfichtner.JdtDecomposeConditional;
+import com.github.pfichtner.JdtEncapsulateField;
 import com.github.pfichtner.JdtExtractConstant;
-import com.github.pfichtner.JdtMoveClass;
-import com.github.pfichtner.JdtRenamePackage;
 import com.github.pfichtner.JdtExtractInterface;
 import com.github.pfichtner.JdtExtractSuperclass;
-import com.github.pfichtner.JdtIntroduceParam;
-import com.github.pfichtner.JdtRemoveMethod;
-import com.github.pfichtner.JdtRemoveParam;
 import com.github.pfichtner.JdtExtractVariable;
 import com.github.pfichtner.JdtExtractor;
 import com.github.pfichtner.JdtInlineMethod;
 import com.github.pfichtner.JdtInliner;
-import com.github.pfichtner.JdtConvertToRecord;
+import com.github.pfichtner.JdtIntroduceIndirection;
+import com.github.pfichtner.JdtIntroduceParam;
 import com.github.pfichtner.JdtIntroduceParameterObject;
 import com.github.pfichtner.JdtIntroduceStaticFactory;
-import com.github.pfichtner.JdtChangeMethodSignature;
-import com.github.pfichtner.JdtDecomposeConditional;
-import com.github.pfichtner.JdtEncapsulateField;
-import com.github.pfichtner.JdtPullUpField;
+import com.github.pfichtner.JdtMoveClass;
 import com.github.pfichtner.JdtMoveMethod;
+import com.github.pfichtner.JdtMoveStaticMember;
+import com.github.pfichtner.JdtPromoteToField;
+import com.github.pfichtner.JdtPullUpField;
 import com.github.pfichtner.JdtPullUpMethod;
 import com.github.pfichtner.JdtPushDownField;
 import com.github.pfichtner.JdtPushDownMethod;
-import com.github.pfichtner.FileChange;
+import com.github.pfichtner.JdtRemoveMethod;
+import com.github.pfichtner.JdtRemoveParam;
+import com.github.pfichtner.JdtRenamePackage;
 import com.github.pfichtner.JdtRenamer;
 import com.github.pfichtner.locator.Locator;
 import com.github.pfichtner.locator.LocatorResolver;
 import com.github.pfichtner.project.ProjectDetector;
+
 import io.modelcontextprotocol.json.McpJsonDefaults;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
@@ -42,13 +50,6 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Builds the MCP server and registers refactoring tools.
@@ -1618,14 +1619,14 @@ public class RefactoringServer {
 
     private static CallToolResult ok(String text) {
         return CallToolResult.builder()
-                .content(List.of(new TextContent(text)))
+                .content(List.of(TextContent.builder(text).build()))
                 .isError(false)
                 .build();
     }
 
     private static CallToolResult error(String message) {
         return CallToolResult.builder()
-                .content(List.of(new TextContent("Error: " + message)))
+                .content(List.of(TextContent.builder("Error: " + message).build()))
                 .isError(true)
                 .build();
     }

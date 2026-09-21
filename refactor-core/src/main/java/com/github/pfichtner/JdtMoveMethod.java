@@ -1,12 +1,19 @@
 package com.github.pfichtner;
 
-import com.github.pfichtner.project.JavaProject;
-import org.eclipse.jdt.core.dom.*;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+
+import com.github.pfichtner.project.JavaProject;
 
 /**
  * Headless Move Method refactoring using JDT ASTParser.

@@ -1,20 +1,20 @@
 package com.github.pfichtner.mcp;
 
-import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
-import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
-import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
-import io.modelcontextprotocol.spec.McpSchema.TextContent;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+
 import org.approvaltests.Approvals;
 import org.approvaltests.core.Options;
 import org.approvaltests.core.Scrubber;
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
+import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
+import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import io.modelcontextprotocol.spec.McpSchema.TextContent;
 
 /**
  * Approval tests for the individual MCP tool handlers.
@@ -323,7 +323,7 @@ class RefactoringServerToolTest {
     }
 
     private static CallToolRequest fakeRequest(Map<String, Object> arguments) {
-        return CallToolRequest.builder().name("fake").arguments(arguments).build();
+        return CallToolRequest.builder("fake").arguments(arguments).build();
     }
 
     private static String textOf(CallToolResult result) {

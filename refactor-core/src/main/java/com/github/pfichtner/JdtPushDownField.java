@@ -1,12 +1,19 @@
 package com.github.pfichtner;
 
-import com.github.pfichtner.project.JavaProject;
-import org.eclipse.jdt.core.dom.*;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+
+import com.github.pfichtner.project.JavaProject;
 
 /**
  * Headless Push-Down Field refactoring using JDT ASTParser.

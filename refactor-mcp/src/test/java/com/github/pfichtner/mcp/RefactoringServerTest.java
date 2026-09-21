@@ -1,14 +1,16 @@
 package com.github.pfichtner.mcp;
 
-import org.approvaltests.Approvals;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import org.approvaltests.Approvals;
+import org.junit.jupiter.api.Test;
+
+import io.modelcontextprotocol.spec.McpSchema;
 
 /**
  * Tests for the MCP tool handlers.
@@ -188,17 +190,15 @@ class RefactoringServerTest {
         );
     }
 
-    private static io.modelcontextprotocol.spec.McpSchema.CallToolRequest fakeRequest(
+    private static McpSchema.CallToolRequest fakeRequest(
             Map<String, Object> arguments) {
-        return io.modelcontextprotocol.spec.McpSchema.CallToolRequest.builder()
-                .name("fake")
+        return McpSchema.CallToolRequest.builder("fake")
                 .arguments(arguments)
                 .build();
     }
 
-    private static String textOf(io.modelcontextprotocol.spec.McpSchema.CallToolResult result) {
-        return ((io.modelcontextprotocol.spec.McpSchema.TextContent)
-                result.content().get(0)).text();
+    private static String textOf(McpSchema.CallToolResult result) {
+        return ((McpSchema.TextContent) result.content().get(0)).text();
     }
 
     private static void copyTree(Path src, Path dst) throws Exception {

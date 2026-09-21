@@ -1,10 +1,18 @@
 package com.github.pfichtner;
 
-import org.eclipse.jdt.core.dom.*;
-
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.TypeParameter;
 
 /**
  * Headless Extract Interface refactoring using JDT ASTParser.

@@ -1,12 +1,13 @@
 package com.github.pfichtner;
 
-import com.github.pfichtner.support.Fixtures;
-import com.github.pfichtner.support.RefactoringStoryBoard;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import com.github.pfichtner.support.Fixtures;
+import com.github.pfichtner.support.RefactoringStoryBoard;
 
 /**
  * Approval tests for Extract Variable.
