@@ -110,21 +110,94 @@ For each pair:
    two-token edit the tool has no operation for: make the class `final` and the
    method `public` with `@Override`.)
 
-3. **Rewire the dispatcher branch** in `GildedRose.java`: replace
-   `updateAgedBrie(item);` with `new AgedBrieUpdater().update(item);` (same for
-   the other three: `updateBackstagePass`, `updateSulfuras`, `updateNormal`).
+3. **Add a delegation stub** back to `GildedRose.java` so the old if/else
+   dispatch keeps compiling and the tests stay green:
+   ```java
+   private void updateAgedBrie(Item item) {
+       new AgedBrieUpdater().update(item);
+   }
+   ```
+   (direct write — the tool moved the body out, so this thin bridge is the only
+   new code you write by hand.)
 
 4. `mvn test` → green. Show the audience the new rule file briefly.
 
 When all four types are migrated, the dispatcher still uses the name-based
-if/else but every branch now calls a rule's `update`.
+if/else; each branch now delegates through one of the four stubs, which in turn
+calls the rule class. The stubs are scaffolding — they exist only to keep the
+old dispatch wiring intact until CONTRACT replaces it.
 
 ## Milestone 3 — CONTRACT (green)
 
-The four legacy helpers in `GildedRose.java` are now dead code. Replace the
-name-string if/else with a true chain iteration over a `List<ItemUpdater>`,
-drop the dead helpers and the three now-unused name constants. `GildedRose.java`
-must end up as:
+### Step 1 — introduce the chain (stubs become dead code)
+
+Write the final `GildedRose.java` with the chain field, `updateQuality` loop,
+and `apply` method — **but keep the four delegation stubs in the file for now**.
+They are dead (nothing calls them anymore) but the class still compiles and all
+13 tests pass:
+
+```java
+package gildedrose;
+
+import java.util.List;
+
+public class GildedRose {
+
+    private final List<ItemUpdater> chain = List.of(
+            new AgedBrieUpdater(),
+            new BackstagePassUpdater(),
+            new SulfurasUpdater(),
+            new RegularUpdater());
+
+    Item[] items;
+
+    public GildedRose(Item[] items) {
+        this.items = items;
+    }
+
+    public void updateQuality() {
+        for (int i = 0; i < items.length; i++) {
+            apply(items[i]);
+        }
+    }
+
+    private void apply(Item item) {
+        for (ItemUpdater updater : chain) {
+            if (updater.canHandle(item)) {
+                updater.update(item);
+                return;
+            }
+        }
+        throw new IllegalStateException("No updater for item: " + item.name);
+    }
+
+    // dead stubs — will be removed in step 2
+    private void updateAgedBrie(Item item)      { new AgedBrieUpdater().update(item); }
+    private void updateBackstagePass(Item item) { new BackstagePassUpdater().update(item); }
+    private void updateSulfuras(Item item)      { new SulfurasUpdater().update(item); }
+    private void updateNormal(Item item)        { new RegularUpdater().update(item); }
+}
+```
+
+`mvn test` → 13 green.
+
+### Step 2 — remove the dead stubs with `remove_method`
+
+For each stub in turn, call `remove_method` (cascade=false — these are private,
+no subclasses involved):
+
+```
+remove_method
+  project_root=/workspace/gilded-rose-demo
+  file=/workspace/gilded-rose-demo/src/main/java/gildedrose/GildedRose.java
+  method=updateAgedBrie
+  cascade=false
+```
+
+Write the returned `GildedRose.java` back to disk and repeat for
+`updateBackstagePass`, `updateSulfuras`, `updateNormal`.
+
+`mvn test` → all 13 green. `GildedRose.java` must end up as:
 
 ```java
 package gildedrose;

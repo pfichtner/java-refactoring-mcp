@@ -125,23 +125,35 @@ def migrate(path):
             "    @Override\n    public void update(Item item) {")
         write(src, content)
 
+        # move_method removes the helper body from GildedRose but leaves the
+        # call site in updateQuality() broken. Add a delegation stub so the
+        # old if/else dispatch keeps compiling; CONTRACT will remove these stubs
+        # with remove_method once the chain replaces the dispatch.
         content = GILDEDROSE.read_text()
-        branch = {
-            "updateAgedBrie": "AGED_BRIE.equals(item.name)",
-            "updateBackstagePass": "BACKSTAGE_PASS.equals(item.name)",
-            "updateSulfuras": "SULFURAS.equals(item.name)",
-        }.get(helper, None)
-        old_call = f"                {helper}(item);"
-        new_call = f"                new {rule}().update(item);"
-        assert old_call in content, (old_call, content)
-        write(GILDEDROSE, content.replace(old_call, new_call))
+        stub = (f"\n    private void {helper}(Item item) {{"
+                f"\n        new {rule}().update(item);"
+                f"\n    }}\n")
+        content = content.rstrip()[:-1].rstrip() + "\n" + stub + "}\n"
+        write(GILDEDROSE, content)
 
         sh(["mvn", "-q", "test"], cwd=DEMO)
 
 
 def contract(path):
-    banner("CONTRACT: replace the name-string dispatch with the chain, drop dead code")
-    write(GILDEDROSE, FINAL_GILDEDROSE)
+    banner("CONTRACT · step 1 — introduce the chain; delegation stubs become dead code")
+    write(GILDEDROSE, GILDEDROSE_CHAIN_WITH_STUBS)
+    sh(["mvn", "-q", "test"], cwd=DEMO)
+
+    banner("CONTRACT · step 2 — remove dead delegation stubs with remove_method")
+    for helper in MOVE_TO.keys():
+        text = call("remove_method",
+                    project_root=str(DEMO),
+                    file=str(GILDEDROSE),
+                    method=helper,
+                    cascade=False)
+        blocks = parse_file_blocks(text)
+        write(GILDEDROSE, blocks["GildedRose.java"])
+
     sh(["mvn", "-q", "test"], cwd=DEMO)
 
     banner("Final state of the codebase")
@@ -261,6 +273,59 @@ public abstract class {name} implements ItemUpdater {{
 }}
 """
 
+
+GILDEDROSE_CHAIN_WITH_STUBS = """\
+package gildedrose;
+
+import java.util.List;
+
+public class GildedRose {
+
+    private final List<ItemUpdater> chain = List.of(
+            new AgedBrieUpdater(),
+            new BackstagePassUpdater(),
+            new SulfurasUpdater(),
+            new RegularUpdater());
+
+    Item[] items;
+
+    public GildedRose(Item[] items) {
+        this.items = items;
+    }
+
+    public void updateQuality() {
+        for (int i = 0; i < items.length; i++) {
+            apply(items[i]);
+        }
+    }
+
+    private void apply(Item item) {
+        for (ItemUpdater updater : chain) {
+            if (updater.canHandle(item)) {
+                updater.update(item);
+                return;
+            }
+        }
+        throw new IllegalStateException("No updater for item: " + item.name);
+    }
+
+    private void updateAgedBrie(Item item) {
+        new AgedBrieUpdater().update(item);
+    }
+
+    private void updateBackstagePass(Item item) {
+        new BackstagePassUpdater().update(item);
+    }
+
+    private void updateSulfuras(Item item) {
+        new SulfurasUpdater().update(item);
+    }
+
+    private void updateNormal(Item item) {
+        new RegularUpdater().update(item);
+    }
+}
+"""
 
 FINAL_GILDEDROSE = """\
 package gildedrose;
