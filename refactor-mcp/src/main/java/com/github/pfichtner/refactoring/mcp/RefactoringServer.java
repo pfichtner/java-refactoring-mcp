@@ -212,9 +212,7 @@ public class RefactoringServer {
     // -------------------------------------------------------------------------
 
     static SyncToolSpecification extractMethod() {
-        Options opts = Options.builder()
-                .addRequired(FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, METHOD_NAME)
-                .build();
+        Options opts = Options.of(FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, METHOD_NAME);
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("extract_method", opts.toSchema())
                         .description("""
@@ -252,7 +250,7 @@ public class RefactoringServer {
     // -------------------------------------------------------------------------
 
     static SyncToolSpecification renamePackage() {
-        Options opts = Options.builder().addRequired(PROJECT_ROOT, OLD_PACKAGE, NEW_PACKAGE).build();
+        Options opts = Options.of(PROJECT_ROOT, OLD_PACKAGE, NEW_PACKAGE);
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("rename_package", opts.toSchema())
                         .description("""
@@ -287,7 +285,7 @@ public class RefactoringServer {
     // -------------------------------------------------------------------------
 
     static SyncToolSpecification moveClass() {
-        Options opts = Options.builder().addRequired(PROJECT_ROOT, FILE, NEW_PACKAGE).build();
+        Options opts = Options.of(PROJECT_ROOT, FILE, NEW_PACKAGE);
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("move_class", opts.toSchema())
                         .description("""
@@ -1074,7 +1072,7 @@ public class RefactoringServer {
     // Tool: convert_to_record
 
     static SyncToolSpecification convertToRecord() {
-        Options opts = Options.builder().addRequired(PROJECT_ROOT, FILE).build();
+        Options opts = Options.of(PROJECT_ROOT, FILE);
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("convert_to_record", opts.toSchema()).build())
                 .callHandler((exchange, request) -> {
@@ -1193,7 +1191,7 @@ public class RefactoringServer {
 
     // Tool: convert_anonymous_to_nested
     static SyncToolSpecification convertAnonymousToNested() {
-        Options opts = Options.builder().addRequired(FILE, LINE, COLUMN, NESTED_CLASS_NAME).build();
+        Options opts = Options.of(FILE, LINE, COLUMN, NESTED_CLASS_NAME);
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("convert_anonymous_to_nested", opts.toSchema())
                 .description("Convert an anonymous class at the given position to a private named nested class.")
@@ -1217,7 +1215,7 @@ public class RefactoringServer {
 
     // Tool: introduce_indirection
     static SyncToolSpecification introduceIndirection() {
-        Options opts = Options.builder().addRequired(FILE, LINE, COLUMN, INDIRECTION_METHOD_NAME).build();
+        Options opts = Options.of(FILE, LINE, COLUMN, INDIRECTION_METHOD_NAME);
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("introduce_indirection", opts.toSchema())
                 .description("Add a public static indirection (wrapper) method that delegates to the method at the given position.")
@@ -1241,7 +1239,7 @@ public class RefactoringServer {
 
     // Tool: move_static_member
     static SyncToolSpecification moveStaticMember() {
-        Options opts = Options.builder().addRequired(PROJECT_ROOT, FILE, LINE, COLUMN, TARGET_CLASS).build();
+        Options opts = Options.of(PROJECT_ROOT, FILE, LINE, COLUMN, TARGET_CLASS);
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("move_static_member", opts.toSchema())
                 .description("Move a static method or static field to another class and update call sites.")
@@ -1270,7 +1268,7 @@ public class RefactoringServer {
 
     // Tool: promote_to_field
     static SyncToolSpecification promoteToField() {
-        Options opts = Options.builder().addRequired(FILE, LINE, COLUMN).build();
+        Options opts = Options.of(FILE, LINE, COLUMN);
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("promote_to_field", opts.toSchema())
                 .description("Promote a local variable declaration to a private instance field of the enclosing class.")
@@ -1293,7 +1291,7 @@ public class RefactoringServer {
 
     // Tool: convert_nested_to_top_level
     static SyncToolSpecification convertNestedToTopLevel() {
-        Options opts = Options.builder().addRequired(FILE, LINE, COLUMN).build();
+        Options opts = Options.of(FILE, LINE, COLUMN);
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("convert_nested_to_top_level", opts.toSchema())
                 .description("Convert a nested (member) type to a top-level type. Returns both the modified outer source and the new type's source.")
