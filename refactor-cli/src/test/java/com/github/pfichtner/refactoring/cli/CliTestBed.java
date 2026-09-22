@@ -1,5 +1,8 @@
 package com.github.pfichtner.refactoring.cli;
 
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toMap;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -8,7 +11,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import picocli.CommandLine;
 
@@ -36,11 +38,9 @@ class CliTestBed {
 
     private static Map<Path, String> takeSnapshot(Path dir) {
         try (var stream = Files.walk(dir)) {
-            return stream.filter(Files::isRegularFile)
-                    .collect(Collectors.toMap(p -> p, p -> {
-                        try { return Files.readString(p); }
-                        catch (IOException e) { throw new UncheckedIOException(e); }
-                    }));
+            return stream
+            		.filter(Files::isRegularFile)
+                    .collect(toMap(identity(), CliTestBed::contentOf));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -48,12 +48,14 @@ class CliTestBed {
 
     List<Path> changedFiles() {
         return snapshot.entrySet().stream()
-                .filter(e -> {
-                    try { return !Files.readString(e.getKey()).equals(e.getValue()); }
-                    catch (IOException ex) { throw new UncheckedIOException(ex); }
-                })
+                .filter(e -> !contentOf(e.getKey()).equals(e.getValue()))
                 .map(Map.Entry::getKey)
-                .collect(Collectors.toList());
+                .toList();
+    }
+
+    private static String contentOf(Path path) {
+    	try { return Files.readString(path); }
+    	catch (IOException e) { throw new UncheckedIOException(e); }
     }
 
     /** Temp-dir copy of the fixture: project root dir, or single fixture file. */
