@@ -1,4 +1,4 @@
-=== App.java ===
+=== src/main/java/com/example/App.java ===
 package com.example;
 
 public class App {
@@ -9,12 +9,12 @@ public class App {
     }
 }
 
-=== Coordinate.java ===
+=== src/main/java/com/example/Coordinate.java ===
 package com.example;
 
 public record Coordinate(int x, int y) {}
 
-=== Printer.java ===
+=== src/main/java/com/example/Printer.java ===
 package com.example;
 
 public class Printer {

@@ -1,0 +1,22 @@
+=== src/main/java/com/example/Animal.java ===
+package com.example;
+
+public class Animal {
+    public String name() {
+        return "Animal";
+    }
+
+    public void speak() {
+        System.out.println("Woof!");
+    }
+}
+
+=== src/main/java/com/example/Dog.java ===
+package com.example;
+
+public class Dog extends Animal {
+    @Override
+    public String name() {
+        return "Dog";
+    }
+}

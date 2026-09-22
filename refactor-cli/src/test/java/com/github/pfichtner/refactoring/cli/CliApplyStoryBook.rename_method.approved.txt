@@ -1,0 +1,19 @@
+=== src/main/java/com/example/App.java ===
+package com.example;
+
+public class App {
+    public static void main(String[] args) {
+        Calculator calc = new Calculator();
+        int result = calc.plus(1, 2);
+        System.out.println(result);
+    }
+}
+
+=== src/main/java/com/example/Calculator.java ===
+package com.example;
+
+public class Calculator {
+    public int plus(int a, int b) {
+        return a + b;
+    }
+}
