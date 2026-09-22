@@ -19,7 +19,6 @@ class CliMoveClassTest {
     @Test
     void dry_run_prints_preview_without_writing(CliTestBed bed) throws Exception {
         Path calculatorFile = bed.root().resolve("src/main/java/com/example/service/Calculator.java");
-        String before = Files.readString(calculatorFile);
 
         int exit = bed.cli().execute(
                 "move-class",
@@ -28,7 +27,7 @@ class CliMoveClassTest {
                 "--dry-run");
 
         assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
-        assertThat(Files.readString(calculatorFile)).as("Dry-run must not modify file on disk").isEqualTo(before);
+        bed.assertUnchanged();
 
         Approvals.verify(bed.out().toString(), new Options().withScrubber(scrubRoot(bed)));
     }

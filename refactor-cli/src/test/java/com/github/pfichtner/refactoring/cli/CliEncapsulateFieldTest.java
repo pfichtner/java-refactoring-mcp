@@ -17,7 +17,6 @@ class CliEncapsulateFieldTest {
     @Test
     void dry_run_prints_getter_preview_without_writing(CliTestBed bed) throws Exception {
         Path personFile = bed.root().resolve("src/main/java/com/example/Person.java");
-        String before = Files.readString(personFile);
 
         int exit = bed.cli().execute(
                 "encapsulate-field",
@@ -26,7 +25,7 @@ class CliEncapsulateFieldTest {
                 "--dry-run");
 
         assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
-        assertThat(Files.readString(personFile)).as("Dry-run must not modify file on disk").isEqualTo(before);
+        bed.assertUnchanged();
 
         Approvals.verify(bed.out().toString());
     }
