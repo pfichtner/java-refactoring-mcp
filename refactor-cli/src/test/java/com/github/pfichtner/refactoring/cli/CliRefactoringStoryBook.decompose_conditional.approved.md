@@ -12,7 +12,6 @@ decompose-conditional --file {root}/Foo.java --line 6 --column 9 --name isAdultP
 ```
 Dry run — no file written.
 
-=== Foo.java ===
 public class Foo {
     private int age;
     private boolean premium;

@@ -1,61 +1,26 @@
 package com.github.pfichtner.refactoring.cli;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.Callable;
 
 import com.github.pfichtner.refactoring.JdtInliner;
 
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
-import picocli.CommandLine.Model.CommandSpec;
-import picocli.CommandLine.Option;
-import picocli.CommandLine.Spec;
 
-/**
- * CLI subcommand for inline-variable refactoring.
- * All logic lives in {@link JdtInliner}.
- */
-@Command(
-    name = "inline-var",
-    mixinStandardHelpOptions = true,
-    description = "Inline a local variable: replace all uses with its initializer and remove the declaration."
-)
-public class InlineVarCommand implements Callable<Integer> {
-
-    @Spec CommandSpec spec;
-
-    @Option(names = {"--file", "-f"}, required = true,
-            description = "Source file containing the variable.")
-    Path file;
+/** CLI subcommand for inline-variable refactoring. All logic lives in {@link JdtInliner}. */
+@Command(name = "inline-var", mixinStandardHelpOptions = true,
+         description = "Inline a local variable: replace all uses with its initializer and remove the declaration.")
+public class InlineVarCommand extends SingleFileCommand {
 
     @Mixin LocatorOptions locator;
 
-    @Option(names = "--dry-run",
-            description = "Print the result without writing to disk.")
-    boolean dryRun;
-
-    @Override
-    public Integer call() throws Exception {
-        Path absFile = file.toAbsolutePath().normalize();
-        if (!Files.isRegularFile(absFile)) {
-            spec.commandLine().getErr().println("Error: file not found: " + absFile);
-            return 1;
-        }
-
-        String source = Files.readString(absFile);
-        int offset    = locator.resolveOffset(source, absFile.getFileName().toString());
-        String result = JdtInliner.inlineVariable(source, absFile.getFileName().toString(), offset);
-
-        var out = spec.commandLine().getOut();
-        if (dryRun) {
-            out.println("Dry run — no file written.");
-            out.println();
-            out.println(result);
-        } else {
-            Files.writeString(absFile, result);
-            out.println("Inlined variable in " + absFile.getFileName());
-        }
-        return 0;
+    @Override protected int resolveOffset(String source, String unitName) {
+        return locator.resolveOffset(source, unitName);
+    }
+    @Override protected String transform(String source, String unitName, int offset) throws Exception {
+        return JdtInliner.inlineVariable(source, unitName, offset);
+    }
+    @Override protected String successMessage(Path f) {
+        return "Inlined variable in " + f.getFileName();
     }
 }
