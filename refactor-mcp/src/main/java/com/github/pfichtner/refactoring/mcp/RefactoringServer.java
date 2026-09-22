@@ -213,19 +213,19 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("extract_method", extractSchema())
                         .description("""
-                        Extract selected statements into a new private method.
-                        The selection is specified as start/end line+column (1-based).
+                        Extract statements into a new method.
+                        Provide start/end line+column (1-based).
                         Returns the rewritten source; does not write to disk.
                         """)
                         .build())
                 .callHandler((exchange, request) -> {
                     try {
                         Map<String, Object> args = request.arguments();
-                        String file       = (String) args.get("file");
-                        int startLine     = ((Number) args.get("start_line")).intValue();
-                        int startCol      = ((Number) args.get("start_column")).intValue();
-                        int endLine       = ((Number) args.get("end_line")).intValue();
-                        int endCol        = ((Number) args.get("end_column")).intValue();
+                        String file      = (String) args.get("file");
+                        int startLine    = ((Number) args.get("start_line")).intValue();
+                        int startCol     = ((Number) args.get("start_column")).intValue();
+                        int endLine      = ((Number) args.get("end_line")).intValue();
+                        int endCol       = ((Number) args.get("end_column")).intValue();
                         String methodName = (String) args.get("method_name");
 
                         String source  = Files.readString(Path.of(file));
@@ -259,22 +259,22 @@ public class RefactoringServer {
                 .tool(Tool.builder("rename_package", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()))
+                        "required", opts.required()))
                         .description("""
                         Rename a package across the project.
                         Updates package declarations, single-class imports, and wildcard imports.
-                        Returns a list of changed files with their new sources and new paths.
-                        Does not write to disk or delete original files.
+                        Returns a list of changed files with new sources and new paths.
+                        Does not write to disk.
                         """)
                         .build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
+                        var args = opts.reader(request.arguments());
                         var result = JdtRenamePackage.renamePackage(
                                 ProjectDetector.detect(
-                                        Path.of((String) args.get("project_root"))),
-                                (String) args.get("old_package"),
-                                (String) args.get("new_package"));
+                                        Path.of(args.getString(PROJECT_ROOT))),
+                                args.getString(OLD_PACKAGE),
+                                args.getString(NEW_PACKAGE));
                         return ok(result.changedFiles().stream()
                                 .map(fc -> "=== " + fc.newPath().getFileName()
                                         + (fc.pathChanged() ? " (moved from " + fc.oldPath().getFileName() + ")" : "")
@@ -297,7 +297,7 @@ public class RefactoringServer {
                 .tool(Tool.builder("move_class", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()))
+                        "required", opts.required()))
                         .description("""
                         Move a Java class to a new package.
                         Updates the package declaration and all explicit imports in the project.
@@ -307,12 +307,12 @@ public class RefactoringServer {
                         .build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        String file       = (String) args.get("file");
-                        String newPackage = (String) args.get("new_package");
+                        var args       = opts.reader(request.arguments());
+                        String file       = args.getString(FILE);
+                        String newPackage = args.getString(NEW_PACKAGE);
                         var result = JdtMoveClass.moveClass(
                                 ProjectDetector.detect(
-                                        Path.of((String) args.get("project_root"))),
+                                        Path.of(args.getString(PROJECT_ROOT))),
                                 Path.of(file), newPackage);
 
                         String imports = result.changedImports().entrySet().stream()
@@ -341,21 +341,19 @@ public class RefactoringServer {
                 .tool(Tool.builder("extract_superclass", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()))
+                        "required", opts.required()))
                         .description("""
-                        Move public methods into a new abstract superclass and make the class extend it.
+                        Extract an abstract superclass from selected methods of a class.
                         Returns the modified class source and the new superclass source.
                         Does not write to disk.
                         """)
                         .build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        String file          = (String) args.get("file");
-                        String superName     = (String) args.get("superclass_name");
-                        @SuppressWarnings("unchecked")
-                        List<String> methods = args.containsKey("method_names")
-                                ? (List<String>) args.get("method_names") : List.of();
+                        var args = opts.reader(request.arguments());
+                        String file          = args.getString(FILE);
+                        String superName     = args.getString(SUPERCLASS_NAME);
+                        List<String> methods = args.getStringList(METHOD_NAMES);
                         String source = Files.readString(Path.of(file));
                         var result = JdtExtractSuperclass.extractSuperclass(
                                 source, Path.of(file).getFileName().toString(), superName, methods);
@@ -381,7 +379,7 @@ public class RefactoringServer {
                 .tool(Tool.builder("extract_interface", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()))
+                        "required", opts.required()))
                         .description("""
                         Extract a new interface from the public methods of a class.
                         Returns the modified class source and the new interface source.
@@ -390,12 +388,10 @@ public class RefactoringServer {
                         .build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        String file          = (String) args.get("file");
-                        String interfaceName = (String) args.get("interface_name");
-                        @SuppressWarnings("unchecked")
-                        List<String> methods = args.containsKey("method_names")
-                                ? (List<String>) args.get("method_names") : List.of();
+                        var args = opts.reader(request.arguments());
+                        String file           = args.getString(FILE);
+                        String interfaceName  = args.getString(INTERFACE_NAME);
+                        List<String> methods  = args.getStringList(METHOD_NAMES);
 
                         String source = Files.readString(Path.of(file));
                         var result = JdtExtractInterface.extractInterface(
@@ -424,7 +420,7 @@ public class RefactoringServer {
                 .tool(Tool.builder("remove_param", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()))
+                        "required", opts.required()))
                         .description("""
                         Remove an unused parameter from a method and the corresponding argument
                         from every call site in the project.
@@ -433,13 +429,13 @@ public class RefactoringServer {
                         .build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        String file = (String) args.get("file");
+                        var args   = opts.reader(request.arguments());
+                        String file = args.getString(FILE);
                         String source = Files.readString(Path.of(file));
                         int offset    = resolveOffset(args, source, Path.of(file).getFileName().toString());
                         var changed = JdtRemoveParam.removeParam(
                                 ProjectDetector.detect(
-                                        Path.of((String) args.get("project_root"))),
+                                        Path.of(args.getString(PROJECT_ROOT))),
                                 Path.of(file), offset);
                         return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
                                 .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
@@ -462,23 +458,23 @@ public class RefactoringServer {
                 .tool(Tool.builder("remove_method", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()))
+                        "required", opts.required()))
                         .description("""
                         Remove a method from a class or interface.
                         When cascade is true (the default), also removes every overriding method
-                        in subclasses and every implementing method in implementing classes.
+                        in subclasses and implementing method in implementing classes.
                         Returns a map of filename → new source for each changed file.
                         """)
                         .build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        String file   = (String) args.get("file");
+                        var args    = opts.reader(request.arguments());
+                        String file  = args.getString(FILE);
                         String source = Files.readString(Path.of(file));
                         int offset    = resolveOffset(args, source, Path.of(file).getFileName().toString());
-                        boolean cascade = args.get("cascade") == null || Boolean.TRUE.equals(args.get("cascade"));
+                        boolean cascade = args.getBoolean(CASCADE, true);
                         var changed = JdtRemoveMethod.removeMethod(
-                                ProjectDetector.detect(Path.of((String) args.get("project_root"))),
+                                ProjectDetector.detect(Path.of(args.getString(PROJECT_ROOT))),
                                 Path.of(file), offset, cascade);
                         return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
                                 .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
@@ -501,30 +497,30 @@ public class RefactoringServer {
                 .tool(Tool.builder("introduce_param", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()))
+                        "required", opts.required()))
                         .description("""
-                        Promote an expression to a method parameter.
+                        Promote an expression to a parameter.
                         Updates the method signature and all call sites in the project.
                         Returns a map of filename → new source for each changed file.
                         """)
                         .build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        String file       = (String) args.get("file");
-                        int startLine     = ((Number) args.get("start_line")).intValue();
-                        int startCol      = ((Number) args.get("start_column")).intValue();
-                        int endLine       = ((Number) args.get("end_line")).intValue();
-                        int endCol        = ((Number) args.get("end_column")).intValue();
-                        String paramName  = (String) args.get("param_name");
-                        String paramType  = (String) args.get("param_type"); // nullable
+                        var args      = opts.reader(request.arguments());
+                        String file   = args.getString(FILE);
+                        int startLine = args.getInt(START_LINE);
+                        int startCol  = args.getInt(START_COLUMN);
+                        int endLine   = args.getInt(END_LINE);
+                        int endCol    = args.getInt(END_COLUMN);
+                        String paramName = args.getString(PARAM_NAME);
+                        String paramType = args.getString(PARAM_TYPE); // nullable
 
                         String source  = Files.readString(Path.of(file));
                         int selStart   = JdtRenamer.toOffset(source, startLine, startCol);
                         int selEnd     = JdtRenamer.toOffset(source, endLine, endCol);
 
                         var changed = JdtIntroduceParam.introduceParam(
-                                ProjectDetector.detect(Path.of((String) args.get("project_root"))),
+                                ProjectDetector.detect(Path.of(args.getString(PROJECT_ROOT))),
                                 Path.of(file), selStart, selEnd - selStart, paramName, paramType);
 
                         return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
@@ -548,7 +544,7 @@ public class RefactoringServer {
                 .tool(Tool.builder("extract_constant", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()))
+                        "required", opts.required()))
                         .description("""
                         Extract an expression into a private static final constant at class level.
                         Returns the rewritten source; does not write to disk.
@@ -556,18 +552,18 @@ public class RefactoringServer {
                         .build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        String file       = (String) args.get("file");
-                        int startLine     = ((Number) args.get("start_line")).intValue();
-                        int startCol      = ((Number) args.get("start_column")).intValue();
-                        int endLine       = ((Number) args.get("end_line")).intValue();
-                        int endCol        = ((Number) args.get("end_column")).intValue();
-                        String constName  = (String) args.get("const_name");
-                        boolean replaceAll = Boolean.TRUE.equals(args.get("replace_all"));
+                        var args       = opts.reader(request.arguments());
+                        String file    = args.getString(FILE);
+                        int startLine  = args.getInt(START_LINE);
+                        int startCol   = args.getInt(START_COLUMN);
+                        int endLine    = args.getInt(END_LINE);
+                        int endCol     = args.getInt(END_COLUMN);
+                        String constName  = args.getString(CONST_NAME);
+                        boolean replaceAll = args.getBoolean(REPLACE_ALL);
 
-                        String source = Files.readString(Path.of(file));
-                        int selStart  = JdtRenamer.toOffset(source, startLine, startCol);
-                        int selEnd    = JdtRenamer.toOffset(source, endLine, endCol);
+                        String source  = Files.readString(Path.of(file));
+                        int selStart   = JdtRenamer.toOffset(source, startLine, startCol);
+                        int selEnd     = JdtRenamer.toOffset(source, endLine, endCol);
                         return ok(JdtExtractConstant.extractConstant(
                                 source, Path.of(file).getFileName().toString(),
                                 selStart, selEnd - selStart, constName, replaceAll));
@@ -588,7 +584,7 @@ public class RefactoringServer {
                 .tool(Tool.builder("inline_method", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()))
+                        "required", opts.required()))
                         .description("""
                         Inline a method call at all call sites in the project.
                         Optionally removes the method declaration.
@@ -597,14 +593,14 @@ public class RefactoringServer {
                         .build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        String file = (String) args.get("file");
-                        boolean removeDel = Boolean.TRUE.equals(args.get("remove_declaration"));
+                        var args      = opts.reader(request.arguments());
+                        String file   = args.getString(FILE);
+                        boolean removeDel = args.getBoolean(REMOVE_DECLARATION);
                         String source = Files.readString(Path.of(file));
                         int offset    = resolveOffset(args, source, Path.of(file).getFileName().toString());
                         var changed = JdtInlineMethod.inlineMethod(
                                 ProjectDetector.detect(
-                                        Path.of((String) args.get("project_root"))),
+                                        Path.of(args.getString(PROJECT_ROOT))),
                                 Path.of(file), offset, removeDel);
                         return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
                                 .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
@@ -627,7 +623,7 @@ public class RefactoringServer {
                 .tool(Tool.builder("extract_variable", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()))
+                        "required", opts.required()))
                         .description("""
                         Extract an expression into a new local variable.
                         Returns the rewritten source; does not write to disk.
@@ -635,14 +631,14 @@ public class RefactoringServer {
                         .build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        String file       = (String) args.get("file");
-                        int startLine     = ((Number) args.get("start_line")).intValue();
-                        int startCol      = ((Number) args.get("start_column")).intValue();
-                        int endLine       = ((Number) args.get("end_line")).intValue();
-                        int endCol        = ((Number) args.get("end_column")).intValue();
-                        String varName    = (String) args.get("var_name");
-                        boolean replaceAll = Boolean.TRUE.equals(args.get("replace_all"));
+                        var args      = opts.reader(request.arguments());
+                        String file   = args.getString(FILE);
+                        int startLine = args.getInt(START_LINE);
+                        int startCol  = args.getInt(START_COLUMN);
+                        int endLine   = args.getInt(END_LINE);
+                        int endCol    = args.getInt(END_COLUMN);
+                        String varName    = args.getString(VAR_NAME);
+                        boolean replaceAll = args.getBoolean(REPLACE_ALL);
 
                         String source  = Files.readString(Path.of(file));
                         int selStart   = JdtRenamer.toOffset(source, startLine, startCol);
@@ -668,7 +664,7 @@ public class RefactoringServer {
                 .tool(Tool.builder("inline_variable", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()))
+                        "required", opts.required()))
                         .description("""
                         Inline a local variable: replace every use with its initializer expression
                         and remove the declaration. Returns the rewritten source; does not write to disk.
@@ -676,8 +672,8 @@ public class RefactoringServer {
                         .build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        String file = (String) args.get("file");
+                        var args   = opts.reader(request.arguments());
+                        String file = args.getString(FILE);
 
                         String source = Files.readString(Path.of(file));
                         int offset    = resolveOffset(args, source, Path.of(file).getFileName().toString());
@@ -701,7 +697,7 @@ public class RefactoringServer {
                 .tool(Tool.builder("inline_constant", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()))
+                        "required", opts.required()))
                         .description("""
                         Inline a static final constant: replace one or all references with its
                         initializer expression, and optionally remove the field declaration.
@@ -710,10 +706,10 @@ public class RefactoringServer {
                         .build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        String file    = (String) args.get("file");
-                        boolean allOcc = Boolean.TRUE.equals(args.get("all_occurrences"));
-                        boolean removeDecl = Boolean.TRUE.equals(args.get("remove_declaration"));
+                        var args       = opts.reader(request.arguments());
+                        String file    = args.getString(FILE);
+                        boolean allOcc = args.getBoolean(ALL_OCCURRENCES);
+                        boolean removeDecl = args.getBoolean(REMOVE_DECLARATION);
 
                         String source = Files.readString(Path.of(file));
                         int offset    = resolveOffset(args, source, Path.of(file).getFileName().toString());
@@ -744,13 +740,13 @@ public class RefactoringServer {
                     + "'. Supported: rename");
         }
 
-        Path root       = Path.of(projectRoot);
+        Path root = Path.of(projectRoot);
         Path sourceFile = Path.of(file).isAbsolute()
                 ? Path.of(file)
                 : root.resolve(file);
 
         String source = Files.readString(sourceFile);
-        int offset    = resolveOffset(args, source, sourceFile.getFileName().toString());
+        int offset = resolveOffset(new Options.Reader(args), source, sourceFile.getFileName().toString());
 
         return JdtRenamer.rename(ProjectDetector.detect(root), sourceFile, offset, newName);
     }
@@ -761,18 +757,23 @@ public class RefactoringServer {
      * {@code method}, {@code field}, {@code type}, {@code variable}, {@code parameter}
      * (with optional {@code class} scope qualifier).
      */
-    static int resolveOffset(Map<String, Object> args, String source, String unitName) {
+    static int resolveOffset(Options.Reader args, String source, String unitName) {
         return LocatorResolver.resolve(buildLocatorFromArgs(args), source, unitName);
     }
 
-    private static Locator buildLocatorFromArgs(Map<String, Object> args) {
-        boolean hasLine      = args.containsKey("line");
-        boolean hasCol       = args.containsKey("column");
-        boolean hasMethod    = args.containsKey("method");
-        boolean hasField     = args.containsKey("field");
-        boolean hasType      = args.containsKey("type");
-        boolean hasParameter = args.containsKey("parameter");
-        boolean hasVariable  = args.containsKey("variable");
+    /** Convenience overload wrapping a raw argument map in an {@link Options.Reader}. */
+    static int resolveOffset(Map<String, Object> raw, String source, String unitName) {
+        return resolveOffset(new Options.Reader(raw), source, unitName);
+    }
+
+    private static Locator buildLocatorFromArgs(Options.Reader args) {
+        boolean hasLine      = args.has(LINE);
+        boolean hasCol       = args.has(COLUMN);
+        boolean hasMethod    = args.has(METHOD);
+        boolean hasField     = args.has(FIELD);
+        boolean hasType      = args.has(TYPE);
+        boolean hasParameter = args.has(PARAMETER);
+        boolean hasVariable  = args.has(VARIABLE);
 
         boolean hasPosition = hasLine || hasCol;
         boolean hasName     = hasMethod || hasField || hasType || hasParameter || hasVariable;
@@ -791,19 +792,17 @@ public class RefactoringServer {
 
         if (hasPosition) {
             if (!hasCol)
-                return new Locator.LineOnly(((Number) args.get("line")).intValue());
-            return new Locator.Position(
-                    ((Number) args.get("line")).intValue(),
-                    ((Number) args.get("column")).intValue());
+                return new Locator.LineOnly(args.getInt(LINE));
+            return new Locator.Position(args.getInt(LINE), args.getInt(COLUMN));
         }
 
-        String className = (String) args.get("class");
+        String className = args.getString(CLASS);
 
         if (hasParameter) {
             if (!hasMethod) {
                 throw new IllegalArgumentException("'parameter' requires 'method' to also be specified.");
             }
-            return new Locator.ParameterInMethod((String) args.get("method"), (String) args.get("parameter"));
+            return new Locator.ParameterInMethod(args.getString(METHOD), args.getString(PARAMETER));
         }
 
         if (hasVariable) {
@@ -811,7 +810,7 @@ public class RefactoringServer {
                 throw new IllegalArgumentException(
                         "'variable' requires 'method' to also be specified " +
                         "(local variables can share names across methods).");
-            return new Locator.VariableName((String) args.get("variable"), (String) args.get("method"));
+            return new Locator.VariableName(args.getString(VARIABLE), args.getString(METHOD));
         }
 
         int kindCount = (hasMethod ? 1 : 0) + (hasField ? 1 : 0) + (hasType ? 1 : 0);
@@ -819,9 +818,9 @@ public class RefactoringServer {
             throw new IllegalArgumentException("Specify only one of: method, field, or type.");
         }
 
-        if (hasMethod)   return new Locator.MethodName((String) args.get("method"), className);
-        if (hasField)    return new Locator.FieldName((String) args.get("field"), className);
-        if (hasType)     return new Locator.TypeName((String) args.get("type"));
+        if (hasMethod) return new Locator.MethodName(args.getString(METHOD), className);
+        if (hasField)  return new Locator.FieldName(args.getString(FIELD), className);
+        if (hasType)   return new Locator.TypeName(args.getString(TYPE));
 
         throw new IllegalArgumentException("No valid locator found in arguments.");
     }
@@ -895,7 +894,7 @@ public class RefactoringServer {
                 .tool(Tool.builder("pull_up_method", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()))
+                        "required", opts.required()))
                         .description("""
                         Pull a method up from a subclass to its direct superclass.
                         The superclass must be in the project source roots.
@@ -905,13 +904,13 @@ public class RefactoringServer {
                         .build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        String file = (String) args.get("file");
+                        var args   = opts.reader(request.arguments());
+                        String file = args.getString(FILE);
                         String source = Files.readString(Path.of(file));
                         int offset    = resolveOffset(args, source, Path.of(file).getFileName().toString());
                         var changed   = JdtPullUpMethod.pullUp(
                                 ProjectDetector.detect(
-                                        Path.of((String) args.get("project_root"))),
+                                        Path.of(args.getString(PROJECT_ROOT))),
                                 Path.of(file), offset);
                         return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
                                 .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
@@ -934,7 +933,7 @@ public class RefactoringServer {
                 .tool(Tool.builder("push_down_method", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()))
+                        "required", opts.required()))
                         .description("""
                         Push a method down from a class to all its direct subclasses in the project.
                         The method is removed from the superclass and added to every subclass found.
@@ -945,13 +944,13 @@ public class RefactoringServer {
                         .build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        String file = (String) args.get("file");
+                        var args   = opts.reader(request.arguments());
+                        String file = args.getString(FILE);
                         String source = Files.readString(Path.of(file));
                         int offset    = resolveOffset(args, source, Path.of(file).getFileName().toString());
                         var changed   = JdtPushDownMethod.pushDown(
                                 ProjectDetector.detect(
-                                        Path.of((String) args.get("project_root"))),
+                                        Path.of(args.getString(PROJECT_ROOT))),
                                 Path.of(file), offset);
                         return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
                                 .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
@@ -972,7 +971,7 @@ public class RefactoringServer {
                 .tool(Tool.builder("move_method", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()))
+                        "required", opts.required()))
                         .description("""
                         Move a method from one class to another class within the project.
                         The method is removed from the source class and added to the target class.
@@ -984,14 +983,14 @@ public class RefactoringServer {
                         .build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        String file = (String) args.get("file");
-                        String targetClass = (String) args.get("target_class");
-                        String source = Files.readString(Path.of(file));
-                        int offset    = resolveOffset(args, source, Path.of(file).getFileName().toString());
-                        var changed   = JdtMoveMethod.moveMethod(
+                        var args         = opts.reader(request.arguments());
+                        String file       = args.getString(FILE);
+                        String targetClass = args.getString(TARGET_CLASS);
+                        String source     = Files.readString(Path.of(file));
+                        int offset        = resolveOffset(args, source, Path.of(file).getFileName().toString());
+                        var changed = JdtMoveMethod.moveMethod(
                                 ProjectDetector.detect(
-                                        Path.of((String) args.get("project_root"))),
+                                        Path.of(args.getString(PROJECT_ROOT))),
                                 Path.of(file), offset, targetClass);
                         return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
                                 .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
@@ -1012,13 +1011,13 @@ public class RefactoringServer {
                 .tool(Tool.builder("pull_up_field", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()
+                        "required", opts.required()
                 )).build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        Path root = Path.of((String) args.get("project_root"));
-                        Path file = root.resolve((String) args.get("file"));
+                        var args  = opts.reader(request.arguments());
+                        Path root = Path.of(args.getString(PROJECT_ROOT));
+                        Path file = root.resolve(args.getString(FILE));
 
                         String source = Files.readString(file);
                         int offset    = resolveOffset(args, source, file.getFileName().toString());
@@ -1043,13 +1042,13 @@ public class RefactoringServer {
                 .tool(Tool.builder("push_down_field", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()
+                        "required", opts.required()
                 )).build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        Path root = Path.of((String) args.get("project_root"));
-                        Path file = root.resolve((String) args.get("file"));
+                        var args  = opts.reader(request.arguments());
+                        Path root = Path.of(args.getString(PROJECT_ROOT));
+                        Path file = root.resolve(args.getString(FILE));
 
                         String source = Files.readString(file);
                         int offset    = resolveOffset(args, source, file.getFileName().toString());
@@ -1074,15 +1073,15 @@ public class RefactoringServer {
                 .tool(Tool.builder("introduce_static_factory", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()
+                        "required", opts.required()
                 )).build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        Path root   = Path.of((String) args.get("project_root"));
-                        Path file   = root.resolve((String) args.get("file"));
-                        String name = (String) args.get("factory_method_name");
-                        boolean makePrivate = args.getOrDefault("make_constructor_private", false) instanceof Boolean b && b;
+                        var args    = opts.reader(request.arguments());
+                        Path root   = Path.of(args.getString(PROJECT_ROOT));
+                        Path file   = root.resolve(args.getString(FILE));
+                        String name = args.getString(FACTORY_METHOD_NAME);
+                        boolean makePrivate = args.getBoolean(MAKE_CONSTRUCTOR_PRIVATE);
 
                         String source = Files.readString(file);
                         int offset    = resolveOffset(args, source, file.getFileName().toString());
@@ -1109,24 +1108,23 @@ public class RefactoringServer {
                 .tool(Tool.builder("introduce_parameter_object", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()
+                        "required", opts.required()
                 )).build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        Path root = Path.of((String) args.get("project_root"));
-                        Path file = root.resolve((String) args.get("file"));
-                        @SuppressWarnings("unchecked")
-                        List<String> paramNames = (List<String>) args.get("param_names");
-                        String className = (String) args.get("class_name");
-                        String paramObjName = args.containsKey("param_object_name")
-                                ? (String) args.get("param_object_name")
+                        var args  = opts.reader(request.arguments());
+                        Path root = Path.of(args.getString(PROJECT_ROOT));
+                        Path file = root.resolve(args.getString(FILE));
+                        List<String> paramNames = args.getStringList(PARAM_NAMES);
+                        String className = args.getString(CLASS_NAME);
+                        String paramObjName = args.has(PARAM_OBJECT_NAME)
+                                ? args.getString(PARAM_OBJECT_NAME)
                                 : Character.toLowerCase(className.charAt(0)) + className.substring(1);
 
                         String source = Files.readString(file);
                         int offset    = resolveOffset(args, source, file.getFileName().toString());
 
-                        boolean asRecord = Boolean.TRUE.equals(args.get("as_record"));
+                        boolean asRecord = args.getBoolean(AS_RECORD);
                         var changed = JdtIntroduceParameterObject.introduce(
                                 ProjectDetector.detect(root),
                                 file, offset, paramNames, className, paramObjName, asRecord);
@@ -1148,13 +1146,13 @@ public class RefactoringServer {
                 .tool(Tool.builder("convert_to_record", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()
+                        "required", opts.required()
                 )).build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        Path root = Path.of((String) args.get("project_root"));
-                        Path file = root.resolve((String) args.get("file"));
+                        var args  = opts.reader(request.arguments());
+                        Path root = Path.of(args.getString(PROJECT_ROOT));
+                        Path file = root.resolve(args.getString(FILE));
                         var changed = JdtConvertToRecord.convertToRecord(
                                 ProjectDetector.detect(root), file);
                         return ok(formatPreview(changed));
@@ -1177,7 +1175,7 @@ public class RefactoringServer {
                 .tool(Tool.builder("change_method_signature", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()))
+                        "required", opts.required()))
                         .description("""
                         Change a method's return type and/or reorder its parameters project-wide.
                         param_order: integer array where param_order[i] is the original index of the
@@ -1187,18 +1185,13 @@ public class RefactoringServer {
                         .build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        Path root = Path.of((String) args.get("project_root"));
-                        Path file = root.resolve((String) args.get("file"));
+                        var args  = opts.reader(request.arguments());
+                        Path root = Path.of(args.getString(PROJECT_ROOT));
+                        Path file = root.resolve(args.getString(FILE));
                         String source = Files.readString(file);
                         int offset = resolveOffset(args, source, file.getFileName().toString());
-                        String newReturnType = (String) args.get("new_return_type");
-                        int[] paramOrder = null;
-                        if (args.containsKey("param_order")) {
-                            @SuppressWarnings("unchecked")
-                            List<Number> orderList = (List<Number>) args.get("param_order");
-                            paramOrder = orderList.stream().mapToInt(Number::intValue).toArray();
-                        }
+                        String newReturnType = args.getString(NEW_RETURN_TYPE);
+                        int[] paramOrder     = args.getIntArray(PARAM_ORDER);
                         var changed = JdtChangeMethodSignature.changeSignature(
                                 ProjectDetector.detect(root), file, offset, newReturnType, paramOrder);
                         return ok(formatPreview(changed));
@@ -1219,7 +1212,7 @@ public class RefactoringServer {
                 .tool(Tool.builder("encapsulate_field", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()))
+                        "required", opts.required()))
                         .description("""
                         Make a public field private, generate a getter (and optional setter),
                         and rewrite all read access sites (and write sites if generate_setter=true)
@@ -1228,12 +1221,12 @@ public class RefactoringServer {
                         .build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        Path root = Path.of((String) args.get("project_root"));
-                        Path file = root.resolve((String) args.get("file"));
+                        var args  = opts.reader(request.arguments());
+                        Path root = Path.of(args.getString(PROJECT_ROOT));
+                        Path file = root.resolve(args.getString(FILE));
                         String source = Files.readString(file);
                         int offset = resolveOffset(args, source, file.getFileName().toString());
-                        boolean generateSetter = Boolean.TRUE.equals(args.get("generate_setter"));
+                        boolean generateSetter = args.getBoolean(GENERATE_SETTER);
                         var changed = JdtEncapsulateField.encapsulateField(
                                 ProjectDetector.detect(root), file, offset, generateSetter);
                         return ok(formatPreview(changed));
@@ -1254,7 +1247,7 @@ public class RefactoringServer {
                 .tool(Tool.builder("decompose_conditional", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()))
+                        "required", opts.required()))
                         .description("""
                         Extract a compound boolean condition from an if/while/for statement
                         into a private boolean method. Single-file operation.
@@ -1263,11 +1256,11 @@ public class RefactoringServer {
                         .build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        Path file = Path.of((String) args.get("file"));
+                        var args      = opts.reader(request.arguments());
+                        Path file     = Path.of(args.getString(FILE));
                         String source = Files.readString(file);
-                        String methodName = (String) args.get("method_name");
-                        int offset = resolveOffset(args, source, file.getFileName().toString());
+                        String methodName = args.getString(METHOD_NAME);
+                        int offset    = resolveOffset(args, source, file.getFileName().toString());
                         String result = JdtDecomposeConditional.decomposeConditional(
                                 source, file.getFileName().toString(), offset, methodName);
                         return ok(result);
@@ -1285,17 +1278,17 @@ public class RefactoringServer {
                 .tool(Tool.builder("convert_anonymous_to_nested", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()
+                        "required", opts.required()
                 ))
                 .description("Convert an anonymous class at the given position to a private named nested class.")
                 .build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        Path file         = Path.of((String) args.get("file"));
+                        var args          = opts.reader(request.arguments());
+                        Path file         = Path.of(args.getString(FILE));
                         String source     = Files.readString(file);
                         int offset        = resolveOffset(args, source, file.getFileName().toString());
-                        String nestedName = (String) args.get("nested_class_name");
+                        String nestedName = args.getString(NESTED_CLASS_NAME);
                         String result     = JdtConvertAnonymousToNested.convert(
                                 source, file.getFileName().toString(), offset, nestedName);
                         return ok(result);
@@ -1313,17 +1306,17 @@ public class RefactoringServer {
                 .tool(Tool.builder("introduce_indirection", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()
+                        "required", opts.required()
                 ))
                 .description("Add a public static indirection (wrapper) method that delegates to the method at the given position.")
                 .build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        Path file    = Path.of((String) args.get("file"));
+                        var args    = opts.reader(request.arguments());
+                        Path file   = Path.of(args.getString(FILE));
                         String source = Files.readString(file);
-                        int offset   = resolveOffset(args, source, file.getFileName().toString());
-                        String name  = (String) args.get("indirection_method_name");
+                        int offset  = resolveOffset(args, source, file.getFileName().toString());
+                        String name = args.getString(INDIRECTION_METHOD_NAME);
                         String result = JdtIntroduceIndirection.introduceIndirection(
                                 source, file.getFileName().toString(), offset, name);
                         return ok(result);
@@ -1341,18 +1334,18 @@ public class RefactoringServer {
                 .tool(Tool.builder("move_static_member", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()
+                        "required", opts.required()
                 ))
                 .description("Move a static method or static field to another class and update call sites.")
                 .build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        Path projectRoot  = Path.of((String) args.get("project_root"));
-                        Path file         = Path.of((String) args.get("file"));
+                        var args          = opts.reader(request.arguments());
+                        Path projectRoot  = Path.of(args.getString(PROJECT_ROOT));
+                        Path file         = Path.of(args.getString(FILE));
                         String source     = Files.readString(file);
                         int offset        = resolveOffset(args, source, file.getFileName().toString());
-                        String target     = (String) args.get("target_class");
+                        String target     = args.getString(TARGET_CLASS);
                         var project = new com.github.pfichtner.refactoring.project.MavenProject(projectRoot);
                         java.util.Map<java.nio.file.Path, String> changed =
                                 JdtMoveStaticMember.moveStaticMember(project, file, offset, target);
@@ -1374,16 +1367,16 @@ public class RefactoringServer {
                 .tool(Tool.builder("promote_to_field", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()
+                        "required", opts.required()
                 ))
                 .description("Promote a local variable declaration to a private instance field of the enclosing class.")
                 .build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        Path file    = Path.of((String) args.get("file"));
+                        var args    = opts.reader(request.arguments());
+                        Path file   = Path.of(args.getString(FILE));
                         String source = Files.readString(file);
-                        int offset   = resolveOffset(args, source, file.getFileName().toString());
+                        int offset  = resolveOffset(args, source, file.getFileName().toString());
                         String result = JdtPromoteToField.promote(
                                 source, file.getFileName().toString(), offset);
                         return ok(result);
@@ -1401,16 +1394,16 @@ public class RefactoringServer {
                 .tool(Tool.builder("convert_nested_to_top_level", Map.of(
                         "type", "object",
                         "properties", opts.properties(),
-                        "required",   opts.required()
+                        "required", opts.required()
                 ))
                 .description("Convert a nested (member) type to a top-level type. Returns both the modified outer source and the new type's source.")
                 .build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        Path file   = Path.of((String) args.get("file"));
+                        var args   = opts.reader(request.arguments());
+                        Path file  = Path.of(args.getString(FILE));
                         String source = Files.readString(file);
-                        int offset  = resolveOffset(args, source, file.getFileName().toString());
+                        int offset = resolveOffset(args, source, file.getFileName().toString());
                         JdtConvertNestedToTopLevel.Result result =
                                 JdtConvertNestedToTopLevel.convert(
                                         source, file.getFileName().toString(), offset);
