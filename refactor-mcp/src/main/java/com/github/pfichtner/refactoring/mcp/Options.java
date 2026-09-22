@@ -1,5 +1,6 @@
 package com.github.pfichtner.refactoring.mcp;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -93,6 +94,12 @@ public final class Options {
         public String getString(Property p, String defaultValue) {
             Object v = args.get(p.key);
             return v == null ? defaultValue : (String) v;
+        }
+
+        /** Returns the value as a {@link Path}; null if absent. */
+        public Path getPath(Property p) {
+            String v = getString(p);
+            return v == null ? null : Path.of(v);
         }
 
         /** Returns the value as an int. Throws if absent. */

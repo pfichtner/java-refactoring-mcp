@@ -224,18 +224,18 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args      = opts.reader(request.arguments());
-                        String file   = args.getString(FILE);
+                        Path file     = args.getPath(FILE);
                         int startLine = args.getInt(START_LINE);
                         int startCol  = args.getInt(START_COLUMN);
                         int endLine   = args.getInt(END_LINE);
                         int endCol    = args.getInt(END_COLUMN);
                         String methodName = args.getString(METHOD_NAME);
 
-                        String source  = Files.readString(Path.of(file));
+                        String source  = Files.readString(file);
                         int selStart   = JdtRenamer.toOffset(source, startLine, startCol);
                         int selEnd     = JdtRenamer.toOffset(source, endLine, endCol);
                         String result  = JdtExtractor.extractMethod(
-                                source, Path.of(file).getFileName().toString(),
+                                source, file.getFileName().toString(),
                                 selStart, selEnd - selStart, methodName);
                         return ok(result);
                     } catch (Exception e) {
@@ -265,7 +265,7 @@ public class RefactoringServer {
                         var args = opts.reader(request.arguments());
                         var result = JdtRenamePackage.renamePackage(
                                 ProjectDetector.detect(
-                                        Path.of(args.getString(PROJECT_ROOT))),
+                                        args.getPath(PROJECT_ROOT)),
                                 args.getString(OLD_PACKAGE),
                                 args.getString(NEW_PACKAGE));
                         return ok(result.changedFiles().stream()
@@ -298,12 +298,12 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args       = opts.reader(request.arguments());
-                        String file       = args.getString(FILE);
+                        Path file         = args.getPath(FILE);
                         String newPackage = args.getString(NEW_PACKAGE);
                         var result = JdtMoveClass.moveClass(
                                 ProjectDetector.detect(
-                                        Path.of(args.getString(PROJECT_ROOT))),
-                                Path.of(file), newPackage);
+                                        args.getPath(PROJECT_ROOT)),
+                                file, newPackage);
 
                         String imports = result.changedImports().entrySet().stream()
                                 .sorted(Map.Entry.comparingByKey())
@@ -338,13 +338,13 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args = opts.reader(request.arguments());
-                        String file          = args.getString(FILE);
+                        Path file            = args.getPath(FILE);
                         String superName     = args.getString(SUPERCLASS_NAME);
                         List<String> methods = args.getStringList(METHOD_NAMES);
-                        String source = Files.readString(Path.of(file));
+                        String source = Files.readString(file);
                         var result = JdtExtractSuperclass.extractSuperclass(
-                                source, Path.of(file).getFileName().toString(), superName, methods);
-                        String out = "=== " + Path.of(file).getFileName() + " (modified) ===\n"
+                                source, file.getFileName().toString(), superName, methods);
+                        String out = "=== " + file.getFileName() + " (modified) ===\n"
                                 + result.modifiedClassSource().stripTrailing() + "\n\n"
                                 + "=== " + superName + ".java (new) ===\n"
                                 + result.superclassSource().stripTrailing();
@@ -373,16 +373,16 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args = opts.reader(request.arguments());
-                        String file           = args.getString(FILE);
+                        Path file             = args.getPath(FILE);
                         String interfaceName  = args.getString(INTERFACE_NAME);
                         List<String> methods  = args.getStringList(METHOD_NAMES);
 
-                        String source = Files.readString(Path.of(file));
+                        String source = Files.readString(file);
                         var result = JdtExtractInterface.extractInterface(
-                                source, Path.of(file).getFileName().toString(),
+                                source, file.getFileName().toString(),
                                 interfaceName, methods);
 
-                        String out = "=== " + Path.of(file).getFileName() + " (modified) ===\n"
+                        String out = "=== " + file.getFileName() + " (modified) ===\n"
                                 + result.modifiedClassSource().stripTrailing() + "\n\n"
                                 + "=== " + interfaceName + ".java (new) ===\n"
                                 + result.interfaceSource().stripTrailing();
@@ -411,13 +411,13 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args   = opts.reader(request.arguments());
-                        String file = args.getString(FILE);
-                        String source = Files.readString(Path.of(file));
-                        int offset    = resolveOffset(args, source, Path.of(file).getFileName().toString());
+                        Path file   = args.getPath(FILE);
+                        String source = Files.readString(file);
+                        int offset    = resolveOffset(args, source, file.getFileName().toString());
                         var changed = JdtRemoveParam.removeParam(
                                 ProjectDetector.detect(
-                                        Path.of(args.getString(PROJECT_ROOT))),
-                                Path.of(file), offset);
+                                        args.getPath(PROJECT_ROOT)),
+                                file, offset);
                         return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
                                 .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
                                         + e.getValue().stripTrailing() + "\n\n")
@@ -447,13 +447,13 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args    = opts.reader(request.arguments());
-                        String file  = args.getString(FILE);
-                        String source = Files.readString(Path.of(file));
-                        int offset    = resolveOffset(args, source, Path.of(file).getFileName().toString());
+                        Path file    = args.getPath(FILE);
+                        String source = Files.readString(file);
+                        int offset    = resolveOffset(args, source, file.getFileName().toString());
                         boolean cascade = args.getBoolean(CASCADE, true);
                         var changed = JdtRemoveMethod.removeMethod(
-                                ProjectDetector.detect(Path.of(args.getString(PROJECT_ROOT))),
-                                Path.of(file), offset, cascade);
+                                ProjectDetector.detect(args.getPath(PROJECT_ROOT)),
+                                file, offset, cascade);
                         return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
                                 .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
                                         + e.getValue().stripTrailing() + "\n\n")
@@ -482,7 +482,7 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args      = opts.reader(request.arguments());
-                        String file   = args.getString(FILE);
+                        Path file     = args.getPath(FILE);
                         int startLine = args.getInt(START_LINE);
                         int startCol  = args.getInt(START_COLUMN);
                         int endLine   = args.getInt(END_LINE);
@@ -490,13 +490,13 @@ public class RefactoringServer {
                         String paramName = args.getString(PARAM_NAME);
                         String paramType = args.getString(PARAM_TYPE); // nullable
 
-                        String source  = Files.readString(Path.of(file));
+                        String source  = Files.readString(file);
                         int selStart   = JdtRenamer.toOffset(source, startLine, startCol);
                         int selEnd     = JdtRenamer.toOffset(source, endLine, endCol);
 
                         var changed = JdtIntroduceParam.introduceParam(
-                                ProjectDetector.detect(Path.of(args.getString(PROJECT_ROOT))),
-                                Path.of(file), selStart, selEnd - selStart, paramName, paramType);
+                                ProjectDetector.detect(args.getPath(PROJECT_ROOT)),
+                                file, selStart, selEnd - selStart, paramName, paramType);
 
                         return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
                                 .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
@@ -525,7 +525,7 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args       = opts.reader(request.arguments());
-                        String file    = args.getString(FILE);
+                        Path file      = args.getPath(FILE);
                         int startLine  = args.getInt(START_LINE);
                         int startCol   = args.getInt(START_COLUMN);
                         int endLine    = args.getInt(END_LINE);
@@ -533,11 +533,11 @@ public class RefactoringServer {
                         String constName  = args.getString(CONST_NAME);
                         boolean replaceAll = args.getBoolean(REPLACE_ALL);
 
-                        String source  = Files.readString(Path.of(file));
+                        String source  = Files.readString(file);
                         int selStart   = JdtRenamer.toOffset(source, startLine, startCol);
                         int selEnd     = JdtRenamer.toOffset(source, endLine, endCol);
                         return ok(JdtExtractConstant.extractConstant(
-                                source, Path.of(file).getFileName().toString(),
+                                source, file.getFileName().toString(),
                                 selStart, selEnd - selStart, constName, replaceAll));
                     } catch (Exception e) {
                         return error(e.getMessage());
@@ -563,14 +563,14 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args      = opts.reader(request.arguments());
-                        String file   = args.getString(FILE);
+                        Path file     = args.getPath(FILE);
                         boolean removeDel = args.getBoolean(REMOVE_DECLARATION);
-                        String source = Files.readString(Path.of(file));
-                        int offset    = resolveOffset(args, source, Path.of(file).getFileName().toString());
+                        String source = Files.readString(file);
+                        int offset    = resolveOffset(args, source, file.getFileName().toString());
                         var changed = JdtInlineMethod.inlineMethod(
                                 ProjectDetector.detect(
-                                        Path.of(args.getString(PROJECT_ROOT))),
-                                Path.of(file), offset, removeDel);
+                                        args.getPath(PROJECT_ROOT)),
+                                file, offset, removeDel);
                         return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
                                 .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
                                         + e.getValue().stripTrailing() + "\n\n")
@@ -598,7 +598,7 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args      = opts.reader(request.arguments());
-                        String file   = args.getString(FILE);
+                        Path file     = args.getPath(FILE);
                         int startLine = args.getInt(START_LINE);
                         int startCol  = args.getInt(START_COLUMN);
                         int endLine   = args.getInt(END_LINE);
@@ -606,11 +606,11 @@ public class RefactoringServer {
                         String varName    = args.getString(VAR_NAME);
                         boolean replaceAll = args.getBoolean(REPLACE_ALL);
 
-                        String source  = Files.readString(Path.of(file));
+                        String source  = Files.readString(file);
                         int selStart   = JdtRenamer.toOffset(source, startLine, startCol);
                         int selEnd     = JdtRenamer.toOffset(source, endLine, endCol);
                         String result  = JdtExtractVariable.extractVariable(
-                                source, Path.of(file).getFileName().toString(),
+                                source, file.getFileName().toString(),
                                 selStart, selEnd - selStart, varName, replaceAll);
                         return ok(result);
                     } catch (Exception e) {
@@ -636,12 +636,12 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args   = opts.reader(request.arguments());
-                        String file = args.getString(FILE);
+                        Path file   = args.getPath(FILE);
 
-                        String source = Files.readString(Path.of(file));
-                        int offset    = resolveOffset(args, source, Path.of(file).getFileName().toString());
+                        String source = Files.readString(file);
+                        int offset    = resolveOffset(args, source, file.getFileName().toString());
                         String result = JdtInliner.inlineVariable(
-                                source, Path.of(file).getFileName().toString(), offset);
+                                source, file.getFileName().toString(), offset);
                         return ok(result);
                     } catch (Exception e) {
                         return error(e.getMessage());
@@ -667,14 +667,14 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args       = opts.reader(request.arguments());
-                        String file    = args.getString(FILE);
+                        Path file      = args.getPath(FILE);
                         boolean allOcc = args.getBoolean(ALL_OCCURRENCES);
                         boolean removeDecl = args.getBoolean(REMOVE_DECLARATION);
 
-                        String source = Files.readString(Path.of(file));
-                        int offset    = resolveOffset(args, source, Path.of(file).getFileName().toString());
+                        String source = Files.readString(file);
+                        int offset    = resolveOffset(args, source, file.getFileName().toString());
                         String result = JdtInliner.inlineConstant(
-                                source, Path.of(file).getFileName().toString(), offset, allOcc, removeDecl);
+                                source, file.getFileName().toString(), offset, allOcc, removeDecl);
                         return ok(result);
                     } catch (Exception e) {
                         return error(e.getMessage());
@@ -689,8 +689,7 @@ public class RefactoringServer {
 
     static List<FileChange> executeRename(Options.Reader args)
             throws Exception {
-        String projectRoot = args.getString(PROJECT_ROOT);
-        String file        = args.getString(FILE);
+        Path filePath      = args.getPath(FILE);
         String newName     = args.getString(NEW_NAME);
         String refactoring = args.getString(REFACTORING, "rename");
 
@@ -700,10 +699,10 @@ public class RefactoringServer {
                     + "'. Supported: rename");
         }
 
-        Path root = Path.of(projectRoot);
-        Path sourceFile = Path.of(file).isAbsolute()
-                ? Path.of(file)
-                : root.resolve(file);
+        Path root = args.getPath(PROJECT_ROOT);
+        Path sourceFile = filePath.isAbsolute()
+                ? filePath
+                : root.resolve(filePath);
 
         String source = Files.readString(sourceFile);
         int offset = resolveOffset(args, source, sourceFile.getFileName().toString());
@@ -858,13 +857,13 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args   = opts.reader(request.arguments());
-                        String file = args.getString(FILE);
-                        String source = Files.readString(Path.of(file));
-                        int offset    = resolveOffset(args, source, Path.of(file).getFileName().toString());
+                        Path file   = args.getPath(FILE);
+                        String source = Files.readString(file);
+                        int offset    = resolveOffset(args, source, file.getFileName().toString());
                         var changed   = JdtPullUpMethod.pullUp(
                                 ProjectDetector.detect(
-                                        Path.of(args.getString(PROJECT_ROOT))),
-                                Path.of(file), offset);
+                                        args.getPath(PROJECT_ROOT)),
+                                file, offset);
                         return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
                                 .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
                                         + e.getValue().stripTrailing() + "\n\n")
@@ -895,13 +894,13 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args   = opts.reader(request.arguments());
-                        String file = args.getString(FILE);
-                        String source = Files.readString(Path.of(file));
-                        int offset    = resolveOffset(args, source, Path.of(file).getFileName().toString());
+                        Path file   = args.getPath(FILE);
+                        String source = Files.readString(file);
+                        int offset    = resolveOffset(args, source, file.getFileName().toString());
                         var changed   = JdtPushDownMethod.pushDown(
                                 ProjectDetector.detect(
-                                        Path.of(args.getString(PROJECT_ROOT))),
-                                Path.of(file), offset);
+                                        args.getPath(PROJECT_ROOT)),
+                                file, offset);
                         return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
                                 .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
                                         + e.getValue().stripTrailing() + "\n\n")
@@ -931,14 +930,14 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args         = opts.reader(request.arguments());
-                        String file       = args.getString(FILE);
+                        Path file         = args.getPath(FILE);
                         String targetClass = args.getString(TARGET_CLASS);
-                        String source     = Files.readString(Path.of(file));
-                        int offset        = resolveOffset(args, source, Path.of(file).getFileName().toString());
+                        String source     = Files.readString(file);
+                        int offset        = resolveOffset(args, source, file.getFileName().toString());
                         var changed = JdtMoveMethod.moveMethod(
                                 ProjectDetector.detect(
-                                        Path.of(args.getString(PROJECT_ROOT))),
-                                Path.of(file), offset, targetClass);
+                                        args.getPath(PROJECT_ROOT)),
+                                file, offset, targetClass);
                         return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
                                 .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
                                         + e.getValue().stripTrailing() + "\n\n")
@@ -959,8 +958,8 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args  = opts.reader(request.arguments());
-                        Path root = Path.of(args.getString(PROJECT_ROOT));
-                        Path file = root.resolve(args.getString(FILE));
+                        Path root = args.getPath(PROJECT_ROOT);
+                        Path file = root.resolve(args.getPath(FILE));
 
                         String source = Files.readString(file);
                         int offset    = resolveOffset(args, source, file.getFileName().toString());
@@ -986,8 +985,8 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args  = opts.reader(request.arguments());
-                        Path root = Path.of(args.getString(PROJECT_ROOT));
-                        Path file = root.resolve(args.getString(FILE));
+                        Path root = args.getPath(PROJECT_ROOT);
+                        Path file = root.resolve(args.getPath(FILE));
 
                         String source = Files.readString(file);
                         int offset    = resolveOffset(args, source, file.getFileName().toString());
@@ -1013,8 +1012,8 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args    = opts.reader(request.arguments());
-                        Path root   = Path.of(args.getString(PROJECT_ROOT));
-                        Path file   = root.resolve(args.getString(FILE));
+                        Path root   = args.getPath(PROJECT_ROOT);
+                        Path file   = root.resolve(args.getPath(FILE));
                         String name = args.getString(FACTORY_METHOD_NAME);
                         boolean makePrivate = args.getBoolean(MAKE_CONSTRUCTOR_PRIVATE);
 
@@ -1044,8 +1043,8 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args  = opts.reader(request.arguments());
-                        Path root = Path.of(args.getString(PROJECT_ROOT));
-                        Path file = root.resolve(args.getString(FILE));
+                        Path root = args.getPath(PROJECT_ROOT);
+                        Path file = root.resolve(args.getPath(FILE));
                         List<String> paramNames = args.getStringList(PARAM_NAMES);
                         String className = args.getString(CLASS_NAME);
                         String paramObjName = args.has(PARAM_OBJECT_NAME)
@@ -1078,8 +1077,8 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args  = opts.reader(request.arguments());
-                        Path root = Path.of(args.getString(PROJECT_ROOT));
-                        Path file = root.resolve(args.getString(FILE));
+                        Path root = args.getPath(PROJECT_ROOT);
+                        Path file = root.resolve(args.getPath(FILE));
                         var changed = JdtConvertToRecord.convertToRecord(
                                 ProjectDetector.detect(root), file);
                         return ok(formatPreview(changed));
@@ -1110,8 +1109,8 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args  = opts.reader(request.arguments());
-                        Path root = Path.of(args.getString(PROJECT_ROOT));
-                        Path file = root.resolve(args.getString(FILE));
+                        Path root = args.getPath(PROJECT_ROOT);
+                        Path file = root.resolve(args.getPath(FILE));
                         String source = Files.readString(file);
                         int offset = resolveOffset(args, source, file.getFileName().toString());
                         String newReturnType = args.getString(NEW_RETURN_TYPE);
@@ -1143,8 +1142,8 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args  = opts.reader(request.arguments());
-                        Path root = Path.of(args.getString(PROJECT_ROOT));
-                        Path file = root.resolve(args.getString(FILE));
+                        Path root = args.getPath(PROJECT_ROOT);
+                        Path file = root.resolve(args.getPath(FILE));
                         String source = Files.readString(file);
                         int offset = resolveOffset(args, source, file.getFileName().toString());
                         boolean generateSetter = args.getBoolean(GENERATE_SETTER);
@@ -1175,7 +1174,7 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args      = opts.reader(request.arguments());
-                        Path file     = Path.of(args.getString(FILE));
+                        Path file     = args.getPath(FILE);
                         String source = Files.readString(file);
                         String methodName = args.getString(METHOD_NAME);
                         int offset    = resolveOffset(args, source, file.getFileName().toString());
@@ -1199,7 +1198,7 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args          = opts.reader(request.arguments());
-                        Path file         = Path.of(args.getString(FILE));
+                        Path file         = args.getPath(FILE);
                         String source     = Files.readString(file);
                         int offset        = resolveOffset(args, source, file.getFileName().toString());
                         String nestedName = args.getString(NESTED_CLASS_NAME);
@@ -1223,7 +1222,7 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args    = opts.reader(request.arguments());
-                        Path file   = Path.of(args.getString(FILE));
+                        Path file   = args.getPath(FILE);
                         String source = Files.readString(file);
                         int offset  = resolveOffset(args, source, file.getFileName().toString());
                         String name = args.getString(INDIRECTION_METHOD_NAME);
@@ -1247,8 +1246,8 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args          = opts.reader(request.arguments());
-                        Path projectRoot  = Path.of(args.getString(PROJECT_ROOT));
-                        Path file         = Path.of(args.getString(FILE));
+                        Path projectRoot  = args.getPath(PROJECT_ROOT);
+                        Path file         = args.getPath(FILE);
                         String source     = Files.readString(file);
                         int offset        = resolveOffset(args, source, file.getFileName().toString());
                         String target     = args.getString(TARGET_CLASS);
@@ -1276,7 +1275,7 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args    = opts.reader(request.arguments());
-                        Path file   = Path.of(args.getString(FILE));
+                        Path file   = args.getPath(FILE);
                         String source = Files.readString(file);
                         int offset  = resolveOffset(args, source, file.getFileName().toString());
                         String result = JdtPromoteToField.promote(
@@ -1299,7 +1298,7 @@ public class RefactoringServer {
                 .callHandler((exchange, request) -> {
                     try {
                         var args   = opts.reader(request.arguments());
-                        Path file  = Path.of(args.getString(FILE));
+                        Path file  = args.getPath(FILE);
                         String source = Files.readString(file);
                         int offset = resolveOffset(args, source, file.getFileName().toString());
                         JdtConvertNestedToTopLevel.Result result =
