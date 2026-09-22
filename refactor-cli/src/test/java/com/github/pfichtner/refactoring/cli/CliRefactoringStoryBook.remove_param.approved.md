@@ -11,6 +11,7 @@ remove-param --file {root}/src/main/java/com/example/Computation.java --method a
 ### Output:
 ```
 Dry run — no files written.
+Would change (2):
 
 === App.java ===
 package com.example;

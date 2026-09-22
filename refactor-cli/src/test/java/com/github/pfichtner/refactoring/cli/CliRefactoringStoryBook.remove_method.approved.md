@@ -11,6 +11,7 @@ remove-method --file {root}/src/main/java/com/example/Printable.java --method pr
 ### Output:
 ```
 Dry run — no files written.
+Would change (3):
 
 === Document.java ===
 package com.example;

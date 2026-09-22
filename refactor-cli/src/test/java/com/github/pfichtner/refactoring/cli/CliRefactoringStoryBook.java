@@ -110,7 +110,7 @@ class CliRefactoringStoryBook {
                 "extract-superclass",
                 "--file", bed.root().toString(),
                 "--name", "BaseAnimal",
-                "--superclass-file", bed.root().getParent().resolve("BaseAnimal.java").toString(),
+                "--output-file", bed.root().getParent().resolve("BaseAnimal.java").toString(),
                 "--dry-run"));
     }
 
@@ -121,7 +121,7 @@ class CliRefactoringStoryBook {
                 "extract-interface",
                 "--file", bed.root().toString(),
                 "--name", "Arithmetic",
-                "--interface-file", bed.root().getParent().resolve("Arithmetic.java").toString(),
+                "--output-file", bed.root().getParent().resolve("Arithmetic.java").toString(),
                 "--dry-run"));
     }
 

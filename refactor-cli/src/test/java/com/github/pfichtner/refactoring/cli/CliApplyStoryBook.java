@@ -105,7 +105,7 @@ class CliApplyStoryBook {
                 "extract-superclass",
                 "--file", bed.root().toString(),
                 "--name", "BaseAnimal",
-                "--superclass-file", bed.root().getParent().resolve("BaseAnimal.java").toString()));
+                "--output-file", bed.root().getParent().resolve("BaseAnimal.java").toString()));
     }
 
     @Test
@@ -115,7 +115,7 @@ class CliApplyStoryBook {
                 "extract-interface",
                 "--file", bed.root().toString(),
                 "--name", "Arithmetic",
-                "--interface-file", bed.root().getParent().resolve("Arithmetic.java").toString()));
+                "--output-file", bed.root().getParent().resolve("Arithmetic.java").toString()));
     }
 
     @Test

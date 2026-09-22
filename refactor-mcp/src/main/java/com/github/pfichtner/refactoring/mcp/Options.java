@@ -1,7 +1,6 @@
 package com.github.pfichtner.refactoring.mcp;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +31,7 @@ public final class Options {
     private final List<String> required;
 
     private Options(Builder builder) {
-        this.properties = Collections.unmodifiableMap(new LinkedHashMap<>(builder.properties));
+        this.properties = new LinkedHashMap<>(builder.properties);
         this.required   = List.copyOf(builder.required);
     }
 
