@@ -12,13 +12,13 @@ import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
 
-/** Shared skeleton for pull-up and push-down method/field commands. */
-abstract class HierarchyMoveCommand implements Callable<Integer> {
+/** Shared skeleton for project-wide refactorings that locate a single element and return changed files. */
+abstract class ProjectWideLocatorCommand implements Callable<Integer> {
 
     @Spec CommandSpec spec;
 
     @Option(names = {"--file", "-f"}, required = true,
-            description = "Source file containing the class.")
+            description = "Source file containing the target element.")
     Path file;
 
     @Mixin LocatorOptions locator;
@@ -30,7 +30,7 @@ abstract class HierarchyMoveCommand implements Callable<Integer> {
     @Mixin ProjectOptions project;
 
     protected abstract Map<Path, String> execute(JavaProject proj, Path absFile, int offset) throws Exception;
-    protected abstract String verb();
+    protected abstract String successLine(int count);
 
     @Override
     public Integer call() throws Exception {
@@ -56,7 +56,7 @@ abstract class HierarchyMoveCommand implements Callable<Integer> {
             for (Map.Entry<Path, String> e : changed.entrySet()) {
                 Files.writeString(e.getKey(), e.getValue());
             }
-            out.println(verb() + " into " + changed.size() + " file(s):");
+            out.println(successLine(changed.size()));
             changed.keySet().stream().sorted().forEach(p -> out.println("  " + p.getFileName()));
         }
         return 0;

@@ -3,7 +3,7 @@
 
 ### Command:
 ```
-extract-superclass --file {root}/Animal.java --name BaseAnimal --superclass-file {root}/BaseAnimal.java
+extract-superclass --file {root}/Animal.java --name BaseAnimal --output-file {root}/BaseAnimal.java
 ```
 
 ### Exit code: 0

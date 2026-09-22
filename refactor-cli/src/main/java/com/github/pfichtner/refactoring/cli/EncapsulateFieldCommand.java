@@ -1,68 +1,26 @@
 package com.github.pfichtner.refactoring.cli;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.concurrent.Callable;
 
 import com.github.pfichtner.refactoring.JdtEncapsulateField;
+import com.github.pfichtner.refactoring.project.JavaProject;
 
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Mixin;
-import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
-import picocli.CommandLine.Spec;
 
 /** CLI subcommand for encapsulate-field refactoring. Logic lives in {@link JdtEncapsulateField}. */
-@Command(
-    name = "encapsulate-field",
-    mixinStandardHelpOptions = true,
-    description = "Make a public field private, generate getter (and optional setter), " +
-                  "and rewrite all access sites across the project."
-)
-public class EncapsulateFieldCommand implements Callable<Integer> {
+@Command(name = "encapsulate-field", mixinStandardHelpOptions = true,
+         description = "Make a public field private, generate getter (and optional setter), " +
+                       "and rewrite all access sites across the project.")
+public class EncapsulateFieldCommand extends ProjectWideLocatorCommand {
 
-    @Spec CommandSpec spec;
-
-    @Option(names = {"--file", "-f"}, required = true,
-            description = "Source file containing the field declaration.") Path file;
-    @Option(names = "--dry-run",
-            description = "Print changed sources; do not write to disk.") boolean dryRun;
     @Option(names = "--setter",
             description = "Also generate a setter and rewrite write access sites (default: false).")
     boolean generateSetter;
 
-    @Mixin LocatorOptions locator;
-    @Mixin ProjectOptions project;
-
-    @Override
-    public Integer call() throws Exception {
-        Path absFile = file.toAbsolutePath().normalize();
-        if (!Files.isRegularFile(absFile)) {
-            spec.commandLine().getErr().println("Error: file not found: " + absFile);
-            return 1;
-        }
-        String source = Files.readString(absFile);
-        int offset = locator.resolveOffset(source, absFile.getFileName().toString());
-
-        Map<Path, String> changed = JdtEncapsulateField.encapsulateField(
-                project.resolve(absFile), absFile, offset, generateSetter);
-
-        var out = spec.commandLine().getOut();
-        if (dryRun) {
-            out.println("Dry run — no files written.");
-            out.println("Would change (" + changed.size() + "):");
-            changed.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(e -> {
-                out.println("\n=== " + e.getKey().getFileName() + " ===");
-                out.println(e.getValue().stripTrailing());
-            });
-        } else {
-            for (Map.Entry<Path, String> e : changed.entrySet()) {
-                Files.writeString(e.getKey(), e.getValue());
-            }
-            out.println("Field encapsulated; " + changed.size() + " file(s) changed:");
-            changed.keySet().stream().sorted().forEach(p -> out.println("  " + p.getFileName()));
-        }
-        return 0;
+    @Override protected Map<Path, String> execute(JavaProject p, Path f, int offset) throws Exception {
+        return JdtEncapsulateField.encapsulateField(p, f, offset, generateSetter);
     }
+    @Override protected String successLine(int n) { return "Field encapsulated; " + n + " file(s) changed:"; }
 }

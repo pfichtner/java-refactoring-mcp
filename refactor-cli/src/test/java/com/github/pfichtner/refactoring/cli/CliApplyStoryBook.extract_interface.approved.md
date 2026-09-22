@@ -3,7 +3,7 @@
 
 ### Command:
 ```
-extract-interface --file {root}/Calculator.java --name Arithmetic --interface-file {root}/Arithmetic.java
+extract-interface --file {root}/Calculator.java --name Arithmetic --output-file {root}/Arithmetic.java
 ```
 
 ### Exit code: 0
