@@ -2,56 +2,47 @@ package com.github.pfichtner.cli;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
-import picocli.CommandLine;
 
 /**
  * Integration tests for the {@code extract-interface} CLI subcommand.
  */
-@CliTestBed(root = "fixtures/extract-interface/simple/input/Calculator.java")
+@CliFixture(root = "fixtures/extract-interface/simple/input/Calculator.java")
 class CliExtractInterfaceTest {
 
     @Test
-    void dry_run_prints_preview_without_writing(CommandLine cli, StringWriter out, Path root, @TempDir Path tmp) throws Exception {
-        Path source = tmp.resolve("Calculator.java");
-        Files.copy(root, source);
-        String before = Files.readString(source);
+    void dry_run_prints_preview_without_writing(CliTestBed bed) throws Exception {
+        String before = Files.readString(bed.root());
 
-        int exit = cli.execute(
+        int exit = bed.cli().execute(
                 "extract-interface",
-                "--file", source.toString(),
+                "--file", bed.root().toString(),
                 "--name", "Arithmetic",
-                "--interface-file", tmp.resolve("Arithmetic.java").toString(),
+                "--interface-file", bed.root().getParent().resolve("Arithmetic.java").toString(),
                 "--dry-run");
 
-        assertThat(exit).as("Expected exit code 0: " + out).isEqualTo(0);
-        assertThat(Files.readString(source)).as("Dry-run must not modify file on disk").isEqualTo(before);
+        assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
+        assertThat(Files.readString(bed.root())).as("Dry-run must not modify file on disk").isEqualTo(before);
 
-        Approvals.verify(out.toString());
+        Approvals.verify(bed.out().toString());
     }
 
     @Test
-    void apply_writes_interface_file(CommandLine cli, StringWriter out, Path root, @TempDir Path tmp) throws Exception {
-        Path source = tmp.resolve("Calculator.java");
-        Files.copy(root, source);
+    void apply_writes_interface_file(CliTestBed bed) throws Exception {
+        Path interfaceFile = bed.root().getParent().resolve("Arithmetic.java");
 
-        Path interfaceFile = tmp.resolve("Arithmetic.java");
-
-        int exit = cli.execute(
+        int exit = bed.cli().execute(
                 "extract-interface",
-                "--file", source.toString(),
+                "--file", bed.root().toString(),
                 "--name", "Arithmetic",
                 "--interface-file", interfaceFile.toString());
 
-        assertThat(exit).as("Expected exit code 0: " + out).isEqualTo(0);
-        assertThat(Files.readString(source)).as("Class should implement the interface")
+        assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
+        assertThat(Files.readString(bed.root())).as("Class should implement the interface")
                 .contains("implements Arithmetic");
         assertThat(Files.exists(interfaceFile)).as("Interface file should be written").isTrue();
         assertThat(Files.readString(interfaceFile))

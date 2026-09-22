@@ -2,56 +2,47 @@ package com.github.pfichtner.cli;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
-import picocli.CommandLine;
 
 /**
  * Integration tests for the {@code extract-superclass} CLI subcommand.
  */
-@CliTestBed(root = "fixtures/extract-superclass/simple/input/Animal.java")
+@CliFixture(root = "fixtures/extract-superclass/simple/input/Animal.java")
 class CliExtractSuperclassTest {
 
     @Test
-    void dry_run_prints_preview_without_writing(CommandLine cli, StringWriter out, Path root, @TempDir Path tmp) throws Exception {
-        Path source = tmp.resolve("Animal.java");
-        Files.copy(root, source);
-        String before = Files.readString(source);
+    void dry_run_prints_preview_without_writing(CliTestBed bed) throws Exception {
+        String before = Files.readString(bed.root());
 
-        int exit = cli.execute(
+        int exit = bed.cli().execute(
                 "extract-superclass",
-                "--file", source.toString(),
+                "--file", bed.root().toString(),
                 "--name", "BaseAnimal",
-                "--superclass-file", tmp.resolve("BaseAnimal.java").toString(),
+                "--superclass-file", bed.root().getParent().resolve("BaseAnimal.java").toString(),
                 "--dry-run");
 
-        assertThat(exit).as("Expected exit code 0: " + out).isEqualTo(0);
-        assertThat(Files.readString(source)).as("Dry-run must not modify file on disk").isEqualTo(before);
+        assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
+        assertThat(Files.readString(bed.root())).as("Dry-run must not modify file on disk").isEqualTo(before);
 
-        Approvals.verify(out.toString());
+        Approvals.verify(bed.out().toString());
     }
 
     @Test
-    void apply_writes_superclass_file(CommandLine cli, StringWriter out, Path root, @TempDir Path tmp) throws Exception {
-        Path source = tmp.resolve("Animal.java");
-        Files.copy(root, source);
+    void apply_writes_superclass_file(CliTestBed bed) throws Exception {
+        Path superclassFile = bed.root().getParent().resolve("BaseAnimal.java");
 
-        Path superclassFile = tmp.resolve("BaseAnimal.java");
-
-        int exit = cli.execute(
+        int exit = bed.cli().execute(
                 "extract-superclass",
-                "--file", source.toString(),
+                "--file", bed.root().toString(),
                 "--name", "BaseAnimal",
                 "--superclass-file", superclassFile.toString());
 
-        assertThat(exit).as("Expected exit code 0: " + out).isEqualTo(0);
-        assertThat(Files.readString(source)).as("Class should extend the superclass")
+        assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
+        assertThat(Files.readString(bed.root())).as("Class should extend the superclass")
                 .contains("extends BaseAnimal");
         assertThat(Files.exists(superclassFile)).as("Superclass file should be written").isTrue();
         assertThat(Files.readString(superclassFile))
