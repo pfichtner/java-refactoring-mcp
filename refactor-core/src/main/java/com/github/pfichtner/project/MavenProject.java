@@ -12,9 +12,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 
 import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
 
 /**
  * Minimal Maven project model that provides JDT with what it needs:
@@ -142,9 +144,9 @@ public class MavenProject implements JavaProject {
             String parent = xpath.evaluate("/project/parent/artifactId/text()", doc).trim();
             if (!parent.isEmpty()) return false;
             // Has any <dependency> element — must invoke Maven
-            org.w3c.dom.NodeList deps = (org.w3c.dom.NodeList)
+            NodeList deps = (NodeList)
                     xpath.evaluate("/project/dependencies/dependency", doc,
-                            javax.xml.xpath.XPathConstants.NODESET);
+                            XPathConstants.NODESET);
             return deps.getLength() == 0;
         } catch (Exception e) {
             return false; // fall back to running Maven when uncertain
