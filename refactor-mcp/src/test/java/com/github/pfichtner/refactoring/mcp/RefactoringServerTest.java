@@ -58,7 +58,7 @@ class RefactoringServerTest {
     void analyze_refactoring_rename_method_preview() throws Exception {
         Map<String, Object> args = renameMethodArgs();
 
-        var changed = RefactoringServer.executeRename(args);
+        var changed = RefactoringServer.executeRename(new Options.Reader(args));
         String preview = RefactoringServer.formatPreview(changed);
 
         Approvals.verify(preview);
@@ -82,7 +82,7 @@ class RefactoringServerTest {
                 "new_name",     "plus"
         );
 
-        var changed = RefactoringServer.executeRename(args);
+        var changed = RefactoringServer.executeRename(new Options.Reader(args));
         for (var fc : changed) {
             Files.createDirectories(fc.newPath().getParent());
             Files.writeString(fc.newPath(), fc.newSource());
@@ -115,7 +115,7 @@ class RefactoringServerTest {
                 "new_name", "helper"
         );
 
-        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> RefactoringServer.executeRename(args)).actual();
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> RefactoringServer.executeRename(new Options.Reader(args))).actual();
         assertThat(ex.getMessage()).contains("extract_method");
     }
 
