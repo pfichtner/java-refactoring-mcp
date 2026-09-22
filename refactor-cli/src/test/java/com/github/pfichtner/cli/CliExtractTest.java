@@ -2,8 +2,8 @@ package com.github.pfichtner.cli;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.approvaltests.Approvals;
@@ -15,30 +15,16 @@ import picocli.CommandLine;
 /**
  * Integration tests for the {@code extract} CLI subcommand.
  */
+@CliTestBed(root = "fixtures/extract/simple/input/Greeter.java")
 class CliExtractTest {
 
-    private static final Path FIXTURE_FILE;
-
-    static {
-        try {
-            FIXTURE_FILE = Path.of(
-                    CliExtractTest.class.getClassLoader()
-                            .getResource("fixtures/extract/simple/input/Greeter.java")
-                            .toURI()
-            );
-        } catch (Exception e) {
-            throw new ExceptionInInitializerError(e);
-        }
-    }
-
     @Test
-    void dry_run_prints_preview_without_writing(@TempDir Path tmp) throws Exception {
+    void dry_run_prints_preview_without_writing(CommandLine cli, StringWriter out, Path root, @TempDir Path tmp) throws Exception {
         Path source = tmp.resolve("Greeter.java");
-        java.nio.file.Files.copy(FIXTURE_FILE, source);
-        String before = java.nio.file.Files.readString(source);
+        Files.copy(root, source);
+        String before = Files.readString(source);
 
-        StringWriter out = new StringWriter();
-        int exit = cli(out).execute(
+        int exit = cli.execute(
                 "extract",
                 "--file", source.toString(),
                 "--start-line", "3", "--start-column", "9",
@@ -47,18 +33,17 @@ class CliExtractTest {
                 "--dry-run");
 
         assertThat(exit).as("Expected exit code 0: " + out).isEqualTo(0);
-        assertThat(java.nio.file.Files.readString(source)).as("Dry-run must not modify file on disk").isEqualTo(before);
+        assertThat(Files.readString(source)).as("Dry-run must not modify file on disk").isEqualTo(before);
 
         Approvals.verify(out.toString());
     }
 
     @Test
-    void apply_writes_extracted_method(@TempDir Path tmp) throws Exception {
+    void apply_writes_extracted_method(CommandLine cli, StringWriter out, Path root, @TempDir Path tmp) throws Exception {
         Path source = tmp.resolve("Greeter.java");
-        java.nio.file.Files.copy(FIXTURE_FILE, source);
+        Files.copy(root, source);
 
-        StringWriter out = new StringWriter();
-        int exit = cli(out).execute(
+        int exit = cli.execute(
                 "extract",
                 "--file", source.toString(),
                 "--start-line", "3", "--start-column", "9",
@@ -67,14 +52,13 @@ class CliExtractTest {
 
         assertThat(exit).as("Expected exit code 0: " + out).isEqualTo(0);
         assertThat(out.toString()).as("Apply output should mention the method name").contains("sayHi");
-        assertThat(java.nio.file.Files.readString(source)).as("File should contain extracted method")
+        assertThat(Files.readString(source)).as("File should contain extracted method")
                 .contains("private void sayHi()");
     }
 
     @Test
-    void missing_file_returns_exit_code_1() throws Exception {
-        StringWriter out = new StringWriter();
-        int exit = cli(out).execute(
+    void missing_file_returns_exit_code_1(CommandLine cli) throws Exception {
+        int exit = cli.execute(
                 "extract",
                 "--file", "/nonexistent/Greeter.java",
                 "--start-line", "3", "--start-column", "9",
@@ -82,16 +66,5 @@ class CliExtractTest {
                 "--name", "sayHi");
 
         assertThat(exit).isEqualTo(1);
-    }
-
-    private static CommandLine cli(StringWriter out) {
-        CommandLine cmd = new CommandLine(new Main());
-        cmd.setOut(new PrintWriter(out, true));
-        cmd.setErr(new PrintWriter(out, true));
-        cmd.setExecutionExceptionHandler((ex, c, pr) -> {
-            c.getErr().println("Error: " + ex.getMessage());
-            return 1;
-        });
-        return cmd;
     }
 }
