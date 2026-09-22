@@ -1,16 +1,8 @@
 package com.github.pfichtner.refactoring.mcp;
 
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
-/**
- * Canonical MCP schema property descriptors.
- *
- * Use {@link #props(Property...)} to build a {@code "properties"} map and
- * {@link #keys(Property...)} to build a {@code "required"} list.
- */
+/** Canonical MCP schema property descriptors. Use {@link Options} to compose them into tool schemas. */
 enum Property {
 
     // -------------------------------------------------------------------------
@@ -85,19 +77,7 @@ enum Property {
         this.descriptor = descriptor;
     }
 
-    /** Builds a {@code "properties"} map from the given constants (insertion order preserved). */
-    static Map<String, Object> props(Property... ps) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        for (Property p : ps) map.put(p.key, p.descriptor);
-        return map;
-    }
-
-    /** Builds a {@code "required"} list from the given constants. */
-    static List<String> keys(Property... ps) {
-        return Arrays.stream(ps).map(p -> p.key).toList();
-    }
-
-    // -------------------------------------------------------------------------
+        // -------------------------------------------------------------------------
     // Descriptor factories
     // -------------------------------------------------------------------------
 

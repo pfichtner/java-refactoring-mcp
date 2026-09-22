@@ -243,11 +243,10 @@ public class RefactoringServer {
     }
 
     private static Map<String, Object> extractSchema() {
-        return Map.of(
-                "type", "object",
-                "properties", props(FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, METHOD_NAME),
-                "required",   keys(FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, METHOD_NAME)
-        );
+        Options opts = Options.builder()
+                .addRequired(FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, METHOD_NAME)
+                .build();
+        return Map.of("type", "object", "properties", opts.properties(), "required", opts.required());
     }
 
     // -------------------------------------------------------------------------
@@ -255,11 +254,12 @@ public class RefactoringServer {
     // -------------------------------------------------------------------------
 
     static SyncToolSpecification renamePackage() {
+        Options opts = Options.builder().addRequired(PROJECT_ROOT, OLD_PACKAGE, NEW_PACKAGE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("rename_package", Map.of(
                         "type", "object",
-                        "properties", props(PROJECT_ROOT, OLD_PACKAGE, NEW_PACKAGE),
-                        "required",   keys(PROJECT_ROOT, OLD_PACKAGE, NEW_PACKAGE)))
+                        "properties", opts.properties(),
+                        "required",   opts.required()))
                         .description("""
                         Rename a package across the project.
                         Updates package declarations, single-class imports, and wildcard imports.
@@ -292,11 +292,12 @@ public class RefactoringServer {
     // -------------------------------------------------------------------------
 
     static SyncToolSpecification moveClass() {
+        Options opts = Options.builder().addRequired(PROJECT_ROOT, FILE, NEW_PACKAGE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("move_class", Map.of(
                         "type", "object",
-                        "properties", props(PROJECT_ROOT, FILE, NEW_PACKAGE),
-                        "required",   keys(PROJECT_ROOT, FILE, NEW_PACKAGE)))
+                        "properties", opts.properties(),
+                        "required",   opts.required()))
                         .description("""
                         Move a Java class to a new package.
                         Updates the package declaration and all explicit imports in the project.
@@ -335,11 +336,12 @@ public class RefactoringServer {
     // -------------------------------------------------------------------------
 
     static SyncToolSpecification extractSuperclass() {
+        Options opts = Options.builder().add(METHOD_NAMES).addRequired(FILE, SUPERCLASS_NAME).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("extract_superclass", Map.of(
                         "type", "object",
-                        "properties", props(FILE, SUPERCLASS_NAME, METHOD_NAMES),
-                        "required",   keys(FILE, SUPERCLASS_NAME)))
+                        "properties", opts.properties(),
+                        "required",   opts.required()))
                         .description("""
                         Move public methods into a new abstract superclass and make the class extend it.
                         Returns the modified class source and the new superclass source.
@@ -374,11 +376,12 @@ public class RefactoringServer {
     // -------------------------------------------------------------------------
 
     static SyncToolSpecification extractInterface() {
+        Options opts = Options.builder().add(METHOD_NAMES).addRequired(FILE, INTERFACE_NAME).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("extract_interface", Map.of(
                         "type", "object",
-                        "properties", props(FILE, INTERFACE_NAME, METHOD_NAMES),
-                        "required",   keys(FILE, INTERFACE_NAME)))
+                        "properties", opts.properties(),
+                        "required",   opts.required()))
                         .description("""
                         Extract a new interface from the public methods of a class.
                         Returns the modified class source and the new interface source.
@@ -416,11 +419,12 @@ public class RefactoringServer {
     // -------------------------------------------------------------------------
 
     static SyncToolSpecification removeParam() {
+        Options opts = Options.builder().add(LINE, COLUMN, METHOD, PARAMETER, CLASS).addRequired(PROJECT_ROOT, FILE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("remove_param", Map.of(
                         "type", "object",
-                        "properties", props(PROJECT_ROOT, FILE, LINE, COLUMN, METHOD, PARAMETER, CLASS),
-                        "required",   keys(PROJECT_ROOT, FILE)))
+                        "properties", opts.properties(),
+                        "required",   opts.required()))
                         .description("""
                         Remove an unused parameter from a method and the corresponding argument
                         from every call site in the project.
@@ -453,11 +457,12 @@ public class RefactoringServer {
     // -------------------------------------------------------------------------
 
     static SyncToolSpecification removeMethod() {
+        Options opts = Options.builder().add(LINE, COLUMN, METHOD, CLASS, CASCADE).addRequired(PROJECT_ROOT, FILE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("remove_method", Map.of(
                         "type", "object",
-                        "properties", props(PROJECT_ROOT, FILE, LINE, COLUMN, METHOD, CLASS, CASCADE),
-                        "required",   keys(PROJECT_ROOT, FILE)))
+                        "properties", opts.properties(),
+                        "required",   opts.required()))
                         .description("""
                         Remove a method from a class or interface.
                         When cascade is true (the default), also removes every overriding method
@@ -491,11 +496,12 @@ public class RefactoringServer {
     // -------------------------------------------------------------------------
 
     static SyncToolSpecification introduceParam() {
+        Options opts = Options.builder().add(PARAM_TYPE).addRequired(PROJECT_ROOT, FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, PARAM_NAME).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("introduce_param", Map.of(
                         "type", "object",
-                        "properties", props(PROJECT_ROOT, FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, PARAM_NAME, PARAM_TYPE),
-                        "required",   keys(PROJECT_ROOT, FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, PARAM_NAME)))
+                        "properties", opts.properties(),
+                        "required",   opts.required()))
                         .description("""
                         Promote an expression to a method parameter.
                         Updates the method signature and all call sites in the project.
@@ -537,11 +543,12 @@ public class RefactoringServer {
     // -------------------------------------------------------------------------
 
     static SyncToolSpecification extractConstant() {
+        Options opts = Options.builder().add(REPLACE_ALL).addRequired(FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, CONST_NAME).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("extract_constant", Map.of(
                         "type", "object",
-                        "properties", props(FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, CONST_NAME, REPLACE_ALL),
-                        "required",   keys(FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, CONST_NAME)))
+                        "properties", opts.properties(),
+                        "required",   opts.required()))
                         .description("""
                         Extract an expression into a private static final constant at class level.
                         Returns the rewritten source; does not write to disk.
@@ -576,11 +583,12 @@ public class RefactoringServer {
     // -------------------------------------------------------------------------
 
     static SyncToolSpecification inlineMethod() {
+        Options opts = Options.builder().add(LINE, COLUMN, METHOD, CLASS, REMOVE_DECLARATION).addRequired(PROJECT_ROOT, FILE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("inline_method", Map.of(
                         "type", "object",
-                        "properties", props(PROJECT_ROOT, FILE, LINE, COLUMN, METHOD, CLASS, REMOVE_DECLARATION),
-                        "required",   keys(PROJECT_ROOT, FILE)))
+                        "properties", opts.properties(),
+                        "required",   opts.required()))
                         .description("""
                         Inline a method call at all call sites in the project.
                         Optionally removes the method declaration.
@@ -614,11 +622,12 @@ public class RefactoringServer {
     // -------------------------------------------------------------------------
 
     static SyncToolSpecification extractVariable() {
+        Options opts = Options.builder().add(REPLACE_ALL).addRequired(FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, VAR_NAME).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("extract_variable", Map.of(
                         "type", "object",
-                        "properties", props(FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, VAR_NAME, REPLACE_ALL),
-                        "required",   keys(FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, VAR_NAME)))
+                        "properties", opts.properties(),
+                        "required",   opts.required()))
                         .description("""
                         Extract an expression into a new local variable.
                         Returns the rewritten source; does not write to disk.
@@ -654,11 +663,12 @@ public class RefactoringServer {
     // -------------------------------------------------------------------------
 
     static SyncToolSpecification inlineVariable() {
+        Options opts = Options.builder().add(LINE, COLUMN, VARIABLE).addRequired(FILE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("inline_variable", Map.of(
                         "type", "object",
-                        "properties", props(FILE, LINE, COLUMN, VARIABLE),
-                        "required",   keys(FILE)))
+                        "properties", opts.properties(),
+                        "required",   opts.required()))
                         .description("""
                         Inline a local variable: replace every use with its initializer expression
                         and remove the declaration. Returns the rewritten source; does not write to disk.
@@ -686,11 +696,12 @@ public class RefactoringServer {
     // -------------------------------------------------------------------------
 
     static SyncToolSpecification inlineConstant() {
+        Options opts = Options.builder().add(LINE, COLUMN, FIELD, CLASS, ALL_OCCURRENCES, REMOVE_DECLARATION).addRequired(FILE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("inline_constant", Map.of(
                         "type", "object",
-                        "properties", props(FILE, LINE, COLUMN, FIELD, CLASS, ALL_OCCURRENCES, REMOVE_DECLARATION),
-                        "required",   keys(FILE)))
+                        "properties", opts.properties(),
+                        "required",   opts.required()))
                         .description("""
                         Inline a static final constant: replace one or all references with its
                         initializer expression, and optionally remove the field declaration.
@@ -867,11 +878,11 @@ public class RefactoringServer {
     // -------------------------------------------------------------------------
 
     private static Map<String, Object> renameSchema() {
-        return Map.of(
-                "type", "object",
-                "properties", props(PROJECT_ROOT, FILE, LINE, COLUMN, METHOD, FIELD, TYPE, CLASS, REFACTORING, NEW_NAME),
-                "required",   keys(PROJECT_ROOT, FILE, REFACTORING, NEW_NAME)
-        );
+        Options opts = Options.builder()
+                .add(LINE, COLUMN, METHOD, FIELD, TYPE, CLASS)
+                .addRequired(PROJECT_ROOT, FILE, REFACTORING, NEW_NAME)
+                .build();
+        return Map.of("type", "object", "properties", opts.properties(), "required", opts.required());
     }
 
     // -------------------------------------------------------------------------
@@ -879,11 +890,12 @@ public class RefactoringServer {
     // -------------------------------------------------------------------------
 
     static SyncToolSpecification pullUpMethod() {
+        Options opts = Options.builder().add(LINE, COLUMN, METHOD, CLASS).addRequired(PROJECT_ROOT, FILE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("pull_up_method", Map.of(
                         "type", "object",
-                        "properties", props(PROJECT_ROOT, FILE, LINE, COLUMN, METHOD, CLASS),
-                        "required",   keys(PROJECT_ROOT, FILE)))
+                        "properties", opts.properties(),
+                        "required",   opts.required()))
                         .description("""
                         Pull a method up from a subclass to its direct superclass.
                         The superclass must be in the project source roots.
@@ -917,11 +929,12 @@ public class RefactoringServer {
     // -------------------------------------------------------------------------
 
     static SyncToolSpecification pushDownMethod() {
+        Options opts = Options.builder().add(LINE, COLUMN, METHOD, CLASS).addRequired(PROJECT_ROOT, FILE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("push_down_method", Map.of(
                         "type", "object",
-                        "properties", props(PROJECT_ROOT, FILE, LINE, COLUMN, METHOD, CLASS),
-                        "required",   keys(PROJECT_ROOT, FILE)))
+                        "properties", opts.properties(),
+                        "required",   opts.required()))
                         .description("""
                         Push a method down from a class to all its direct subclasses in the project.
                         The method is removed from the superclass and added to every subclass found.
@@ -954,11 +967,12 @@ public class RefactoringServer {
     // Tool: move_method
 
     static SyncToolSpecification moveMethod() {
+        Options opts = Options.builder().add(LINE, COLUMN, METHOD, CLASS).addRequired(PROJECT_ROOT, FILE, TARGET_CLASS).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("move_method", Map.of(
                         "type", "object",
-                        "properties", props(PROJECT_ROOT, FILE, TARGET_CLASS, LINE, COLUMN, METHOD, CLASS),
-                        "required",   keys(PROJECT_ROOT, FILE, TARGET_CLASS)))
+                        "properties", opts.properties(),
+                        "required",   opts.required()))
                         .description("""
                         Move a method from one class to another class within the project.
                         The method is removed from the source class and added to the target class.
@@ -993,11 +1007,12 @@ public class RefactoringServer {
     // Tool: pull_up_field
 
     static SyncToolSpecification pullUpField() {
+        Options opts = Options.builder().add(LINE, COLUMN, FIELD, CLASS).addRequired(PROJECT_ROOT, FILE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("pull_up_field", Map.of(
                         "type", "object",
-                        "properties", props(PROJECT_ROOT, FILE, LINE, COLUMN, FIELD, CLASS),
-                        "required",   keys(PROJECT_ROOT, FILE)
+                        "properties", opts.properties(),
+                        "required",   opts.required()
                 )).build())
                 .callHandler((exchange, request) -> {
                     try {
@@ -1023,11 +1038,12 @@ public class RefactoringServer {
     // Tool: push_down_field
 
     static SyncToolSpecification pushDownField() {
+        Options opts = Options.builder().add(LINE, COLUMN, FIELD, CLASS).addRequired(PROJECT_ROOT, FILE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("push_down_field", Map.of(
                         "type", "object",
-                        "properties", props(PROJECT_ROOT, FILE, LINE, COLUMN, FIELD, CLASS),
-                        "required",   keys(PROJECT_ROOT, FILE)
+                        "properties", opts.properties(),
+                        "required",   opts.required()
                 )).build())
                 .callHandler((exchange, request) -> {
                     try {
@@ -1053,11 +1069,12 @@ public class RefactoringServer {
     // Tool: introduce_static_factory
 
     static SyncToolSpecification introduceStaticFactory() {
+        Options opts = Options.builder().add(LINE, COLUMN, METHOD, MAKE_CONSTRUCTOR_PRIVATE).addRequired(PROJECT_ROOT, FILE, FACTORY_METHOD_NAME).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("introduce_static_factory", Map.of(
                         "type", "object",
-                        "properties", props(PROJECT_ROOT, FILE, LINE, COLUMN, METHOD, FACTORY_METHOD_NAME, MAKE_CONSTRUCTOR_PRIVATE),
-                        "required",   keys(PROJECT_ROOT, FILE, FACTORY_METHOD_NAME)
+                        "properties", opts.properties(),
+                        "required",   opts.required()
                 )).build())
                 .callHandler((exchange, request) -> {
                     try {
@@ -1087,11 +1104,12 @@ public class RefactoringServer {
     // Tool: introduce_parameter_object
 
     static SyncToolSpecification introduceParameterObject() {
+        Options opts = Options.builder().add(LINE, COLUMN, METHOD, CLASS, PARAM_OBJECT_NAME, AS_RECORD).addRequired(PROJECT_ROOT, FILE, PARAM_NAMES, CLASS_NAME).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("introduce_parameter_object", Map.of(
                         "type", "object",
-                        "properties", props(PROJECT_ROOT, FILE, LINE, COLUMN, METHOD, CLASS, PARAM_NAMES, CLASS_NAME, PARAM_OBJECT_NAME, AS_RECORD),
-                        "required",   keys(PROJECT_ROOT, FILE, PARAM_NAMES, CLASS_NAME)
+                        "properties", opts.properties(),
+                        "required",   opts.required()
                 )).build())
                 .callHandler((exchange, request) -> {
                     try {
@@ -1125,11 +1143,12 @@ public class RefactoringServer {
     // Tool: convert_to_record
 
     static SyncToolSpecification convertToRecord() {
+        Options opts = Options.builder().addRequired(PROJECT_ROOT, FILE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("convert_to_record", Map.of(
                         "type", "object",
-                        "properties", props(PROJECT_ROOT, FILE),
-                        "required",   keys(PROJECT_ROOT, FILE)
+                        "properties", opts.properties(),
+                        "required",   opts.required()
                 )).build())
                 .callHandler((exchange, request) -> {
                     try {
@@ -1153,11 +1172,12 @@ public class RefactoringServer {
     // -------------------------------------------------------------------------
 
     static SyncToolSpecification changeMethodSignature() {
+        Options opts = Options.builder().add(LINE, COLUMN, METHOD, CLASS, NEW_RETURN_TYPE, PARAM_ORDER).addRequired(PROJECT_ROOT, FILE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("change_method_signature", Map.of(
                         "type", "object",
-                        "properties", props(PROJECT_ROOT, FILE, LINE, COLUMN, METHOD, CLASS, NEW_RETURN_TYPE, PARAM_ORDER),
-                        "required",   keys(PROJECT_ROOT, FILE)))
+                        "properties", opts.properties(),
+                        "required",   opts.required()))
                         .description("""
                         Change a method's return type and/or reorder its parameters project-wide.
                         param_order: integer array where param_order[i] is the original index of the
@@ -1194,11 +1214,12 @@ public class RefactoringServer {
     // -------------------------------------------------------------------------
 
     static SyncToolSpecification encapsulateField() {
+        Options opts = Options.builder().add(LINE, COLUMN, FIELD, CLASS, GENERATE_SETTER).addRequired(PROJECT_ROOT, FILE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("encapsulate_field", Map.of(
                         "type", "object",
-                        "properties", props(PROJECT_ROOT, FILE, LINE, COLUMN, FIELD, CLASS, GENERATE_SETTER),
-                        "required",   keys(PROJECT_ROOT, FILE)))
+                        "properties", opts.properties(),
+                        "required",   opts.required()))
                         .description("""
                         Make a public field private, generate a getter (and optional setter),
                         and rewrite all read access sites (and write sites if generate_setter=true)
@@ -1228,11 +1249,12 @@ public class RefactoringServer {
     // -------------------------------------------------------------------------
 
     static SyncToolSpecification decomposeConditional() {
+        Options opts = Options.builder().add(LINE, COLUMN).addRequired(FILE, METHOD_NAME).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("decompose_conditional", Map.of(
                         "type", "object",
-                        "properties", props(FILE, LINE, COLUMN, METHOD_NAME),
-                        "required",   keys(FILE, METHOD_NAME)))
+                        "properties", opts.properties(),
+                        "required",   opts.required()))
                         .description("""
                         Extract a compound boolean condition from an if/while/for statement
                         into a private boolean method. Single-file operation.
@@ -1258,11 +1280,12 @@ public class RefactoringServer {
 
     // Tool: convert_anonymous_to_nested
     static SyncToolSpecification convertAnonymousToNested() {
+        Options opts = Options.builder().addRequired(FILE, LINE, COLUMN, NESTED_CLASS_NAME).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("convert_anonymous_to_nested", Map.of(
                         "type", "object",
-                        "properties", props(FILE, LINE, COLUMN, NESTED_CLASS_NAME),
-                        "required",   keys(FILE, LINE, COLUMN, NESTED_CLASS_NAME)
+                        "properties", opts.properties(),
+                        "required",   opts.required()
                 ))
                 .description("Convert an anonymous class at the given position to a private named nested class.")
                 .build())
@@ -1285,11 +1308,12 @@ public class RefactoringServer {
 
     // Tool: introduce_indirection
     static SyncToolSpecification introduceIndirection() {
+        Options opts = Options.builder().addRequired(FILE, LINE, COLUMN, INDIRECTION_METHOD_NAME).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("introduce_indirection", Map.of(
                         "type", "object",
-                        "properties", props(FILE, LINE, COLUMN, INDIRECTION_METHOD_NAME),
-                        "required",   keys(FILE, LINE, COLUMN, INDIRECTION_METHOD_NAME)
+                        "properties", opts.properties(),
+                        "required",   opts.required()
                 ))
                 .description("Add a public static indirection (wrapper) method that delegates to the method at the given position.")
                 .build())
@@ -1312,11 +1336,12 @@ public class RefactoringServer {
 
     // Tool: move_static_member
     static SyncToolSpecification moveStaticMember() {
+        Options opts = Options.builder().addRequired(PROJECT_ROOT, FILE, LINE, COLUMN, TARGET_CLASS).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("move_static_member", Map.of(
                         "type", "object",
-                        "properties", props(PROJECT_ROOT, FILE, LINE, COLUMN, TARGET_CLASS),
-                        "required",   keys(PROJECT_ROOT, FILE, LINE, COLUMN, TARGET_CLASS)
+                        "properties", opts.properties(),
+                        "required",   opts.required()
                 ))
                 .description("Move a static method or static field to another class and update call sites.")
                 .build())
@@ -1344,11 +1369,12 @@ public class RefactoringServer {
 
     // Tool: promote_to_field
     static SyncToolSpecification promoteToField() {
+        Options opts = Options.builder().addRequired(FILE, LINE, COLUMN).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("promote_to_field", Map.of(
                         "type", "object",
-                        "properties", props(FILE, LINE, COLUMN),
-                        "required",   keys(FILE, LINE, COLUMN)
+                        "properties", opts.properties(),
+                        "required",   opts.required()
                 ))
                 .description("Promote a local variable declaration to a private instance field of the enclosing class.")
                 .build())
@@ -1370,11 +1396,12 @@ public class RefactoringServer {
 
     // Tool: convert_nested_to_top_level
     static SyncToolSpecification convertNestedToTopLevel() {
+        Options opts = Options.builder().addRequired(FILE, LINE, COLUMN).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("convert_nested_to_top_level", Map.of(
                         "type", "object",
-                        "properties", props(FILE, LINE, COLUMN),
-                        "required",   keys(FILE, LINE, COLUMN)
+                        "properties", opts.properties(),
+                        "required",   opts.required()
                 ))
                 .description("Convert a nested (member) type to a top-level type. Returns both the modified outer source and the new type's source.")
                 .build())
