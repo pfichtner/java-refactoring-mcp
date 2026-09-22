@@ -2,7 +2,6 @@ package com.github.pfichtner.cli;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,32 +19,18 @@ import picocli.CommandLine;
  * to {@code --line}/{@code --column} on the {@code rename} command, and
  * verifies that mutually exclusive error cases produce non-zero exit codes.
  */
+@CliTestBed(root = "fixtures/projects/rename-method/pom.xml")
 class CliLocatorByNameTest {
-
-    private static final Path FIXTURE_ROOT;
-
-    static {
-        try {
-            FIXTURE_ROOT = Path.of(
-                    CliLocatorByNameTest.class.getClassLoader()
-                            .getResource("fixtures/projects/rename-method/pom.xml")
-                            .toURI()
-            ).getParent();
-        } catch (Exception e) {
-            throw new ExceptionInInitializerError(e);
-        }
-    }
 
     // -------------------------------------------------------------------------
     // rename --method (dry-run)
     // -------------------------------------------------------------------------
 
     @Test
-    void dry_run_by_method_name_prints_preview() throws Exception {
-        Path calcFile = FIXTURE_ROOT.resolve("src/main/java/com/example/Calculator.java");
+    void dry_run_by_method_name_prints_preview(CommandLine cli, StringWriter out, Path root) throws Exception {
+        Path calcFile = root.resolve("src/main/java/com/example/Calculator.java");
 
-        StringWriter out = new StringWriter();
-        int exit = cli(out).execute(
+        int exit = cli.execute(
                 "rename",
                 "--file", calcFile.toString(),
                 "--method", "add",
@@ -63,13 +48,12 @@ class CliLocatorByNameTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void apply_by_method_name_writes_changed_files(@TempDir Path tmp) throws Exception {
-        copyTree(FIXTURE_ROOT, tmp);
+    void apply_by_method_name_writes_changed_files(CommandLine cli, StringWriter out, Path root, @TempDir Path tmp) throws Exception {
+        CliTestSupport.copyTree(root, tmp);
 
         Path calcFile = tmp.resolve("src/main/java/com/example/Calculator.java");
 
-        StringWriter out = new StringWriter();
-        int exit = cli(out).execute(
+        int exit = cli.execute(
                 "rename",
                 "--file", calcFile.toString(),
                 "--method", "add",
@@ -90,11 +74,10 @@ class CliLocatorByNameTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void position_and_method_together_causes_error() throws Exception {
-        Path calcFile = FIXTURE_ROOT.resolve("src/main/java/com/example/Calculator.java");
+    void position_and_method_together_causes_error(CommandLine cli, StringWriter out, Path root) throws Exception {
+        Path calcFile = root.resolve("src/main/java/com/example/Calculator.java");
 
-        StringWriter out = new StringWriter();
-        int exit = cli(out).execute(
+        int exit = cli.execute(
                 "rename",
                 "--file", calcFile.toString(),
                 "--line", "4", "--column", "16",
@@ -106,41 +89,15 @@ class CliLocatorByNameTest {
     }
 
     @Test
-    void no_locator_causes_error() throws Exception {
-        Path calcFile = FIXTURE_ROOT.resolve("src/main/java/com/example/Calculator.java");
+    void no_locator_causes_error(CommandLine cli, StringWriter out, Path root) throws Exception {
+        Path calcFile = root.resolve("src/main/java/com/example/Calculator.java");
 
-        StringWriter out = new StringWriter();
-        int exit = cli(out).execute(
+        int exit = cli.execute(
                 "rename",
                 "--file", calcFile.toString(),
                 "--name", "plus",
                 "--dry-run");
 
         assertThat(exit).as("Expected non-zero exit when no locator given").isNotEqualTo(0);
-    }
-
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
-
-    private static CommandLine cli(StringWriter out) {
-        CommandLine cmd = new CommandLine(new Main());
-        cmd.setOut(new PrintWriter(out, true));
-        cmd.setErr(new PrintWriter(out, true));
-        cmd.setExecutionExceptionHandler((ex, c, pr) -> {
-            c.getErr().println("Error: " + ex.getMessage());
-            return 1;
-        });
-        return cmd;
-    }
-
-    private static void copyTree(Path src, Path dst) throws Exception {
-        try (var stream = Files.walk(src)) {
-            for (Path p : (Iterable<Path>) stream::iterator) {
-                Path target = dst.resolve(src.relativize(p));
-                if (Files.isDirectory(p)) Files.createDirectories(target);
-                else Files.copy(p, target);
-            }
-        }
     }
 }

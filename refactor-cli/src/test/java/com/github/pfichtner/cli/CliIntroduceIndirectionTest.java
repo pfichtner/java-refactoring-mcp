@@ -2,8 +2,8 @@ package com.github.pfichtner.cli;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.approvaltests.Approvals;
@@ -15,30 +15,16 @@ import picocli.CommandLine;
 /**
  * Integration tests for the {@code introduce-indirection} CLI subcommand.
  */
+@CliTestBed(root = "fixtures/introduce-indirection/static-method/input/MathUtils.java")
 class CliIntroduceIndirectionTest {
 
-    private static final Path FIXTURE_FILE;
-
-    static {
-        try {
-            FIXTURE_FILE = Path.of(
-                    CliIntroduceIndirectionTest.class.getClassLoader()
-                            .getResource("fixtures/introduce-indirection/static-method/input/MathUtils.java")
-                            .toURI()
-            );
-        } catch (Exception e) {
-            throw new ExceptionInInitializerError(e);
-        }
-    }
-
     @Test
-    void dry_run_prints_preview_without_writing(@TempDir Path tmp) throws Exception {
+    void dry_run_prints_preview_without_writing(CommandLine cli, StringWriter out, Path root, @TempDir Path tmp) throws Exception {
         Path source = tmp.resolve("MathUtils.java");
-        java.nio.file.Files.copy(FIXTURE_FILE, source);
-        String before = java.nio.file.Files.readString(source);
+        Files.copy(root, source);
+        String before = Files.readString(source);
 
-        StringWriter out = new StringWriter();
-        int exit = cli(out).execute(
+        int exit = cli.execute(
                 "introduce-indirection",
                 "--file", source.toString(),
                 "--line", "3", "--column", "26",
@@ -46,39 +32,27 @@ class CliIntroduceIndirectionTest {
                 "--dry-run");
 
         assertThat(exit).as("Expected exit code 0: " + out).isEqualTo(0);
-        assertThat(java.nio.file.Files.readString(source)).as("Dry-run must not modify file on disk").isEqualTo(before);
+        assertThat(Files.readString(source)).as("Dry-run must not modify file on disk").isEqualTo(before);
 
         Approvals.verify(out.toString());
     }
 
     @Test
-    void apply_writes_indirection_method(@TempDir Path tmp) throws Exception {
+    void apply_writes_indirection_method(CommandLine cli, StringWriter out, Path root, @TempDir Path tmp) throws Exception {
         Path source = tmp.resolve("MathUtils.java");
-        java.nio.file.Files.copy(FIXTURE_FILE, source);
+        Files.copy(root, source);
 
-        StringWriter out = new StringWriter();
-        int exit = cli(out).execute(
+        int exit = cli.execute(
                 "introduce-indirection",
                 "--file", source.toString(),
                 "--line", "3", "--column", "26",
                 "--name", "computeSquare");
 
         assertThat(exit).as("Expected exit code 0: " + out).isEqualTo(0);
-        String result = java.nio.file.Files.readString(source);
+        String result = Files.readString(source);
         assertThat(result).as("Original method should be unchanged").contains("public static int square(int x)");
         assertThat(result).as("Indirection method should delegate to the original")
                 .contains("public static int computeSquare(int x)")
                 .contains("return square(x);");
-    }
-
-    private static CommandLine cli(StringWriter out) {
-        CommandLine cmd = new CommandLine(new Main());
-        cmd.setOut(new PrintWriter(out, true));
-        cmd.setErr(new PrintWriter(out, true));
-        cmd.setExecutionExceptionHandler((ex, c, pr) -> {
-            c.getErr().println("Error: " + ex.getMessage());
-            return 1;
-        });
-        return cmd;
     }
 }
