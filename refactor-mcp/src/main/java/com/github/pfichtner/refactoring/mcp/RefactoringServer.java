@@ -168,7 +168,7 @@ public class RefactoringServer {
                         .build())
                 .callHandler((exchange, request) -> {
                     try {
-                        var changed = executeRename(request.arguments());
+                        var changed = executeRename(new Options.Reader(request.arguments()));
                         return ok(formatPreview(changed));
                     } catch (Exception e) {
                         return error(e.getMessage());
@@ -191,7 +191,7 @@ public class RefactoringServer {
                         .build())
                 .callHandler((exchange, request) -> {
                     try {
-                        var changed = executeRename(request.arguments());
+                        var changed = executeRename(new Options.Reader(request.arguments()));
                         for (FileChange fc : changed) {
                             Files.createDirectories(fc.newPath().getParent());
                             Files.writeString(fc.newPath(), fc.newSource());
@@ -210,8 +210,14 @@ public class RefactoringServer {
     // -------------------------------------------------------------------------
 
     static SyncToolSpecification extractMethod() {
+        Options opts = Options.builder()
+                .addRequired(FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, METHOD_NAME)
+                .build();
         return SyncToolSpecification.builder()
-                .tool(Tool.builder("extract_method", extractSchema())
+                .tool(Tool.builder("extract_method", Map.of(
+                        "type", "object",
+                        "properties", opts.properties(),
+                        "required",   opts.required()))
                         .description("""
                         Extract statements into a new method.
                         Provide start/end line+column (1-based).
@@ -220,13 +226,13 @@ public class RefactoringServer {
                         .build())
                 .callHandler((exchange, request) -> {
                     try {
-                        Map<String, Object> args = request.arguments();
-                        String file      = (String) args.get("file");
-                        int startLine    = ((Number) args.get("start_line")).intValue();
-                        int startCol     = ((Number) args.get("start_column")).intValue();
-                        int endLine      = ((Number) args.get("end_line")).intValue();
-                        int endCol       = ((Number) args.get("end_column")).intValue();
-                        String methodName = (String) args.get("method_name");
+                        var args      = opts.reader(request.arguments());
+                        String file   = args.getString(FILE);
+                        int startLine = args.getInt(START_LINE);
+                        int startCol  = args.getInt(START_COLUMN);
+                        int endLine   = args.getInt(END_LINE);
+                        int endCol    = args.getInt(END_COLUMN);
+                        String methodName = args.getString(METHOD_NAME);
 
                         String source  = Files.readString(Path.of(file));
                         int selStart   = JdtRenamer.toOffset(source, startLine, startCol);
@@ -240,13 +246,6 @@ public class RefactoringServer {
                     }
                 })
                 .build();
-    }
-
-    private static Map<String, Object> extractSchema() {
-        Options opts = Options.builder()
-                .addRequired(FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, METHOD_NAME)
-                .build();
-        return Map.of("type", "object", "properties", opts.properties(), "required", opts.required());
     }
 
     // -------------------------------------------------------------------------
@@ -727,12 +726,12 @@ public class RefactoringServer {
     // Shared engine call
     // -------------------------------------------------------------------------
 
-    static List<FileChange> executeRename(Map<String, Object> args)
+    static List<FileChange> executeRename(Options.Reader args)
             throws Exception {
-        String projectRoot = (String) args.get("project_root");
-        String file        = (String) args.get("file");
-        String newName     = (String) args.get("new_name");
-        String refactoring = (String) args.getOrDefault("refactoring", "rename");
+        String projectRoot = args.getString(PROJECT_ROOT);
+        String file        = args.getString(FILE);
+        String newName     = args.getString(NEW_NAME);
+        String refactoring = args.getString(REFACTORING, "rename");
 
         if (!"rename".equals(refactoring)) {
             throw new IllegalArgumentException(
@@ -746,7 +745,7 @@ public class RefactoringServer {
                 : root.resolve(file);
 
         String source = Files.readString(sourceFile);
-        int offset = resolveOffset(new Options.Reader(args), source, sourceFile.getFileName().toString());
+        int offset = resolveOffset(args, source, sourceFile.getFileName().toString());
 
         return JdtRenamer.rename(ProjectDetector.detect(root), sourceFile, offset, newName);
     }
@@ -764,6 +763,11 @@ public class RefactoringServer {
     /** Convenience overload wrapping a raw argument map in an {@link Options.Reader}. */
     static int resolveOffset(Map<String, Object> raw, String source, String unitName) {
         return resolveOffset(new Options.Reader(raw), source, unitName);
+    }
+
+    /** Convenience overload wrapping a raw argument map in an {@link Options.Reader}. */
+    static List<FileChange> executeRename(Map<String, Object> raw) throws Exception {
+        return executeRename(new Options.Reader(raw));
     }
 
     private static Locator buildLocatorFromArgs(Options.Reader args) {
