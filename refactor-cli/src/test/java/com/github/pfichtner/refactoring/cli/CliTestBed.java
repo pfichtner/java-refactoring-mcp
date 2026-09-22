@@ -1,13 +1,12 @@
 package com.github.pfichtner.refactoring.cli;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -47,16 +46,14 @@ class CliTestBed {
         }
     }
 
-    void assertUnchanged() {
-        snapshot.forEach((path, content) -> {
-            try {
-                assertThat(Files.readString(path))
-                        .as("Dry-run must not modify " + path.getFileName())
-                        .isEqualTo(content);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        });
+    List<Path> changedFiles() {
+        return snapshot.entrySet().stream()
+                .filter(e -> {
+                    try { return !Files.readString(e.getKey()).equals(e.getValue()); }
+                    catch (IOException ex) { throw new UncheckedIOException(ex); }
+                })
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
     }
 
     /** Temp-dir copy of the fixture: project root dir, or single fixture file. */
