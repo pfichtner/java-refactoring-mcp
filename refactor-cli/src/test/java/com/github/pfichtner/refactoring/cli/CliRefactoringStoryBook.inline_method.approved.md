@@ -11,6 +11,7 @@ inline-method --file {root}/src/main/java/com/example/App.java --line 6 --column
 ### Output:
 ```
 Dry run — no files written.
+Would change (1):
 
 === App.java ===
 package com.example;
