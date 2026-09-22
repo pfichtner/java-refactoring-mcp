@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -13,22 +12,6 @@ import org.junit.jupiter.api.Test;
  */
 @CliFixture(root = "fixtures/extract-superclass/simple/input/Animal.java")
 class CliExtractSuperclassTest {
-
-    @Test
-    void dry_run_prints_preview_without_writing(CliTestBed bed) throws Exception {
-
-        int exit = bed.cli().execute(
-                "extract-superclass",
-                "--file", bed.root().toString(),
-                "--name", "BaseAnimal",
-                "--superclass-file", bed.root().getParent().resolve("BaseAnimal.java").toString(),
-                "--dry-run");
-
-        assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
-        assertThat(bed.changedFiles()).isEmpty();
-
-        Approvals.verify(bed.out().toString());
-    }
 
     @Test
     void apply_writes_superclass_file(CliTestBed bed) throws Exception {

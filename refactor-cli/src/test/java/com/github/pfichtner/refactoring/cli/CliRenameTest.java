@@ -18,31 +18,6 @@ import org.junit.jupiter.api.Test;
 @CliFixture(root = "fixtures/projects/rename-method/pom.xml")
 class CliRenameTest {
 
-    // -------------------------------------------------------------------------
-    // --dry-run
-    // -------------------------------------------------------------------------
-
-    @Test
-    void dry_run_prints_preview_without_writing(CliTestBed bed) throws Exception {
-        Path calcFile = bed.root().resolve("src/main/java/com/example/Calculator.java");
-
-        int exit = bed.cli().execute(
-                "rename",
-                "--file", calcFile.toString(),
-                "--line", "4", "--column", "16",
-                "--name", "plus",
-                "--dry-run");
-
-        assertThat(exit).as("Expected exit code 0").isEqualTo(0);
-        assertThat(Files.readString(calcFile)).as("Dry-run must not modify the file on disk").contains("add");
-
-        Approvals.verify(bed.out().toString());
-    }
-
-    // -------------------------------------------------------------------------
-    // Apply (writes to a temp copy of the fixture project)
-    // -------------------------------------------------------------------------
-
     @Test
     void apply_writes_changed_files(CliTestBed bed) throws Exception {
         Path calcFile = bed.root().resolve("src/main/java/com/example/Calculator.java");

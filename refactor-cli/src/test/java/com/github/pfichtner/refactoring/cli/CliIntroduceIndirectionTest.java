@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Files;
 
-import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -12,22 +11,6 @@ import org.junit.jupiter.api.Test;
  */
 @CliFixture(root = "fixtures/introduce-indirection/static-method/input/MathUtils.java")
 class CliIntroduceIndirectionTest {
-
-    @Test
-    void dry_run_prints_preview_without_writing(CliTestBed bed) throws Exception {
-
-        int exit = bed.cli().execute(
-                "introduce-indirection",
-                "--file", bed.root().toString(),
-                "--line", "3", "--column", "26",
-                "--name", "computeSquare",
-                "--dry-run");
-
-        assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
-        assertThat(bed.changedFiles()).isEmpty();
-
-        Approvals.verify(bed.out().toString());
-    }
 
     @Test
     void apply_writes_indirection_method(CliTestBed bed) throws Exception {

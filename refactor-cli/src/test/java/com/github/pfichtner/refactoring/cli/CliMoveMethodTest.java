@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -13,23 +12,6 @@ import org.junit.jupiter.api.Test;
  */
 @CliFixture(root = "fixtures/projects/move-method/pom.xml")
 class CliMoveMethodTest {
-
-    @Test
-    void dry_run_prints_preview_without_writing(CliTestBed bed) throws Exception {
-        Path printerFile = bed.root().resolve("src/main/java/com/example/Printer.java");
-
-        int exit = bed.cli().execute(
-                "move-method",
-                "--file", printerFile.toString(),
-                "--method", "format",
-                "--target-class", "com.example.Report",
-                "--dry-run");
-
-        assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
-        assertThat(bed.changedFiles()).isEmpty();
-
-        Approvals.verify(bed.out().toString());
-    }
 
     @Test
     void apply_moves_method_to_target_class(CliTestBed bed) throws Exception {

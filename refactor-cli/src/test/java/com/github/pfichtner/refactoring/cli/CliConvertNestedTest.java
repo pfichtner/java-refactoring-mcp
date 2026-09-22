@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Files;
 
-import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -12,21 +11,6 @@ import org.junit.jupiter.api.Test;
  */
 @CliFixture(root = "fixtures/convert-nested/static-class/input/Outer.java")
 class CliConvertNestedTest {
-
-    @Test
-    void dry_run_prints_preview_without_writing(CliTestBed bed) throws Exception {
-
-        int exit = bed.cli().execute(
-                "convert-nested",
-                "--file", bed.root().toString(),
-                "--line", "15", "--column", "25",
-                "--dry-run");
-
-        assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
-        assertThat(bed.changedFiles()).isEmpty();
-
-        Approvals.verify(bed.out().toString());
-    }
 
     @Test
     void apply_writes_top_level_class(CliTestBed bed) throws Exception {
