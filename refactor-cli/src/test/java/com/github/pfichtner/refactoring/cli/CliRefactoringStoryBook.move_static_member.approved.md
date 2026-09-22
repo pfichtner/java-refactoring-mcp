@@ -10,14 +10,18 @@ move-static --file {root}/src/main/java/com/example/MathUtils.java --line 5 --co
 
 ### Output:
 ```
-Dry run — no files written. Changed files (3):
+Dry run — no files written.
+Would change (3):
 
-=== MathUtils.java ===
+=== Client.java ===
 package com.example;
 
-public class MathUtils {
-}
+public class Client {
 
+    public int compute() {
+        return Helpers.square(5);
+    }
+}
 
 === Helpers.java ===
 package com.example;
@@ -29,14 +33,9 @@ public class Helpers {
     }
 }
 
-
-=== Client.java ===
+=== MathUtils.java ===
 package com.example;
 
-public class Client {
-
-    public int compute() {
-        return Helpers.square(5);
-    }
+public class MathUtils {
 }
 ```
