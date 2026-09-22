@@ -1,5 +1,7 @@
 package com.github.pfichtner.cli;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import com.github.pfichtner.locator.Locator;
@@ -123,8 +125,8 @@ public class LocatorOptions {
     }
 
     /** Convenience: accepts a file path and reads/resolves in one call. */
-    public int resolveOffsetFromFile(Path file) throws java.io.IOException {
-        String source = java.nio.file.Files.readString(file);
+    public int resolveOffsetFromFile(Path file) throws IOException {
+        String source = Files.readString(file);
         return resolveOffset(source, file.getFileName().toString());
     }
 }

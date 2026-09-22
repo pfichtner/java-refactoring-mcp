@@ -1012,7 +1012,7 @@ public class RefactoringServer {
                     try {
                         Map<String, Object> args = request.arguments();
                         String file = (String) args.get("file");
-                        String source = java.nio.file.Files.readString(Path.of(file));
+                        String source = Files.readString(Path.of(file));
                         int offset    = resolveOffset(args, source, Path.of(file).getFileName().toString());
                         var changed   = JdtPullUpMethod.pullUp(
                                 ProjectDetector.detect(
@@ -1058,7 +1058,7 @@ public class RefactoringServer {
                     try {
                         Map<String, Object> args = request.arguments();
                         String file = (String) args.get("file");
-                        String source = java.nio.file.Files.readString(Path.of(file));
+                        String source = Files.readString(Path.of(file));
                         int offset    = resolveOffset(args, source, Path.of(file).getFileName().toString());
                         var changed   = JdtPushDownMethod.pushDown(
                                 ProjectDetector.detect(
@@ -1105,7 +1105,7 @@ public class RefactoringServer {
                         Map<String, Object> args = request.arguments();
                         String file = (String) args.get("file");
                         String targetClass = (String) args.get("target_class");
-                        String source = java.nio.file.Files.readString(Path.of(file));
+                        String source = Files.readString(Path.of(file));
                         int offset    = resolveOffset(args, source, Path.of(file).getFileName().toString());
                         var changed   = JdtMoveMethod.moveMethod(
                                 ProjectDetector.detect(
@@ -1144,7 +1144,7 @@ public class RefactoringServer {
                         Path root = Path.of((String) args.get("project_root"));
                         Path file = root.resolve((String) args.get("file"));
 
-                        String source = java.nio.file.Files.readString(file);
+                        String source = Files.readString(file);
                         int offset    = resolveOffset(args, source, file.getFileName().toString());
 
                         var changed = JdtPullUpField.pullUp(
@@ -1181,7 +1181,7 @@ public class RefactoringServer {
                         Path root = Path.of((String) args.get("project_root"));
                         Path file = root.resolve((String) args.get("file"));
 
-                        String source = java.nio.file.Files.readString(file);
+                        String source = Files.readString(file);
                         int offset    = resolveOffset(args, source, file.getFileName().toString());
 
                         var changed = JdtPushDownField.pushDown(
@@ -1221,7 +1221,7 @@ public class RefactoringServer {
                         String name = (String) args.get("factory_method_name");
                         boolean makePrivate = args.getOrDefault("make_constructor_private", false) instanceof Boolean b && b;
 
-                        String source = java.nio.file.Files.readString(file);
+                        String source = Files.readString(file);
                         int offset    = resolveOffset(args, source, file.getFileName().toString());
 
                         var changed = JdtIntroduceStaticFactory.introduceStaticFactory(
@@ -1271,7 +1271,7 @@ public class RefactoringServer {
                                 ? (String) args.get("param_object_name")
                                 : Character.toLowerCase(className.charAt(0)) + className.substring(1);
 
-                        String source = java.nio.file.Files.readString(file);
+                        String source = Files.readString(file);
                         int offset    = resolveOffset(args, source, file.getFileName().toString());
 
                         boolean asRecord = Boolean.TRUE.equals(args.get("as_record"));
