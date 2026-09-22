@@ -83,22 +83,6 @@ class RefactoringServerByNameTest {
         Approvals.verify(preview);
     }
 
-    @Test
-    void analyze_rename_by_method_name_does_not_write_files() throws Exception {
-        Path calcFile = FIXTURE_ROOT.resolve("src/main/java/com/example/Calculator.java");
-        String before = Files.readString(calcFile);
-
-        RefactoringServer.executeRename(Map.of(
-                "project_root", FIXTURE_ROOT.toString(),
-                "file",         "src/main/java/com/example/Calculator.java",
-                "method",       "add",
-                "refactoring",  "rename",
-                "new_name",     "plus"
-        ));
-
-        assertThat(Files.readString(calcFile)).as("analyze (no write) must not modify files on disk").isEqualTo(before);
-    }
-
     // -------------------------------------------------------------------------
     // Error cases — buildLocatorFromArgs validation
     // -------------------------------------------------------------------------

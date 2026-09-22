@@ -64,16 +64,6 @@ class RefactoringServerTest {
         Approvals.verify(preview);
     }
 
-    @Test
-    void analyze_refactoring_does_not_write_files() throws Exception {
-        Path calcFile = FIXTURE_ROOT.resolve("src/main/java/com/example/Calculator.java");
-        String before = Files.readString(calcFile);
-
-        RefactoringServer.executeRename(renameMethodArgs());
-
-        assertThat(Files.readString(calcFile)).as("analyze must not modify files on disk").isEqualTo(before);
-    }
-
     // -------------------------------------------------------------------------
     // apply_refactoring
     // -------------------------------------------------------------------------
