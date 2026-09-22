@@ -1,7 +1,0 @@
-=== Foo.java ===
-public class Foo {
-    public int compute() {
-        int answer = 6 * 7;
-        return answer;
-    }
-}

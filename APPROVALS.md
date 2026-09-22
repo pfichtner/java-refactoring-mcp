@@ -242,75 +242,75 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 ### Cli apply story book
 | Test case | Approval |
 |-----------|----------|
-| Change method signature | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.change_method_signature.approved.txt) |
-| Convert anonymous to nested | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.convert_anonymous_to_nested.approved.txt) |
-| Convert nested to top level | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.convert_nested_to_top_level.approved.txt) |
-| Convert to record | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.convert_to_record.approved.txt) |
-| Decompose conditional | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.decompose_conditional.approved.txt) |
-| Encapsulate field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.encapsulate_field.approved.txt) |
-| Extract constant | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_constant.approved.txt) |
-| Extract interface | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_interface.approved.txt) |
-| Extract method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_method.approved.txt) |
-| Extract superclass | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_superclass.approved.txt) |
-| Extract variable | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_variable.approved.txt) |
-| Inline constant | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.inline_constant.approved.txt) |
-| Inline method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.inline_method.approved.txt) |
-| Inline variable | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.inline_variable.approved.txt) |
-| Introduce indirection | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.introduce_indirection.approved.txt) |
-| Introduce param | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.introduce_param.approved.txt) |
-| Introduce param object | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.introduce_param_object.approved.txt) |
-| Introduce static factory | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.introduce_static_factory.approved.txt) |
-| Move class | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.move_class.approved.txt) |
-| Move method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.move_method.approved.txt) |
-| Move static member | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.move_static_member.approved.txt) |
-| Promote to field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.promote_to_field.approved.txt) |
-| Pull up field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.pull_up_field.approved.txt) |
-| Pull up method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.pull_up_method.approved.txt) |
-| Push down field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.push_down_field.approved.txt) |
-| Push down method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.push_down_method.approved.txt) |
-| Remove method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.remove_method.approved.txt) |
-| Remove method no cascade | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.remove_method_no_cascade.approved.txt) |
-| Remove param | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.remove_param.approved.txt) |
-| Rename method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.rename_method.approved.txt) |
-| Rename method by method name | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.rename_method_by_method_name.approved.txt) |
-| Rename package | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.rename_package.approved.txt) |
+| change-method-signature | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.change_method_signature.approved.md) |
+| convert-anonymous | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.convert_anonymous_to_nested.approved.md) |
+| convert-nested | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.convert_nested_to_top_level.approved.md) |
+| convert-to-record | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.convert_to_record.approved.md) |
+| decompose-conditional | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.decompose_conditional.approved.md) |
+| encapsulate-field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.encapsulate_field.approved.md) |
+| extract-const | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_constant.approved.md) |
+| extract-interface | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_interface.approved.md) |
+| extract | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_method.approved.md) |
+| extract-superclass | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_superclass.approved.md) |
+| extract-var | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_variable.approved.md) |
+| inline-const | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.inline_constant.approved.md) |
+| inline-method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.inline_method.approved.md) |
+| inline-var | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.inline_variable.approved.md) |
+| introduce-indirection | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.introduce_indirection.approved.md) |
+| introduce-param | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.introduce_param.approved.md) |
+| introduce-param-object | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.introduce_param_object.approved.md) |
+| introduce-factory | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.introduce_static_factory.approved.md) |
+| move-class | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.move_class.approved.md) |
+| move-method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.move_method.approved.md) |
+| move-static | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.move_static_member.approved.md) |
+| promote-to-field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.promote_to_field.approved.md) |
+| pull-up-field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.pull_up_field.approved.md) |
+| pull-up | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.pull_up_method.approved.md) |
+| push-down-field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.push_down_field.approved.md) |
+| push-down | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.push_down_method.approved.md) |
+| remove-method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.remove_method.approved.md) |
+| remove-method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.remove_method_no_cascade.approved.md) |
+| remove-param | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.remove_param.approved.md) |
+| rename | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.rename_method.approved.md) |
+| rename | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.rename_method_by_method_name.approved.md) |
+| rename-package | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.rename_package.approved.md) |
 
 ### Cli refactoring story book
 | Test case | Approval |
 |-----------|----------|
-| Change method signature | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.change_method_signature.approved.txt) |
-| Convert anonymous to nested | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.convert_anonymous_to_nested.approved.txt) |
-| Convert nested to top level | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.convert_nested_to_top_level.approved.txt) |
-| Convert to record | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.convert_to_record.approved.txt) |
-| Decompose conditional | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.decompose_conditional.approved.txt) |
-| Encapsulate field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.encapsulate_field.approved.txt) |
-| Encapsulate field with setter | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.encapsulate_field_with_setter.approved.txt) |
-| Extract constant | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_constant.approved.txt) |
-| Extract interface | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_interface.approved.txt) |
-| Extract method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_method.approved.txt) |
-| Extract superclass | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_superclass.approved.txt) |
-| Extract variable | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_variable.approved.txt) |
-| Inline constant | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.inline_constant.approved.txt) |
-| Inline method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.inline_method.approved.txt) |
-| Inline variable | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.inline_variable.approved.txt) |
-| Introduce indirection | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.introduce_indirection.approved.txt) |
-| Introduce param | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.introduce_param.approved.txt) |
-| Introduce param object | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.introduce_param_object.approved.txt) |
-| Introduce static factory | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.introduce_static_factory.approved.txt) |
-| Introduce static factory with private constructor | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.introduce_static_factory_with_private_constructor.approved.txt) |
-| Move class | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.move_class.approved.txt) |
-| Move method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.move_method.approved.txt) |
-| Move static member | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.move_static_member.approved.txt) |
-| Promote to field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.promote_to_field.approved.txt) |
-| Pull up field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.pull_up_field.approved.txt) |
-| Pull up method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.pull_up_method.approved.txt) |
-| Push down field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.push_down_field.approved.txt) |
-| Push down method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.push_down_method.approved.txt) |
-| Remove method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.remove_method.approved.txt) |
-| Remove param | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.remove_param.approved.txt) |
-| Rename by method name | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.rename_by_method_name.approved.txt) |
-| Rename method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.rename_method.approved.txt) |
-| Rename package | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.rename_package.approved.txt) |
+| change-method-signature | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.change_method_signature.approved.md) |
+| convert-anonymous | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.convert_anonymous_to_nested.approved.md) |
+| convert-nested | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.convert_nested_to_top_level.approved.md) |
+| convert-to-record | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.convert_to_record.approved.md) |
+| decompose-conditional | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.decompose_conditional.approved.md) |
+| encapsulate-field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.encapsulate_field.approved.md) |
+| encapsulate-field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.encapsulate_field_with_setter.approved.md) |
+| extract-const | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_constant.approved.md) |
+| extract-interface | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_interface.approved.md) |
+| extract | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_method.approved.md) |
+| extract-superclass | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_superclass.approved.md) |
+| extract-var | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_variable.approved.md) |
+| inline-const | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.inline_constant.approved.md) |
+| inline-method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.inline_method.approved.md) |
+| inline-var | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.inline_variable.approved.md) |
+| introduce-indirection | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.introduce_indirection.approved.md) |
+| introduce-param | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.introduce_param.approved.md) |
+| introduce-param-object | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.introduce_param_object.approved.md) |
+| introduce-factory | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.introduce_static_factory.approved.md) |
+| introduce-factory | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.introduce_static_factory_with_private_constructor.approved.md) |
+| move-class | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.move_class.approved.md) |
+| move-method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.move_method.approved.md) |
+| move-static | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.move_static_member.approved.md) |
+| promote-to-field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.promote_to_field.approved.md) |
+| pull-up-field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.pull_up_field.approved.md) |
+| pull-up | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.pull_up_method.approved.md) |
+| push-down-field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.push_down_field.approved.md) |
+| push-down | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.push_down_method.approved.md) |
+| remove-method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.remove_method.approved.md) |
+| remove-param | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.remove_param.approved.md) |
+| rename | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.rename_by_method_name.approved.md) |
+| rename | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.rename_method.approved.md) |
+| rename-package | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.rename_package.approved.md) |
 
 ### Convert anonymous to nested
 | Test case | Approval |
