@@ -4,16 +4,20 @@ import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
+import org.approvaltests.MarkdownStoryBoard;
 import picocli.CommandLine;
 
 class CliTestBed {
@@ -71,21 +75,24 @@ class CliTestBed {
 
     /**
      * Executes a dry-run CLI command, asserts exit code 0 and no files modified,
-     * then returns the captured output — ready for {@code Approvals.verify()}.
+     * then returns a MarkdownStoryBoard documenting the scenario — ready for {@code Approvals.verify()}.
      */
-    String preview(String... args) {
+    MarkdownStoryBoard preview(String... args) {
         int exit = cli.execute(args);
         assertThat(exit).as("Expected exit code 0: " + out).isEqualTo(0);
         assertThat(changedFiles()).as("Dry-run must not modify any file").isEmpty();
-        return out.toString();
+        return new MarkdownStoryBoard()
+                .addTitle(args[0])
+                .addCustomMarkdown("\n\n### Command:\n```\n" + formatCommand(args) + "\n```")
+                .addCustomMarkdown("\n\n### Exit code: " + exit)
+                .addCustomMarkdown("\n\n### Output:\n```\n" + scrub(out.toString().stripTrailing()) + "\n```");
     }
 
     /**
-     * Executes an apply CLI command, asserts exit code 0, then returns the
-     * contents of every file that was created, modified, or deleted — ready for
-     * {@code Approvals.verify()}.
+     * Executes an apply CLI command, asserts exit code 0, then returns a
+     * MarkdownStoryBoard documenting changed, created, and deleted files — ready for {@code Approvals.verify()}.
      */
-    String apply(String... args) throws IOException {
+    MarkdownStoryBoard apply(String... args) throws IOException {
         int exit = cli.execute(args);
         assertThat(exit).as("Expected exit code 0: " + out).isEqualTo(0);
         Path dir = Files.isDirectory(root) ? root : root.getParent();
@@ -94,22 +101,36 @@ class CliTestBed {
             current = stream.filter(Files::isRegularFile)
                     .collect(toMap(identity(), CliTestBed::contentOf));
         }
-        TreeSet<Path> affected = new TreeSet<>();
+        TreeSet<Path> changedOrCreated = new TreeSet<>();
+        TreeSet<Path> deleted = new TreeSet<>();
         for (Path p : current.keySet()) {
             String orig = snapshot.get(p);
-            if (!current.get(p).equals(orig != null ? orig : "")) affected.add(p);
+            if (!current.get(p).equals(orig != null ? orig : "")) changedOrCreated.add(p);
         }
-        snapshot.keySet().stream().filter(p -> !current.containsKey(p)).forEach(affected::add);
-        StringBuilder sb = new StringBuilder();
-        for (Path p : affected) {
+        snapshot.keySet().stream().filter(p -> !current.containsKey(p)).forEach(deleted::add);
+
+        MarkdownStoryBoard board = new MarkdownStoryBoard()
+                .addTitle(args[0])
+                .addCustomMarkdown("\n\n### Command:\n```\n" + formatCommand(args) + "\n```")
+                .addCustomMarkdown("\n\n### Exit code: " + exit)
+                .addCustomMarkdown("\n\n### Files changed: " + changedOrCreated.size() + " | Files deleted: " + deleted.size());
+        for (Path p : changedOrCreated) {
             String rel = dir.relativize(p).toString();
-            if (current.containsKey(p)) {
-                sb.append("=== ").append(rel).append(" ===\n")
-                  .append(current.get(p).stripTrailing()).append("\n\n");
-            } else {
-                sb.append("=== ").append(rel).append(" [deleted] ===\n\n");
-            }
+            board.addCustomMarkdown("\n\n### " + rel + ":\n```java\n" + current.get(p).stripTrailing() + "\n```");
         }
-        return sb.toString().stripTrailing();
+        for (Path p : deleted) {
+            board.addCustomMarkdown("\n\n### " + dir.relativize(p) + " [deleted]");
+        }
+        return board;
+    }
+
+    private String formatCommand(String[] args) {
+        return Arrays.stream(args).map(this::scrub).collect(Collectors.joining(" "));
+    }
+
+    private String scrub(String text) {
+        Path dir = Files.isDirectory(root) ? root : root.getParent();
+        String prefix = dir.toString();
+        return text.replace(prefix + File.separator, "{root}/").replace(prefix, "{root}");
     }
 }

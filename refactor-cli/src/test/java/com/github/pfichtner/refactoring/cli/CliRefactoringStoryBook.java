@@ -1,11 +1,8 @@
 package com.github.pfichtner.refactoring.cli;
 
-import java.io.File;
 import java.nio.file.Path;
 
 import org.approvaltests.Approvals;
-import org.approvaltests.core.Options;
-import org.approvaltests.core.Scrubber;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -393,8 +390,7 @@ class CliRefactoringStoryBook {
                 "--project", bed.root().toString(),
                 "--old-package", "com.example.service",
                 "--new-package", "com.example.util",
-                "--dry-run"),
-                new Options().withScrubber(scrubRoot(bed)));
+                "--dry-run"));
     }
 
     @Test
@@ -405,16 +401,6 @@ class CliRefactoringStoryBook {
                 "move-class",
                 "--file", calculatorFile.toString(),
                 "--package", "com.example.util",
-                "--dry-run"),
-                new Options().withScrubber(scrubRoot(bed)));
-    }
-
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
-
-    private static Scrubber scrubRoot(CliTestBed bed) {
-        String root = bed.root().toString() + File.separator;
-        return input -> input.replace(root, "{ROOT}/");
+                "--dry-run"));
     }
 }

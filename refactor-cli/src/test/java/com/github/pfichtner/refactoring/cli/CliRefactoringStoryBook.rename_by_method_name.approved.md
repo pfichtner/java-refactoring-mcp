@@ -1,0 +1,35 @@
+# rename
+
+
+### Command:
+```
+rename --file {root}/src/main/java/com/example/Calculator.java --method add --name plus --dry-run
+```
+
+### Exit code: 0
+
+### Output:
+```
+Dry run — no files written.
+Would change (2): App.java, Calculator.java
+
+=== App.java ===
+package com.example;
+
+public class App {
+    public static void main(String[] args) {
+        Calculator calc = new Calculator();
+        int result = calc.plus(1, 2);
+        System.out.println(result);
+    }
+}
+
+=== Calculator.java ===
+package com.example;
+
+public class Calculator {
+    public int plus(int a, int b) {
+        return a + b;
+    }
+}
+```
