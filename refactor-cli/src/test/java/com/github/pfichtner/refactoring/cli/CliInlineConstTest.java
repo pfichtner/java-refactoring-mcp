@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Files;
 
-import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -12,23 +11,6 @@ import org.junit.jupiter.api.Test;
  */
 @CliFixture(root = "fixtures/inline-constant/int-constant/input/Foo.java")
 class CliInlineConstTest {
-
-    @Test
-    void dry_run_prints_preview_without_writing(CliTestBed bed) throws Exception {
-
-        int exit = bed.cli().execute(
-                "inline-const",
-                "--file", bed.root().toString(),
-                "--line", "5", "--column", "21",
-                "--all-occurrences",
-                "--remove-declaration",
-                "--dry-run");
-
-        assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
-        assertThat(bed.changedFiles()).isEmpty();
-
-        Approvals.verify(bed.out().toString());
-    }
 
     @Test
     void apply_writes_inlined_constant(CliTestBed bed) throws Exception {

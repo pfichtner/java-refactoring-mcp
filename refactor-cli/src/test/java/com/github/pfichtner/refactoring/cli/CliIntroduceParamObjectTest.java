@@ -12,26 +12,6 @@ import org.junit.jupiter.api.Test;
 class CliIntroduceParamObjectTest {
 
     @Test
-    void dry_run_record_prints_preview_without_writing(CliTestBed bed) throws Exception {
-        Path printerFile = bed.root().resolve("src/main/java/com/example/Printer.java");
-
-        int exit = bed.cli().execute(
-                "introduce-param-object",
-                "--file", printerFile.toString(),
-                "--line", "4",
-                "--column", "17",
-                "--params", "x,y",
-                "--class-name", "Coordinate",
-                "--record",
-                "--dry-run");
-
-        assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
-        assertThat(bed.changedFiles()).isEmpty();
-
-        Approvals.verify(bed.out().toString());
-    }
-
-    @Test
     void apply_record_writes_record_and_updates_call_sites(CliTestBed bed) throws Exception {
         Path srcRoot     = bed.root().resolve("src/main/java/com/example");
         Path printerFile = srcRoot.resolve("Printer.java");

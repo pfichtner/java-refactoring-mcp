@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -13,39 +12,6 @@ import org.junit.jupiter.api.Test;
  */
 @CliFixture(root = "fixtures/projects/encapsulate-field/pom.xml")
 class CliEncapsulateFieldTest {
-
-    @Test
-    void dry_run_prints_getter_preview_without_writing(CliTestBed bed) throws Exception {
-        Path personFile = bed.root().resolve("src/main/java/com/example/Person.java");
-
-        int exit = bed.cli().execute(
-                "encapsulate-field",
-                "--file", personFile.toString(),
-                "--field", "name",
-                "--dry-run");
-
-        assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
-        assertThat(bed.changedFiles()).isEmpty();
-
-        Approvals.verify(bed.out().toString());
-    }
-
-    @Test
-    void dry_run_prints_getter_and_setter_preview(CliTestBed bed) throws Exception {
-        Path personFile = bed.root().resolve("src/main/java/com/example/Person.java");
-
-        int exit = bed.cli().execute(
-                "encapsulate-field",
-                "--file", personFile.toString(),
-                "--field", "name",
-                "--setter",
-                "--dry-run");
-
-        assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
-        assertThat(bed.out().toString()).as("Preview should show a setter").contains("setName");
-
-        Approvals.verify(bed.out().toString());
-    }
 
     @Test
     void apply_writes_getter_and_updates_call_sites(CliTestBed bed) throws Exception {

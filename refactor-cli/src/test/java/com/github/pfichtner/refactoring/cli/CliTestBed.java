@@ -2,6 +2,7 @@ package com.github.pfichtner.refactoring.cli;
 
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -66,4 +67,15 @@ class CliTestBed {
 
     /** Pre-configured CLI ready to execute subcommands. */
     CommandLine cli() { return cli; }
+
+    /**
+     * Executes a dry-run CLI command, asserts exit code 0 and no files modified,
+     * then returns the captured output — ready for {@code Approvals.verify()}.
+     */
+    String preview(String... args) {
+        int exit = cli.execute(args);
+        assertThat(exit).as("Expected exit code 0: " + out).isEqualTo(0);
+        assertThat(changedFiles()).as("Dry-run must not modify any file").isEmpty();
+        return out.toString();
+    }
 }

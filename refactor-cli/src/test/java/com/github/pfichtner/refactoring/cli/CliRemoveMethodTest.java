@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -13,22 +12,6 @@ import org.junit.jupiter.api.Test;
  */
 @CliFixture(root = "fixtures/projects/remove-method/pom.xml")
 class CliRemoveMethodTest {
-
-    @Test
-    void dry_run_prints_preview_without_writing(CliTestBed bed) throws Exception {
-        Path printableFile = bed.root().resolve("src/main/java/com/example/Printable.java");
-
-        int exit = bed.cli().execute(
-                "remove-method",
-                "--file", printableFile.toString(),
-                "--method", "print",
-                "--dry-run");
-
-        assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
-        assertThat(bed.changedFiles()).isEmpty();
-
-        Approvals.verify(bed.out().toString());
-    }
 
     @Test
     void apply_writes_cascade(CliTestBed bed) throws Exception {

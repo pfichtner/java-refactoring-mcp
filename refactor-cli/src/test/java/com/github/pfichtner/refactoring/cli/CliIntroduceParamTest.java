@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -13,24 +12,6 @@ import org.junit.jupiter.api.Test;
  */
 @CliFixture(root = "fixtures/projects/introduce-param/pom.xml")
 class CliIntroduceParamTest {
-
-    @Test
-    void dry_run_prints_preview_without_writing(CliTestBed bed) throws Exception {
-        Path greeterFile = bed.root().resolve("src/main/java/com/example/Greeter.java");
-
-        int exit = bed.cli().execute(
-                "introduce-param",
-                "--file", greeterFile.toString(),
-                "--start-line", "5", "--start-column", "40",
-                "--end-line", "5", "--end-column", "47",
-                "--name", "whom",
-                "--dry-run");
-
-        assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
-        assertThat(bed.changedFiles()).isEmpty();
-
-        Approvals.verify(bed.out().toString());
-    }
 
     @Test
     void apply_writes_new_parameter(CliTestBed bed) throws Exception {

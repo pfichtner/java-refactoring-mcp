@@ -29,7 +29,12 @@ class CliTestBedExtension implements ParameterResolver {
     }
 
     private CliTestBed createBed(ExtensionContext ctx) {
-        CliFixture annotation = ctx.getRequiredTestClass().getAnnotation(CliFixture.class);
+        CliFixture annotation = ctx.getTestMethod()
+                .map(m -> m.getAnnotation(CliFixture.class))
+                .orElse(null);
+        if (annotation == null) {
+            annotation = ctx.getRequiredTestClass().getAnnotation(CliFixture.class);
+        }
         if (annotation == null) {
             throw new ParameterResolutionException(
                     "@CliFixture not found on " + ctx.getRequiredTestClass().getSimpleName());

@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -17,27 +16,6 @@ import org.junit.jupiter.api.Test;
  */
 @CliFixture(root = "fixtures/projects/rename-method/pom.xml")
 class CliLocatorByNameTest {
-
-    // -------------------------------------------------------------------------
-    // rename --method (dry-run)
-    // -------------------------------------------------------------------------
-
-    @Test
-    void dry_run_by_method_name_prints_preview(CliTestBed bed) throws Exception {
-        Path calcFile = bed.root().resolve("src/main/java/com/example/Calculator.java");
-
-        int exit = bed.cli().execute(
-                "rename",
-                "--file", calcFile.toString(),
-                "--method", "add",
-                "--name", "plus",
-                "--dry-run");
-
-        assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
-        assertThat(Files.readString(calcFile)).as("Dry-run must not modify the file on disk").contains("add");
-
-        Approvals.verify(bed.out().toString());
-    }
 
     // -------------------------------------------------------------------------
     // rename --method (apply, writes to temp copy)
