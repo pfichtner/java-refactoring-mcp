@@ -1,0 +1,8 @@
+public class Foo {
+    private static final String GREETING = "HELLO";
+    public void run() {
+        System.out.println(GREETING);
+        System.err.println(GREETING);
+        String msg = GREETING + "!";
+    }
+}

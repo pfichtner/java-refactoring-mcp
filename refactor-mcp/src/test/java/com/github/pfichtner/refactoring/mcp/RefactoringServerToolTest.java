@@ -60,6 +60,26 @@ class RefactoringServerToolTest {
     }
 
     @Test
+    void tool_extract_constant_replace_all_returns_preview() {
+        String text = call(RefactoringServer.extractConstant(), Map.of(
+                "file", fixture("extract-const/replaces-all/input/Foo.java"),
+                "start_line", 3, "start_column", 28,
+                "end_line", 3, "end_column", 35,
+                "const_name", "GREETING", "replace_all", true));
+        Approvals.verify(text);
+    }
+
+    @Test
+    void tool_extract_constant_without_replace_all_returns_preview() {
+        String text = call(RefactoringServer.extractConstant(), Map.of(
+                "file", fixture("extract-const/replaces-all/input/Foo.java"),
+                "start_line", 3, "start_column", 28,
+                "end_line", 3, "end_column", 35,
+                "const_name", "GREETING", "replace_all", false));
+        Approvals.verify(text);
+    }
+
+    @Test
     void tool_inline_variable_returns_preview() {
         String text = call(RefactoringServer.inlineVariable(), Map.of(
                 "file", fixture("inline-var/multiple-uses/input/Foo.java"),

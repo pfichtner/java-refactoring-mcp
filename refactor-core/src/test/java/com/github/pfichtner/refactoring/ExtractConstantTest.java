@@ -56,6 +56,25 @@ class ExtractConstantTest {
     }
 
     @Test
+    void extract_string_literal_without_replace_all_keeps_other_occurrences() throws Exception {
+        String source = fixtures.load("extract-const/replaces-all/input/Foo.java");
+        int start = Fixtures.offsetOf(source, "\"HELLO\"");
+        int len = "\"HELLO\"".length();
+
+        String result = JdtExtractConstant.extractConstant(
+                source, "Foo.java", start, len, "GREETING", false);
+
+        Approvals.verify(
+                RefactoringStoryBoard.titled("Extract constant: \"HELLO\" → GREETING (selected occurrence only)")
+                        .javaSection("Input", source)
+                        .refactoring("extract constant", "`\"HELLO\"` → `private static final String GREETING` (replaceAll=false)",
+                                Fixtures.lineCol(source, start))
+                        .javaSection("Output", result)
+                        .build()
+        );
+    }
+
+    @Test
     void extract_constant_rejected_when_selection_is_simple_name() throws Exception {
         String source = fixtures.load("extract-const/invalid-simple-name/input/Foo.java");
         int start = Fixtures.offsetOf(source, "int x") + "int ".length();
