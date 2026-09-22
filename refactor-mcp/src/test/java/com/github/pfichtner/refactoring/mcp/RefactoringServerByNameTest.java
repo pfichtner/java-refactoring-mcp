@@ -54,8 +54,8 @@ class RefactoringServerByNameTest {
                 "new_name",     "plus"
         );
 
-        var resultByPosition = RefactoringServer.executeRename(byPosition);
-        var resultByName     = RefactoringServer.executeRename(byName);
+        var resultByPosition = RefactoringServer.executeRename(new Options.Reader(byPosition));
+        var resultByName     = RefactoringServer.executeRename(new Options.Reader(byName));
 
         // Both approaches should produce identical output for every changed file
         assertThat(resultByName.size()).as("Same number of changed files expected").isEqualTo(resultByPosition.size());
@@ -77,7 +77,7 @@ class RefactoringServerByNameTest {
                 "new_name",     "plus"
         );
 
-        var changed = RefactoringServer.executeRename(args);
+        var changed = RefactoringServer.executeRename(new Options.Reader(args));
         String preview = RefactoringServer.formatPreview(changed);
 
         Approvals.verify(preview);
@@ -90,7 +90,7 @@ class RefactoringServerByNameTest {
     @Test
     void no_locator_at_all_throws() {
         Map<String, Object> empty = new java.util.HashMap<>();
-        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> RefactoringServer.resolveOffset(empty, "class Foo {}", "Foo.java")).actual();
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> RefactoringServer.resolveOffset(new Options.Reader(empty), "class Foo {}", "Foo.java")).actual();
         assertThat(ex.getMessage()).contains("Specify either");
     }
 
@@ -98,7 +98,7 @@ class RefactoringServerByNameTest {
     void position_and_name_together_throws() {
         Map<String, Object> args = new java.util.HashMap<>();
         args.put("line", 1); args.put("column", 1); args.put("method", "foo");
-        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> RefactoringServer.resolveOffset(args, "class Foo { void foo() {} }", "Foo.java")).actual();
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> RefactoringServer.resolveOffset(new Options.Reader(args), "class Foo { void foo() {} }", "Foo.java")).actual();
         assertThat(ex.getMessage()).contains("not both");
     }
 
@@ -107,7 +107,7 @@ class RefactoringServerByNameTest {
         Map<String, Object> args = new java.util.HashMap<>();
         args.put("column", 7);
         var ex = assertThatExceptionOfType(IllegalArgumentException.class)
-                .isThrownBy(() -> RefactoringServer.resolveOffset(args, "class Foo {}", "Foo.java")).actual();
+                .isThrownBy(() -> RefactoringServer.resolveOffset(new Options.Reader(args), "class Foo {}", "Foo.java")).actual();
         assertThat(ex.getMessage()).containsIgnoringCase("line");
     }
 
@@ -117,7 +117,7 @@ class RefactoringServerByNameTest {
         args.put("line", 2);
         // line 2 has exactly one named declaration: the field "count"
         String source = "class Counter {\n    int count;\n}";
-        int offset = RefactoringServer.resolveOffset(args, source, "Counter.java");
+        int offset = RefactoringServer.resolveOffset(new Options.Reader(args), source, "Counter.java");
         assertThat(source.substring(offset, offset + 5)).isEqualTo("count");
     }
 
@@ -128,7 +128,7 @@ class RefactoringServerByNameTest {
         // line 3 has two variable declarations: i and j
         String source = "class C {\n    void m() {\n        int i=0, j=0;\n    }\n}";
         var ex = assertThatExceptionOfType(IllegalArgumentException.class)
-                .isThrownBy(() -> RefactoringServer.resolveOffset(args, source, "C.java")).actual();
+                .isThrownBy(() -> RefactoringServer.resolveOffset(new Options.Reader(args), source, "C.java")).actual();
         assertThat(ex.getMessage()).containsIgnoringCase("ambiguous");
     }
 
@@ -137,7 +137,7 @@ class RefactoringServerByNameTest {
         Map<String, Object> args = new java.util.HashMap<>();
         args.put("parameter", "unused");
         var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> RefactoringServer.resolveOffset(
-                args, "class Foo { void bar(int unused) {} }", "Foo.java")).actual();
+                new Options.Reader(args), "class Foo { void bar(int unused) {} }", "Foo.java")).actual();
         assertThat(ex.getMessage()).contains("'method'");
     }
 
@@ -146,7 +146,7 @@ class RefactoringServerByNameTest {
         Map<String, Object> args = new java.util.HashMap<>();
         args.put("method", "foo"); args.put("field", "bar");
         var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> RefactoringServer.resolveOffset(
-                args, "class Foo { void foo() {} int bar; }", "Foo.java")).actual();
+                new Options.Reader(args), "class Foo { void foo() {} int bar; }", "Foo.java")).actual();
         assertThat(ex.getMessage()).contains("only one");
     }
 }

@@ -41,6 +41,11 @@ public final class Options {
     public Map<String, Object> properties() { return properties; }
     public List<String> required()          { return required; }
 
+    /** Returns the JSON-Schema map {@code {"type":"object","properties":…,"required":…}}. */
+    public Map<String, Object> toSchema() {
+        return Map.of("type", "object", "properties", properties, "required", required);
+    }
+
     /** Binds {@code args} (from {@code request.arguments()}) to typed accessors. */
     public Reader reader(Map<String, Object> args) { return new Reader(args); }
 
@@ -79,7 +84,7 @@ public final class Options {
     public static final class Reader {
         private final Map<String, Object> args;
 
-        Reader(Map<String, Object> args) { this.args = args; }
+        public Reader(Map<String, Object> args) { this.args = args; }
 
         /** Returns true if the property is present in the args (use for optional properties). */
         public boolean has(Property p) { return args.containsKey(p.key); }

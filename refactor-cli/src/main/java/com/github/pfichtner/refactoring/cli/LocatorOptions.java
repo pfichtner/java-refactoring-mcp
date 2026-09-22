@@ -1,7 +1,5 @@
 package com.github.pfichtner.refactoring.cli;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import com.github.pfichtner.refactoring.locator.Locator;
@@ -124,9 +122,4 @@ public class LocatorOptions {
         throw new IllegalArgumentException("No valid locator provided.");
     }
 
-    /** Convenience: accepts a file path and reads/resolves in one call. */
-    public int resolveOffsetFromFile(Path file) throws IOException {
-        String source = Files.readString(file);
-        return resolveOffset(source, file.getFileName().toString());
-    }
 }
