@@ -12,35 +12,35 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 ### Rename
 | Test case | Approval |
 |-----------|----------|
-| Rename constructor directly — expect rejection | [→](refactor-core/src/test/java/com/github/pfichtner/RenameTest.rename_constructor_directly_is_rejected.approved.md) |
-| Rename field: name → fullName (multi-file) | [→](refactor-core/src/test/java/com/github/pfichtner/RenameTest.rename_field_across_files.approved.md) |
-| Rename local variable: x → local (field x must be untouched) | [→](refactor-core/src/test/java/com/github/pfichtner/RenameTest.rename_local_does_not_affect_shadowed_field.approved.md) |
-| Rename local variable: x → answer | [→](refactor-core/src/test/java/com/github/pfichtner/RenameTest.rename_local_variable_from_declaration_site.approved.md) |
-| Rename local variable: x → answer | [→](refactor-core/src/test/java/com/github/pfichtner/RenameTest.rename_local_variable_from_reference_site.approved.md) |
-| Rename method: add → plus (multi-file) | [→](refactor-core/src/test/java/com/github/pfichtner/RenameTest.rename_method_across_files.approved.md) |
-| Rename type name — expect rejection | [→](refactor-core/src/test/java/com/github/pfichtner/RenameTest.rename_non_variable_is_rejected.approved.md) |
-| Rename parameter: n → count | [→](refactor-core/src/test/java/com/github/pfichtner/RenameTest.rename_parameter_n_to_count.approved.md) |
-| Rename type: Rectangle → Rect (multi-file) | [→](refactor-core/src/test/java/com/github/pfichtner/RenameTest.rename_type_across_files.approved.md) |
-| Rename type via FQN reference: Rectangle → Rect | [→](refactor-core/src/test/java/com/github/pfichtner/RenameTest.rename_type_via_fqn_reference.approved.md) |
-| Rename local variable: y → product (x must be untouched) | [→](refactor-core/src/test/java/com/github/pfichtner/RenameTest.rename_y_does_not_affect_x.approved.md) |
+| Rename constructor directly — expect rejection | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenameTest.rename_constructor_directly_is_rejected.approved.md) |
+| Rename field: name → fullName (multi-file) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenameTest.rename_field_across_files.approved.md) |
+| Rename local variable: x → local (field x must be untouched) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenameTest.rename_local_does_not_affect_shadowed_field.approved.md) |
+| Rename local variable: x → answer | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenameTest.rename_local_variable_from_declaration_site.approved.md) |
+| Rename local variable: x → answer | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenameTest.rename_local_variable_from_reference_site.approved.md) |
+| Rename method: add → plus (multi-file) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenameTest.rename_method_across_files.approved.md) |
+| Rename type name — expect rejection | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenameTest.rename_non_variable_is_rejected.approved.md) |
+| Rename parameter: n → count | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenameTest.rename_parameter_n_to_count.approved.md) |
+| Rename type: Rectangle → Rect (multi-file) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenameTest.rename_type_across_files.approved.md) |
+| Rename type via FQN reference: Rectangle → Rect | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenameTest.rename_type_via_fqn_reference.approved.md) |
+| Rename local variable: y → product (x must be untouched) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenameTest.rename_y_does_not_affect_x.approved.md) |
 
 ### Rename edge case
 | Test case | Approval |
 |-----------|----------|
-| Rename method: Animal.speak → makeSound (override chain limitation) | [→](refactor-core/src/test/java/com/github/pfichtner/RenameEdgeCaseTest.rename_base_method_does_not_follow_override_chain.approved.md) |
-| Rename interface method: Task.execute → perform (anonymous impl) | [→](refactor-core/src/test/java/com/github/pfichtner/RenameEdgeCaseTest.rename_interface_method_with_anonymous_class_implementation.approved.md) |
-| Rename method in generic class: Container<T>.getValue → get | [→](refactor-core/src/test/java/com/github/pfichtner/RenameEdgeCaseTest.rename_method_in_generic_class.approved.md) |
-| Rename method: Calculator.compute → add ({@link} and @see updated) | [→](refactor-core/src/test/java/com/github/pfichtner/RenameEdgeCaseTest.rename_method_updates_javadoc_link.approved.md) |
-| Rename method referenced in lambda: Calculator.square → squared | [→](refactor-core/src/test/java/com/github/pfichtner/RenameEdgeCaseTest.rename_method_used_as_method_reference_in_lambda.approved.md) |
-| Rename method: compute(int,int) → add (sibling overload unchanged) | [→](refactor-core/src/test/java/com/github/pfichtner/RenameEdgeCaseTest.rename_renames_only_matching_overload_not_siblings.approved.md) |
-| Rename type: Greeter → HelloService ({@link} and @see updated) | [→](refactor-core/src/test/java/com/github/pfichtner/RenameEdgeCaseTest.rename_type_updates_javadoc_link.approved.md) |
+| Rename method: Animal.speak → makeSound (override chain limitation) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenameEdgeCaseTest.rename_base_method_does_not_follow_override_chain.approved.md) |
+| Rename interface method: Task.execute → perform (anonymous impl) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenameEdgeCaseTest.rename_interface_method_with_anonymous_class_implementation.approved.md) |
+| Rename method in generic class: Container<T>.getValue → get | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenameEdgeCaseTest.rename_method_in_generic_class.approved.md) |
+| Rename method: Calculator.compute → add ({@link} and @see updated) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenameEdgeCaseTest.rename_method_updates_javadoc_link.approved.md) |
+| Rename method referenced in lambda: Calculator.square → squared | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenameEdgeCaseTest.rename_method_used_as_method_reference_in_lambda.approved.md) |
+| Rename method: compute(int,int) → add (sibling overload unchanged) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenameEdgeCaseTest.rename_renames_only_matching_overload_not_siblings.approved.md) |
+| Rename type: Greeter → HelloService ({@link} and @see updated) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenameEdgeCaseTest.rename_type_updates_javadoc_link.approved.md) |
 
 ### Rename package
 | Test case | Approval |
 |-----------|----------|
-| Rename package: com.example.service → com.example.util | [→](refactor-core/src/test/java/com/github/pfichtner/RenamePackageTest.rename_package_updates_declarations_imports_and_paths.approved.md) |
-| Rename package with FQN code references: com.example.service → com.example.util | [→](refactor-core/src/test/java/com/github/pfichtner/RenamePackageTest.rename_package_updates_fqn_code_references.approved.md) |
-| Rename package: {@link} and @see FQN in Javadoc updated | [→](refactor-core/src/test/java/com/github/pfichtner/RenamePackageTest.rename_package_updates_javadoc_fqn_references.approved.md) |
+| Rename package: com.example.service → com.example.util | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenamePackageTest.rename_package_updates_declarations_imports_and_paths.approved.md) |
+| Rename package with FQN code references: com.example.service → com.example.util | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenamePackageTest.rename_package_updates_fqn_code_references.approved.md) |
+| Rename package: {@link} and @see FQN in Javadoc updated | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenamePackageTest.rename_package_updates_javadoc_fqn_references.approved.md) |
 
 ---
 
@@ -49,42 +49,42 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 ### Extract method
 | Test case | Approval |
 |-----------|----------|
-| Extract method — rejected: multiple variables used after selection | [→](refactor-core/src/test/java/com/github/pfichtner/ExtractMethodTest.extract_rejected_when_multiple_vars_used_after.approved.md) |
-| Extract method — rejected: selection contains return | [→](refactor-core/src/test/java/com/github/pfichtner/ExtractMethodTest.extract_rejected_when_selection_contains_return.approved.md) |
-| Extract method: greet() — no params, no return | [→](refactor-core/src/test/java/com/github/pfichtner/ExtractMethodTest.extract_simple_no_params_no_return.approved.md) |
-| Extract method: compute(n) — with parameter | [→](refactor-core/src/test/java/com/github/pfichtner/ExtractMethodTest.extract_with_parameter.approved.md) |
-| Extract method: add(a, b) — with return value | [→](refactor-core/src/test/java/com/github/pfichtner/ExtractMethodTest.extract_with_return_value.approved.md) |
+| Extract method — rejected: multiple variables used after selection | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ExtractMethodTest.extract_rejected_when_multiple_vars_used_after.approved.md) |
+| Extract method — rejected: selection contains return | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ExtractMethodTest.extract_rejected_when_selection_contains_return.approved.md) |
+| Extract method: greet() — no params, no return | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ExtractMethodTest.extract_simple_no_params_no_return.approved.md) |
+| Extract method: compute(n) — with parameter | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ExtractMethodTest.extract_with_parameter.approved.md) |
+| Extract method: add(a, b) — with return value | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ExtractMethodTest.extract_with_return_value.approved.md) |
 
 ### Extract variable
 | Test case | Approval |
 |-----------|----------|
-| Extract variable: name.toUpperCase() → upper | [→](refactor-core/src/test/java/com/github/pfichtner/ExtractVariableTest.extract_nested_expression.approved.md) |
-| Extract variable — rejected: selection is an assignment | [→](refactor-core/src/test/java/com/github/pfichtner/ExtractVariableTest.extract_rejected_when_selection_is_assignment.approved.md) |
-| Extract variable — rejected: selection is a simple name | [→](refactor-core/src/test/java/com/github/pfichtner/ExtractVariableTest.extract_rejected_when_selection_is_simple_name.approved.md) |
-| Extract variable: 42 → MAGIC (replace all occurrences) | [→](refactor-core/src/test/java/com/github/pfichtner/ExtractVariableTest.extract_replaces_all_occurrences.approved.md) |
-| Extract variable: 6 * 7 → answer | [→](refactor-core/src/test/java/com/github/pfichtner/ExtractVariableTest.extract_simple_expression.approved.md) |
+| Extract variable: name.toUpperCase() → upper | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ExtractVariableTest.extract_nested_expression.approved.md) |
+| Extract variable — rejected: selection is an assignment | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ExtractVariableTest.extract_rejected_when_selection_is_assignment.approved.md) |
+| Extract variable — rejected: selection is a simple name | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ExtractVariableTest.extract_rejected_when_selection_is_simple_name.approved.md) |
+| Extract variable: 42 → MAGIC (replace all occurrences) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ExtractVariableTest.extract_replaces_all_occurrences.approved.md) |
+| Extract variable: 6 * 7 → answer | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ExtractVariableTest.extract_simple_expression.approved.md) |
 
 ### Extract constant
 | Test case | Approval |
 |-----------|----------|
-| Extract constant — rejected: selection is a simple name | [→](refactor-core/src/test/java/com/github/pfichtner/ExtractConstantTest.extract_constant_rejected_when_selection_is_simple_name.approved.md) |
-| Extract constant: 3.14159 → PI | [→](refactor-core/src/test/java/com/github/pfichtner/ExtractConstantTest.extract_numeric_literal_as_constant.approved.md) |
-| Extract constant: "HELLO" → GREETING (replace all) | [→](refactor-core/src/test/java/com/github/pfichtner/ExtractConstantTest.extract_string_literal_replaces_all_occurrences.approved.md) |
+| Extract constant — rejected: selection is a simple name | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ExtractConstantTest.extract_constant_rejected_when_selection_is_simple_name.approved.md) |
+| Extract constant: 3.14159 → PI | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ExtractConstantTest.extract_numeric_literal_as_constant.approved.md) |
+| Extract constant: "HELLO" → GREETING (replace all) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ExtractConstantTest.extract_string_literal_replaces_all_occurrences.approved.md) |
 
 ### Extract interface
 | Test case | Approval |
 |-----------|----------|
-| Extract interface: Arithmetic from Calculator | [→](refactor-core/src/test/java/com/github/pfichtner/ExtractInterfaceTest.extract_all_public_methods_into_interface.approved.md) |
-| Extract interface: Transformable from Converter (generics) | [→](refactor-core/src/test/java/com/github/pfichtner/ExtractInterfaceTest.extract_interface_with_generic_method.approved.md) |
-| Extract interface — rejected: no public non-static methods | [→](refactor-core/src/test/java/com/github/pfichtner/ExtractInterfaceTest.extract_rejected_when_no_public_methods.approved.md) |
-| Extract interface: Addable from Calculator (subset) | [→](refactor-core/src/test/java/com/github/pfichtner/ExtractInterfaceTest.extract_subset_of_methods.approved.md) |
+| Extract interface: Arithmetic from Calculator | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ExtractInterfaceTest.extract_all_public_methods_into_interface.approved.md) |
+| Extract interface: Transformable from Converter (generics) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ExtractInterfaceTest.extract_interface_with_generic_method.approved.md) |
+| Extract interface — rejected: no public non-static methods | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ExtractInterfaceTest.extract_rejected_when_no_public_methods.approved.md) |
+| Extract interface: Addable from Calculator (subset) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ExtractInterfaceTest.extract_subset_of_methods.approved.md) |
 
 ### Extract superclass
 | Test case | Approval |
 |-----------|----------|
-| Extract superclass: BaseAnimal (all public methods) | [→](refactor-core/src/test/java/com/github/pfichtner/ExtractSuperclassTest.extract_all_public_methods_when_no_subset_specified.approved.md) |
-| Extract superclass — rejected: class already extends | [→](refactor-core/src/test/java/com/github/pfichtner/ExtractSuperclassTest.extract_rejected_when_class_already_extends.approved.md) |
-| Extract superclass: Living from Animal | [→](refactor-core/src/test/java/com/github/pfichtner/ExtractSuperclassTest.extract_superclass_moves_methods_and_adds_extends.approved.md) |
+| Extract superclass: BaseAnimal (all public methods) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ExtractSuperclassTest.extract_all_public_methods_when_no_subset_specified.approved.md) |
+| Extract superclass — rejected: class already extends | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ExtractSuperclassTest.extract_rejected_when_class_already_extends.approved.md) |
+| Extract superclass: Living from Animal | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ExtractSuperclassTest.extract_superclass_moves_methods_and_adds_extends.approved.md) |
 
 ---
 
@@ -93,37 +93,37 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 ### Inline method
 | Test case | Approval |
 |-----------|----------|
-| Inline method: greet() — all occurrences, declaration removed | [→](refactor-core/src/test/java/com/github/pfichtner/InlineMethodTest.inline_all_occurrences_removes_declaration.approved.md) |
-| Inline method: add() — all occurrences, declaration kept | [→](refactor-core/src/test/java/com/github/pfichtner/InlineMethodTest.inline_all_occurrences_returns_expression_keeps_declaration.approved.md) |
-| Inline method: greet() — all occurrences, declaration kept | [→](refactor-core/src/test/java/com/github/pfichtner/InlineMethodTest.inline_all_occurrences_void_method_keeps_declaration.approved.md) |
-| Inline method: add (multi-file, all call sites, declaration kept) | [→](refactor-core/src/test/java/com/github/pfichtner/InlineMethodTest.inline_method_across_files_inlines_all_call_sites.approved.md) |
-| Inline method: add (multi-file, declaration removed) | [→](refactor-core/src/test/java/com/github/pfichtner/InlineMethodTest.inline_method_across_files_removes_declaration_when_requested.approved.md) |
-| Inline method: add(x, y) → return expression substituted | [→](refactor-core/src/test/java/com/github/pfichtner/InlineMethodTest.inline_method_that_returns_expression.approved.md) |
-| Inline method — rejected: multi-statement body in value context | [→](refactor-core/src/test/java/com/github/pfichtner/InlineMethodTest.inline_rejected_when_body_has_multiple_statements_in_value_context.approved.md) |
-| Inline method — rejected: method not in this file | [→](refactor-core/src/test/java/com/github/pfichtner/InlineMethodTest.inline_rejected_when_method_not_in_file.approved.md) |
-| Inline method — rejected: removeDeclaration without allOccurrences | [→](refactor-core/src/test/java/com/github/pfichtner/InlineMethodTest.inline_rejected_when_remove_declaration_without_all_occurrences.approved.md) |
-| Inline method: greet() — void, no parameters | [→](refactor-core/src/test/java/com/github/pfichtner/InlineMethodTest.inline_void_method_no_params.approved.md) |
-| Inline method: printSum(a, b) — void, parameters substituted | [→](refactor-core/src/test/java/com/github/pfichtner/InlineMethodTest.inline_void_method_with_params.approved.md) |
+| Inline method: greet() — all occurrences, declaration removed | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/InlineMethodTest.inline_all_occurrences_removes_declaration.approved.md) |
+| Inline method: add() — all occurrences, declaration kept | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/InlineMethodTest.inline_all_occurrences_returns_expression_keeps_declaration.approved.md) |
+| Inline method: greet() — all occurrences, declaration kept | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/InlineMethodTest.inline_all_occurrences_void_method_keeps_declaration.approved.md) |
+| Inline method: add (multi-file, all call sites, declaration kept) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/InlineMethodTest.inline_method_across_files_inlines_all_call_sites.approved.md) |
+| Inline method: add (multi-file, declaration removed) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/InlineMethodTest.inline_method_across_files_removes_declaration_when_requested.approved.md) |
+| Inline method: add(x, y) → return expression substituted | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/InlineMethodTest.inline_method_that_returns_expression.approved.md) |
+| Inline method — rejected: multi-statement body in value context | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/InlineMethodTest.inline_rejected_when_body_has_multiple_statements_in_value_context.approved.md) |
+| Inline method — rejected: method not in this file | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/InlineMethodTest.inline_rejected_when_method_not_in_file.approved.md) |
+| Inline method — rejected: removeDeclaration without allOccurrences | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/InlineMethodTest.inline_rejected_when_remove_declaration_without_all_occurrences.approved.md) |
+| Inline method: greet() — void, no parameters | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/InlineMethodTest.inline_void_method_no_params.approved.md) |
+| Inline method: printSum(a, b) — void, parameters substituted | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/InlineMethodTest.inline_void_method_with_params.approved.md) |
 
 ### Inline variable
 | Test case | Approval |
 |-----------|----------|
-| Inline variable: sum — parentheses added to preserve precedence | [→](refactor-core/src/test/java/com/github/pfichtner/InlineVariableTest.inline_adds_parens_to_preserve_precedence.approved.md) |
-| Inline variable — rejected: multiple fragments in declaration | [→](refactor-core/src/test/java/com/github/pfichtner/InlineVariableTest.inline_rejected_when_multiple_fragments.approved.md) |
-| Inline variable — rejected: no initializer | [→](refactor-core/src/test/java/com/github/pfichtner/InlineVariableTest.inline_rejected_when_no_initializer.approved.md) |
-| Inline variable: msg — replaces all two uses | [→](refactor-core/src/test/java/com/github/pfichtner/InlineVariableTest.inline_replaces_all_uses.approved.md) |
-| Inline variable: x (initializer is a compound expression) | [→](refactor-core/src/test/java/com/github/pfichtner/InlineVariableTest.inline_simple_variable.approved.md) |
+| Inline variable: sum — parentheses added to preserve precedence | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/InlineVariableTest.inline_adds_parens_to_preserve_precedence.approved.md) |
+| Inline variable — rejected: multiple fragments in declaration | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/InlineVariableTest.inline_rejected_when_multiple_fragments.approved.md) |
+| Inline variable — rejected: no initializer | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/InlineVariableTest.inline_rejected_when_no_initializer.approved.md) |
+| Inline variable: msg — replaces all two uses | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/InlineVariableTest.inline_replaces_all_uses.approved.md) |
+| Inline variable: x (initializer is a compound expression) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/InlineVariableTest.inline_simple_variable.approved.md) |
 
 ### Inline constant
 | Test case | Approval |
 |-----------|----------|
-| Inline constant: MAX — all occurrences, declaration kept | [→](refactor-core/src/test/java/com/github/pfichtner/InlineConstantTest.inline_constant_all_occurrences_keeps_declaration.approved.md) |
-| Inline constant: MAX — all occurrences, declaration removed | [→](refactor-core/src/test/java/com/github/pfichtner/InlineConstantTest.inline_constant_all_occurrences_removes_declaration.approved.md) |
-| Inline constant — rejected: multiple constants in one declaration | [→](refactor-core/src/test/java/com/github/pfichtner/InlineConstantTest.inline_constant_rejected_multiple_fragments.approved.md) |
-| Inline constant — rejected: mutable field | [→](refactor-core/src/test/java/com/github/pfichtner/InlineConstantTest.inline_constant_rejected_mutable_field.approved.md) |
-| Inline constant — rejected: removeDeclaration without allOccurrences | [→](refactor-core/src/test/java/com/github/pfichtner/InlineConstantTest.inline_constant_rejected_remove_without_all.approved.md) |
-| Inline constant: MAX — this occurrence only | [→](refactor-core/src/test/java/com/github/pfichtner/InlineConstantTest.inline_constant_this_occurrence.approved.md) |
-| Inline constant: FACTOR — compound initializer needs parens | [→](refactor-core/src/test/java/com/github/pfichtner/InlineConstantTest.inline_constant_with_parens.approved.md) |
+| Inline constant: MAX — all occurrences, declaration kept | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/InlineConstantTest.inline_constant_all_occurrences_keeps_declaration.approved.md) |
+| Inline constant: MAX — all occurrences, declaration removed | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/InlineConstantTest.inline_constant_all_occurrences_removes_declaration.approved.md) |
+| Inline constant — rejected: multiple constants in one declaration | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/InlineConstantTest.inline_constant_rejected_multiple_fragments.approved.md) |
+| Inline constant — rejected: mutable field | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/InlineConstantTest.inline_constant_rejected_mutable_field.approved.md) |
+| Inline constant — rejected: removeDeclaration without allOccurrences | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/InlineConstantTest.inline_constant_rejected_remove_without_all.approved.md) |
+| Inline constant: MAX — this occurrence only | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/InlineConstantTest.inline_constant_this_occurrence.approved.md) |
+| Inline constant: FACTOR — compound initializer needs parens | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/InlineConstantTest.inline_constant_with_parens.approved.md) |
 
 ---
 
@@ -132,27 +132,27 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 ### Introduce param
 | Test case | Approval |
 |-----------|----------|
-| Introduce parameter: @param tag inserted after last @param | [→](refactor-core/src/test/java/com/github/pfichtner/IntroduceParamTest.introduce_param_adds_param_tag_when_javadoc_exists.approved.md) |
-| Introduce parameter: method references converted to lambdas | [→](refactor-core/src/test/java/com/github/pfichtner/IntroduceParamTest.introduce_param_converts_method_references_to_lambdas.approved.md) |
-| Introduce parameter: FQN type inferred when Calculator not imported | [→](refactor-core/src/test/java/com/github/pfichtner/IntroduceParamTest.introduce_param_infers_fqn_type_when_not_imported.approved.md) |
-| Introduce parameter — rejected: selection is a simple name | [→](refactor-core/src/test/java/com/github/pfichtner/IntroduceParamTest.introduce_param_rejected_when_selection_is_simple_name.approved.md) |
-| Introduce parameter: "World" → String name (multi-file) | [→](refactor-core/src/test/java/com/github/pfichtner/IntroduceParamTest.introduce_param_updates_call_sites.approved.md) |
+| Introduce parameter: @param tag inserted after last @param | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/IntroduceParamTest.introduce_param_adds_param_tag_when_javadoc_exists.approved.md) |
+| Introduce parameter: method references converted to lambdas | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/IntroduceParamTest.introduce_param_converts_method_references_to_lambdas.approved.md) |
+| Introduce parameter: FQN type inferred when Calculator not imported | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/IntroduceParamTest.introduce_param_infers_fqn_type_when_not_imported.approved.md) |
+| Introduce parameter — rejected: selection is a simple name | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/IntroduceParamTest.introduce_param_rejected_when_selection_is_simple_name.approved.md) |
+| Introduce parameter: "World" → String name (multi-file) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/IntroduceParamTest.introduce_param_updates_call_sites.approved.md) |
 
 ### Introduce parameter object
 | Test case | Approval |
 |-----------|----------|
-| Introduce parameter object as record: Printer.print(x,y) → Coordinate | [→](refactor-core/src/test/java/com/github/pfichtner/IntroduceParameterObjectTest.introduce_parameter_object_as_record.approved.md) |
-| Introduce parameter object: Printer.print(x,y) → Coordinate | [→](refactor-core/src/test/java/com/github/pfichtner/IntroduceParameterObjectTest.introduce_parameter_object_creates_class_and_updates_call_sites.approved.md) |
-| Introduce parameter object rejected: fewer than 2 params | [→](refactor-core/src/test/java/com/github/pfichtner/IntroduceParameterObjectTest.introduce_parameter_object_rejected_when_fewer_than_two_params.approved.md) |
-| Introduce parameter object rejected: unknown param name | [→](refactor-core/src/test/java/com/github/pfichtner/IntroduceParameterObjectTest.introduce_parameter_object_rejected_when_param_name_not_found.approved.md) |
+| Introduce parameter object as record: Printer.print(x,y) → Coordinate | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/IntroduceParameterObjectTest.introduce_parameter_object_as_record.approved.md) |
+| Introduce parameter object: Printer.print(x,y) → Coordinate | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/IntroduceParameterObjectTest.introduce_parameter_object_creates_class_and_updates_call_sites.approved.md) |
+| Introduce parameter object rejected: fewer than 2 params | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/IntroduceParameterObjectTest.introduce_parameter_object_rejected_when_fewer_than_two_params.approved.md) |
+| Introduce parameter object rejected: unknown param name | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/IntroduceParameterObjectTest.introduce_parameter_object_rejected_when_param_name_not_found.approved.md) |
 
 ### Introduce static factory
 | Test case | Approval |
 |-----------|----------|
-| Introduce static factory: Counter.of (constructor stays public) | [→](refactor-core/src/test/java/com/github/pfichtner/IntroduceStaticFactoryTest.introduce_static_factory_creates_method_and_updates_call_sites.approved.md) |
-| Introduce static factory: Counter.create (constructor private) | [→](refactor-core/src/test/java/com/github/pfichtner/IntroduceStaticFactoryTest.introduce_static_factory_makes_constructor_private.approved.md) |
-| Introduce static factory rejected: factory method already exists | [→](refactor-core/src/test/java/com/github/pfichtner/IntroduceStaticFactoryTest.introduce_static_factory_rejected_when_factory_name_already_exists.approved.md) |
-| Introduce static factory rejected: no constructor at offset | [→](refactor-core/src/test/java/com/github/pfichtner/IntroduceStaticFactoryTest.introduce_static_factory_rejected_when_no_constructor_at_offset.approved.md) |
+| Introduce static factory: Counter.of (constructor stays public) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/IntroduceStaticFactoryTest.introduce_static_factory_creates_method_and_updates_call_sites.approved.md) |
+| Introduce static factory: Counter.create (constructor private) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/IntroduceStaticFactoryTest.introduce_static_factory_makes_constructor_private.approved.md) |
+| Introduce static factory rejected: factory method already exists | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/IntroduceStaticFactoryTest.introduce_static_factory_rejected_when_factory_name_already_exists.approved.md) |
+| Introduce static factory rejected: no constructor at offset | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/IntroduceStaticFactoryTest.introduce_static_factory_rejected_when_no_constructor_at_offset.approved.md) |
 
 ---
 
@@ -160,10 +160,10 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 
 | Test case | Approval |
 |-----------|----------|
-| Remove parameter: method references converted to lambdas | [→](refactor-core/src/test/java/com/github/pfichtner/RemoveParamTest.remove_param_converts_method_references_to_lambdas.approved.md) |
-| Remove parameter — rejected: parameter used in body | [→](refactor-core/src/test/java/com/github/pfichtner/RemoveParamTest.remove_param_rejected_when_used_in_body.approved.md) |
-| Remove parameter: @param tag removed from Javadoc | [→](refactor-core/src/test/java/com/github/pfichtner/RemoveParamTest.remove_param_removes_orphaned_param_tag.approved.md) |
-| Remove parameter: c (unused, index 2) — multi-file | [→](refactor-core/src/test/java/com/github/pfichtner/RemoveParamTest.remove_unused_trailing_parameter_across_files.approved.md) |
+| Remove parameter: method references converted to lambdas | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RemoveParamTest.remove_param_converts_method_references_to_lambdas.approved.md) |
+| Remove parameter — rejected: parameter used in body | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RemoveParamTest.remove_param_rejected_when_used_in_body.approved.md) |
+| Remove parameter: @param tag removed from Javadoc | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RemoveParamTest.remove_param_removes_orphaned_param_tag.approved.md) |
+| Remove parameter: c (unused, index 2) — multi-file | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RemoveParamTest.remove_unused_trailing_parameter_across_files.approved.md) |
 
 ---
 
@@ -172,30 +172,30 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 ### Pull up method
 | Test case | Approval |
 |-----------|----------|
-| Pull up method: Dog.speak → Animal (FQN extends clause) | [→](refactor-core/src/test/java/com/github/pfichtner/PullUpMethodTest.pull_up_handles_fqn_extends_clause.approved.md) |
-| Pull up method: Dog.speak → Animal | [→](refactor-core/src/test/java/com/github/pfichtner/PullUpMethodTest.pull_up_moves_method_to_superclass.approved.md) |
-| Pull up method rejected: Animal has no superclass | [→](refactor-core/src/test/java/com/github/pfichtner/PullUpMethodTest.reject_class_with_no_explicit_superclass.approved.md) |
-| Pull up method rejected: superclass already has name() | [→](refactor-core/src/test/java/com/github/pfichtner/PullUpMethodTest.reject_duplicate_method_in_superclass.approved.md) |
+| Pull up method: Dog.speak → Animal (FQN extends clause) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/PullUpMethodTest.pull_up_handles_fqn_extends_clause.approved.md) |
+| Pull up method: Dog.speak → Animal | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/PullUpMethodTest.pull_up_moves_method_to_superclass.approved.md) |
+| Pull up method rejected: Animal has no superclass | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/PullUpMethodTest.reject_class_with_no_explicit_superclass.approved.md) |
+| Pull up method rejected: superclass already has name() | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/PullUpMethodTest.reject_duplicate_method_in_superclass.approved.md) |
 
 ### Pull up field
 | Test case | Approval |
 |-----------|----------|
-| Pull up field: Dog.breed → Animal | [→](refactor-core/src/test/java/com/github/pfichtner/PullUpFieldTest.pull_up_moves_field_to_superclass.approved.md) |
-| Pull up field rejected: Animal has no superclass | [→](refactor-core/src/test/java/com/github/pfichtner/PullUpFieldTest.reject_class_with_no_explicit_superclass.approved.md) |
-| Pull up field rejected: superclass already has name | [→](refactor-core/src/test/java/com/github/pfichtner/PullUpFieldTest.reject_duplicate_field_in_superclass.approved.md) |
+| Pull up field: Dog.breed → Animal | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/PullUpFieldTest.pull_up_moves_field_to_superclass.approved.md) |
+| Pull up field rejected: Animal has no superclass | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/PullUpFieldTest.reject_class_with_no_explicit_superclass.approved.md) |
+| Pull up field rejected: superclass already has name | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/PullUpFieldTest.reject_duplicate_field_in_superclass.approved.md) |
 
 ### Push down method
 | Test case | Approval |
 |-----------|----------|
-| Push down method: Shape.area → Circle, Rectangle | [→](refactor-core/src/test/java/com/github/pfichtner/PushDownMethodTest.push_down_copies_method_to_all_subclasses.approved.md) |
-| Push down method: Animal.speak → Dog (FQN extends clause) | [→](refactor-core/src/test/java/com/github/pfichtner/PushDownMethodTest.push_down_handles_fqn_extends_clause.approved.md) |
-| Push down method rejected: Dog has no subclasses | [→](refactor-core/src/test/java/com/github/pfichtner/PushDownMethodTest.reject_no_subclasses_in_project.approved.md) |
+| Push down method: Shape.area → Circle, Rectangle | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/PushDownMethodTest.push_down_copies_method_to_all_subclasses.approved.md) |
+| Push down method: Animal.speak → Dog (FQN extends clause) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/PushDownMethodTest.push_down_handles_fqn_extends_clause.approved.md) |
+| Push down method rejected: Dog has no subclasses | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/PushDownMethodTest.reject_no_subclasses_in_project.approved.md) |
 
 ### Push down field
 | Test case | Approval |
 |-----------|----------|
-| Push down field: Vehicle.maxSpeed → Car, Truck | [→](refactor-core/src/test/java/com/github/pfichtner/PushDownFieldTest.push_down_copies_field_to_all_subclasses.approved.md) |
-| Push down field rejected: Car has no subclasses | [→](refactor-core/src/test/java/com/github/pfichtner/PushDownFieldTest.reject_no_subclasses_in_project.approved.md) |
+| Push down field: Vehicle.maxSpeed → Car, Truck | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/PushDownFieldTest.push_down_copies_field_to_all_subclasses.approved.md) |
+| Push down field rejected: Car has no subclasses | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/PushDownFieldTest.reject_no_subclasses_in_project.approved.md) |
 
 ---
 
@@ -203,9 +203,9 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 
 | Test case | Approval |
 |-----------|----------|
-| Move class rejected: already in target package | [→](refactor-core/src/test/java/com/github/pfichtner/MoveClassTest.move_class_rejected_when_already_in_target_package.approved.md) |
-| Move class: Calculator → com.example.util (FQN code references) | [→](refactor-core/src/test/java/com/github/pfichtner/MoveClassTest.move_class_updates_fqn_code_references.approved.md) |
-| Move class: Calculator → com.example.util | [→](refactor-core/src/test/java/com/github/pfichtner/MoveClassTest.move_class_updates_package_and_imports.approved.md) |
+| Move class rejected: already in target package | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveClassTest.move_class_rejected_when_already_in_target_package.approved.md) |
+| Move class: Calculator → com.example.util (FQN code references) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveClassTest.move_class_updates_fqn_code_references.approved.md) |
+| Move class: Calculator → com.example.util | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveClassTest.move_class_updates_package_and_imports.approved.md) |
 
 ---
 
@@ -213,9 +213,9 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 
 | Test case | Approval |
 |-----------|----------|
-| Convert class to record: Point (getters renamed at call sites) | [→](refactor-core/src/test/java/com/github/pfichtner/ConvertToRecordTest.convert_class_to_record_renames_getter_call_sites.approved.md) |
-| Convert to record rejected: class has extends clause | [→](refactor-core/src/test/java/com/github/pfichtner/ConvertToRecordTest.convert_to_record_rejected_when_class_has_extends.approved.md) |
-| Convert to record rejected: has non-private-final fields | [→](refactor-core/src/test/java/com/github/pfichtner/ConvertToRecordTest.convert_to_record_rejected_when_has_non_private_final_fields.approved.md) |
+| Convert class to record: Point (getters renamed at call sites) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ConvertToRecordTest.convert_class_to_record_renames_getter_call_sites.approved.md) |
+| Convert to record rejected: class has extends clause | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ConvertToRecordTest.convert_to_record_rejected_when_class_has_extends.approved.md) |
+| Convert to record rejected: has non-private-final fields | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ConvertToRecordTest.convert_to_record_rejected_when_has_non_private_final_fields.approved.md) |
 
 ---
 
@@ -224,156 +224,156 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 ### Cli rename
 | Test case | Approval |
 |-----------|----------|
-| Apply writes changed files | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliRenameTest.apply_writes_changed_files.approved.txt) |
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliRenameTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Apply writes changed files | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRenameTest.apply_writes_changed_files.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRenameTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Cli rename package
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliRenamePackageTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRenamePackageTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Cli change method signature
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliChangeMethodSignatureTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliChangeMethodSignatureTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Cli convert anonymous
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliConvertAnonymousTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliConvertAnonymousTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Cli convert nested
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliConvertNestedTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliConvertNestedTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Cli convert to record
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliConvertToRecordTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliConvertToRecordTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Cli decompose conditional
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliDecomposeConditionalTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliDecomposeConditionalTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Cli encapsulate field
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints getter and setter preview | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliEncapsulateFieldTest.dry_run_prints_getter_and_setter_preview.approved.txt) |
-| Dry run prints getter preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliEncapsulateFieldTest.dry_run_prints_getter_preview_without_writing.approved.txt) |
+| Dry run prints getter and setter preview | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliEncapsulateFieldTest.dry_run_prints_getter_and_setter_preview.approved.txt) |
+| Dry run prints getter preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliEncapsulateFieldTest.dry_run_prints_getter_preview_without_writing.approved.txt) |
 
 ### Cli extract const
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliExtractConstTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliExtractConstTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Cli extract interface
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliExtractInterfaceTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliExtractInterfaceTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Cli extract superclass
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliExtractSuperclassTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliExtractSuperclassTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Cli extract
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliExtractTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliExtractTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Cli extract var
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliExtractVarTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliExtractVarTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Cli inline const
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliInlineConstTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliInlineConstTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Cli inline method
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliInlineMethodTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliInlineMethodTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Cli inline var
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliInlineVarTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliInlineVarTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Cli introduce indirection
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliIntroduceIndirectionTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliIntroduceIndirectionTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Cli introduce param object
 | Test case | Approval |
 |-----------|----------|
-| Apply record writes record and updates call sites | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliIntroduceParamObjectTest.apply_record_writes_record_and_updates_call_sites.approved.txt) |
-| Dry run record prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliIntroduceParamObjectTest.dry_run_record_prints_preview_without_writing.approved.txt) |
+| Apply record writes record and updates call sites | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliIntroduceParamObjectTest.apply_record_writes_record_and_updates_call_sites.approved.txt) |
+| Dry run record prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliIntroduceParamObjectTest.dry_run_record_prints_preview_without_writing.approved.txt) |
 
 ### Cli introduce param
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliIntroduceParamTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliIntroduceParamTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Cli introduce static factory
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliIntroduceStaticFactoryTest.dry_run_prints_preview_without_writing.approved.txt) |
-| Dry run with private constructor | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliIntroduceStaticFactoryTest.dry_run_with_private_constructor.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliIntroduceStaticFactoryTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run with private constructor | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliIntroduceStaticFactoryTest.dry_run_with_private_constructor.approved.txt) |
 
 ### Cli locator by name
 | Test case | Approval |
 |-----------|----------|
-| Dry run by method name prints preview | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliLocatorByNameTest.dry_run_by_method_name_prints_preview.approved.txt) |
+| Dry run by method name prints preview | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliLocatorByNameTest.dry_run_by_method_name_prints_preview.approved.txt) |
 
 ### Cli move class
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliMoveClassTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliMoveClassTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Cli move method
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliMoveMethodTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliMoveMethodTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Cli move static member
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliMoveStaticMemberTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliMoveStaticMemberTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Cli promote to field
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliPromoteToFieldTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliPromoteToFieldTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Cli pull up field
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliPullUpFieldTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliPullUpFieldTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Cli pull up method
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliPullUpMethodTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliPullUpMethodTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Cli push down field
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliPushDownFieldTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliPushDownFieldTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Cli push down method
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliPushDownMethodTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliPushDownMethodTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Cli remove param
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliRemoveParamTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRemoveParamTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ---
 
@@ -381,8 +381,8 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 
 | Test case | Approval |
 |-----------|----------|
-| Analyze refactoring rename method preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerTest.analyze_refactoring_rename_method_preview.approved.txt) |
-| Apply refactoring writes files and returns summary | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerTest.apply_refactoring_writes_files_and_returns_summary.approved.txt) |
+| Analyze refactoring rename method preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerTest.analyze_refactoring_rename_method_preview.approved.txt) |
+| Apply refactoring writes files and returns summary | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerTest.apply_refactoring_writes_files_and_returns_summary.approved.txt) |
 
 ---
 
@@ -391,128 +391,128 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 ### Change method signature
 | Test case | Approval |
 |-----------|----------|
-| Change method signature: change return type String → Object | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.change_return_type_updates_declaration_only.approved.md) |
-| Change method signature rejected: nothing to change | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.rejected_when_nothing_to_change.approved.md) |
-| Change method signature rejected: wrong paramOrder length | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.rejected_when_param_order_length_wrong.approved.md) |
-| Change method signature: reorder params + return type Object | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.reorder_and_return_type_change_applied_together.approved.md) |
-| Change method signature: reorder params convert(int,String) → convert(String,int) | [→](refactor-core/src/test/java/com/github/pfichtner/ChangeMethodSignatureTest.reorder_params_updates_declaration_and_call_sites.approved.md) |
+| Change method signature: change return type String → Object | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ChangeMethodSignatureTest.change_return_type_updates_declaration_only.approved.md) |
+| Change method signature rejected: nothing to change | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ChangeMethodSignatureTest.rejected_when_nothing_to_change.approved.md) |
+| Change method signature rejected: wrong paramOrder length | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ChangeMethodSignatureTest.rejected_when_param_order_length_wrong.approved.md) |
+| Change method signature: reorder params + return type Object | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ChangeMethodSignatureTest.reorder_and_return_type_change_applied_together.approved.md) |
+| Change method signature: reorder params convert(int,String) → convert(String,int) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ChangeMethodSignatureTest.reorder_params_updates_declaration_and_call_sites.approved.md) |
 
 ### Cli remove method
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/cli/CliRemoveMethodTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRemoveMethodTest.dry_run_prints_preview_without_writing.approved.txt) |
 
 ### Convert anonymous to nested
 | Test case | Approval |
 |-----------|----------|
-| Convert anonymous Comparator → nested class CaseInsensitiveOrder | [→](refactor-core/src/test/java/com/github/pfichtner/ConvertAnonymousToNestedTest.convert_comparator_anonymous_to_nested_class.approved.md) |
-| Convert anonymous rejected: no anonymous class at offset | [→](refactor-core/src/test/java/com/github/pfichtner/ConvertAnonymousToNestedTest.convert_rejected_when_no_anonymous_class_at_offset.approved.md) |
-| Convert anonymous Runnable → nested class Worker | [→](refactor-core/src/test/java/com/github/pfichtner/ConvertAnonymousToNestedTest.convert_runnable_anonymous_to_nested_class.approved.md) |
+| Convert anonymous Comparator → nested class CaseInsensitiveOrder | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ConvertAnonymousToNestedTest.convert_comparator_anonymous_to_nested_class.approved.md) |
+| Convert anonymous rejected: no anonymous class at offset | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ConvertAnonymousToNestedTest.convert_rejected_when_no_anonymous_class_at_offset.approved.md) |
+| Convert anonymous Runnable → nested class Worker | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ConvertAnonymousToNestedTest.convert_runnable_anonymous_to_nested_class.approved.md) |
 
 ### Convert nested to top level
 | Test case | Approval |
 |-----------|----------|
-| Convert nested interface Transformer → top-level Transformer.java | [→](refactor-core/src/test/java/com/github/pfichtner/ConvertNestedToTopLevelTest.convert_nested_interface_to_top_level.approved.md) |
-| Convert nested rejected: no nested type at offset | [→](refactor-core/src/test/java/com/github/pfichtner/ConvertNestedToTopLevelTest.convert_rejected_when_no_nested_type_at_offset.approved.md) |
-| Convert nested class Helper → top-level class Helper.java | [→](refactor-core/src/test/java/com/github/pfichtner/ConvertNestedToTopLevelTest.convert_static_nested_class_to_top_level.approved.md) |
+| Convert nested interface Transformer → top-level Transformer.java | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ConvertNestedToTopLevelTest.convert_nested_interface_to_top_level.approved.md) |
+| Convert nested rejected: no nested type at offset | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ConvertNestedToTopLevelTest.convert_rejected_when_no_nested_type_at_offset.approved.md) |
+| Convert nested class Helper → top-level class Helper.java | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ConvertNestedToTopLevelTest.convert_static_nested_class_to_top_level.approved.md) |
 
 ### Decompose conditional
 | Test case | Approval |
 |-----------|----------|
-| Decompose conditional: if (age >= 18 && premium) → isAdultPremium() | [→](refactor-core/src/test/java/com/github/pfichtner/DecomposeConditionalTest.decompose_if_condition_into_method.approved.md) |
-| Decompose conditional: while (count < max && max > 0) → shouldContinue() | [→](refactor-core/src/test/java/com/github/pfichtner/DecomposeConditionalTest.decompose_while_condition_into_method.approved.md) |
-| Decompose conditional rejected: condition is too simple (single name) | [→](refactor-core/src/test/java/com/github/pfichtner/DecomposeConditionalTest.rejected_when_condition_is_simple_name.approved.md) |
-| Decompose conditional rejected: method already exists | [→](refactor-core/src/test/java/com/github/pfichtner/DecomposeConditionalTest.rejected_when_method_already_exists.approved.md) |
+| Decompose conditional: if (age >= 18 && premium) → isAdultPremium() | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/DecomposeConditionalTest.decompose_if_condition_into_method.approved.md) |
+| Decompose conditional: while (count < max && max > 0) → shouldContinue() | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/DecomposeConditionalTest.decompose_while_condition_into_method.approved.md) |
+| Decompose conditional rejected: condition is too simple (single name) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/DecomposeConditionalTest.rejected_when_condition_is_simple_name.approved.md) |
+| Decompose conditional rejected: method already exists | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/DecomposeConditionalTest.rejected_when_method_already_exists.approved.md) |
 
 ### Encapsulate field
 | Test case | Approval |
 |-----------|----------|
-| Encapsulate field: Person.name — getter only | [→](refactor-core/src/test/java/com/github/pfichtner/EncapsulateFieldTest.encapsulate_field_generates_getter_and_rewrites_reads.approved.md) |
-| Encapsulate field: Person.name — getter + setter | [→](refactor-core/src/test/java/com/github/pfichtner/EncapsulateFieldTest.encapsulate_field_generates_getter_and_setter_rewrites_both.approved.md) |
-| Encapsulate field: Person.age — getter only (verify private result) | [→](refactor-core/src/test/java/com/github/pfichtner/EncapsulateFieldTest.encapsulate_field_rejected_when_already_private.approved.md) |
+| Encapsulate field: Person.name — getter only | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/EncapsulateFieldTest.encapsulate_field_generates_getter_and_rewrites_reads.approved.md) |
+| Encapsulate field: Person.name — getter + setter | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/EncapsulateFieldTest.encapsulate_field_generates_getter_and_setter_rewrites_both.approved.md) |
+| Encapsulate field: Person.age — getter only (verify private result) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/EncapsulateFieldTest.encapsulate_field_rejected_when_already_private.approved.md) |
 
 ### Introduce indirection
 | Test case | Approval |
 |-----------|----------|
-| Introduce indirection: Service.process → static doProcess(Service, String) | [→](refactor-core/src/test/java/com/github/pfichtner/IntroduceIndirectionTest.introduce_indirection_for_instance_method.approved.md) |
-| Introduce indirection: MathUtils.square → static computeSquare(int) | [→](refactor-core/src/test/java/com/github/pfichtner/IntroduceIndirectionTest.introduce_indirection_for_static_method.approved.md) |
-| Introduce indirection rejected: no method at offset | [→](refactor-core/src/test/java/com/github/pfichtner/IntroduceIndirectionTest.introduce_indirection_rejected_when_no_method_at_offset.approved.md) |
+| Introduce indirection: Service.process → static doProcess(Service, String) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/IntroduceIndirectionTest.introduce_indirection_for_instance_method.approved.md) |
+| Introduce indirection: MathUtils.square → static computeSquare(int) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/IntroduceIndirectionTest.introduce_indirection_for_static_method.approved.md) |
+| Introduce indirection rejected: no method at offset | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/IntroduceIndirectionTest.introduce_indirection_rejected_when_no_method_at_offset.approved.md) |
 
 ### Locator by name
 | Test case | Approval |
 |-----------|----------|
-| Inline constant by name: MAX | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.inline_constant_by_name.approved.md) |
-| Inline variable by name: x | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.inline_variable_by_name.approved.md) |
-| Pull up field by name: Dog.breed | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.pull_up_field_by_name.approved.md) |
-| Pull up method by name: Dog.speak | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.pull_up_method_by_name.approved.md) |
-| Push down field by name: Vehicle.maxSpeed | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.push_down_field_by_name.approved.md) |
-| Push down method by name: Shape.area | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.push_down_method_by_name.approved.md) |
-| Remove param by name: add.c | [→](refactor-core/src/test/java/com/github/pfichtner/LocatorByNameTest.remove_param_by_name.approved.md) |
+| Inline constant by name: MAX | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/LocatorByNameTest.inline_constant_by_name.approved.md) |
+| Inline variable by name: x | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/LocatorByNameTest.inline_variable_by_name.approved.md) |
+| Pull up field by name: Dog.breed | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/LocatorByNameTest.pull_up_field_by_name.approved.md) |
+| Pull up method by name: Dog.speak | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/LocatorByNameTest.pull_up_method_by_name.approved.md) |
+| Push down field by name: Vehicle.maxSpeed | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/LocatorByNameTest.push_down_field_by_name.approved.md) |
+| Push down method by name: Shape.area | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/LocatorByNameTest.push_down_method_by_name.approved.md) |
+| Remove param by name: add.c | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/LocatorByNameTest.remove_param_by_name.approved.md) |
 
 ### Move method
 | Test case | Approval |
 |-----------|----------|
-| Move method: FQN selects com.example.Report over com.other.Report | [→](refactor-core/src/test/java/com/github/pfichtner/MoveMethodTest.disambiguates_target_by_fully_qualified_name.approved.md) |
-| Move method: Printer.format → com.example.Report | [→](refactor-core/src/test/java/com/github/pfichtner/MoveMethodTest.move_method_moves_to_target_class.approved.md) |
-| Move method to named target: Printer.byline(Report, Author) → com.example.Report | [→](refactor-core/src/test/java/com/github/pfichtner/MoveMethodTest.move_method_with_multiple_parameter_types_to_named_target.approved.md) |
-| Move method rejected: Report already declares describe(Report) | [→](refactor-core/src/test/java/com/github/pfichtner/MoveMethodTest.reject_duplicate_method_in_target.approved.md) |
-| Move method rejected: target class not found | [→](refactor-core/src/test/java/com/github/pfichtner/MoveMethodTest.reject_target_class_not_found.approved.md) |
-| Move method rejected: com.other.Report already declares format | [→](refactor-core/src/test/java/com/github/pfichtner/MoveMethodTest.reject_when_target_in_other_package_already_has_same_method.approved.md) |
+| Move method: FQN selects com.example.Report over com.other.Report | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveMethodTest.disambiguates_target_by_fully_qualified_name.approved.md) |
+| Move method: Printer.format → com.example.Report | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveMethodTest.move_method_moves_to_target_class.approved.md) |
+| Move method to named target: Printer.byline(Report, Author) → com.example.Report | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveMethodTest.move_method_with_multiple_parameter_types_to_named_target.approved.md) |
+| Move method rejected: Report already declares describe(Report) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveMethodTest.reject_duplicate_method_in_target.approved.md) |
+| Move method rejected: target class not found | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveMethodTest.reject_target_class_not_found.approved.md) |
+| Move method rejected: com.other.Report already declares format | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveMethodTest.reject_when_target_in_other_package_already_has_same_method.approved.md) |
 
 ### Move static member
 | Test case | Approval |
 |-----------|----------|
-| Move static member rejected: no static member at offset | [→](refactor-core/src/test/java/com/github/pfichtner/MoveStaticMemberTest.move_static_member_rejected_when_no_static_member_at_offset.approved.md) |
-| Move static method MathUtils.square → Helpers.square | [→](refactor-core/src/test/java/com/github/pfichtner/MoveStaticMemberTest.move_static_method_to_another_class_and_update_call_sites.approved.md) |
+| Move static member rejected: no static member at offset | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveStaticMemberTest.move_static_member_rejected_when_no_static_member_at_offset.approved.md) |
+| Move static method MathUtils.square → Helpers.square | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveStaticMemberTest.move_static_method_to_another_class_and_update_call_sites.approved.md) |
 
 ### Promote to field
 | Test case | Approval |
 |-----------|----------|
-| Promote local variable result → private field | [→](refactor-core/src/test/java/com/github/pfichtner/PromoteToFieldTest.promote_local_with_initializer_to_field.approved.md) |
-| Promote local variable count (no initializer) → private field | [→](refactor-core/src/test/java/com/github/pfichtner/PromoteToFieldTest.promote_local_without_initializer_to_field.approved.md) |
-| Promote to field rejected: no local variable at offset | [→](refactor-core/src/test/java/com/github/pfichtner/PromoteToFieldTest.promote_rejected_when_no_local_variable_at_offset.approved.md) |
+| Promote local variable result → private field | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/PromoteToFieldTest.promote_local_with_initializer_to_field.approved.md) |
+| Promote local variable count (no initializer) → private field | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/PromoteToFieldTest.promote_local_without_initializer_to_field.approved.md) |
+| Promote to field rejected: no local variable at offset | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/PromoteToFieldTest.promote_rejected_when_no_local_variable_at_offset.approved.md) |
 
 ### Refactoring server by name
 | Test case | Approval |
 |-----------|----------|
-| Analyze rename by method name preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerByNameTest.analyze_rename_by_method_name_preview.approved.txt) |
+| Analyze rename by method name preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerByNameTest.analyze_rename_by_method_name_preview.approved.txt) |
 
 ### Refactoring server tool
 | Test case | Approval |
 |-----------|----------|
-| Tool change method signature returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_change_method_signature_returns_preview.approved.txt) |
-| Tool convert anonymous to nested returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_convert_anonymous_to_nested_returns_preview.approved.txt) |
-| Tool convert nested to top level returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_convert_nested_to_top_level_returns_preview.approved.txt) |
-| Tool decompose conditional returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_decompose_conditional_returns_preview.approved.txt) |
-| Tool encapsulate field returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_encapsulate_field_returns_preview.approved.txt) |
-| Tool extract constant returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_extract_constant_returns_preview.approved.txt) |
-| Tool extract interface returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_extract_interface_returns_preview.approved.txt) |
-| Tool extract method returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_extract_method_returns_preview.approved.txt) |
-| Tool extract superclass returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_extract_superclass_returns_preview.approved.txt) |
-| Tool extract variable returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_extract_variable_returns_preview.approved.txt) |
-| Tool inline constant returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_inline_constant_returns_preview.approved.txt) |
-| Tool inline method returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_inline_method_returns_preview.approved.txt) |
-| Tool inline variable returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_inline_variable_returns_preview.approved.txt) |
-| Tool introduce indirection returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_introduce_indirection_returns_preview.approved.txt) |
-| Tool introduce param returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_introduce_param_returns_preview.approved.txt) |
-| Tool introduce parameter object returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_introduce_parameter_object_returns_preview.approved.txt) |
-| Tool introduce static factory returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_introduce_static_factory_returns_preview.approved.txt) |
-| Tool move class returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_move_class_returns_preview.approved.txt) |
-| Tool move method returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_move_method_returns_preview.approved.txt) |
-| Tool move static member returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_move_static_member_returns_preview.approved.txt) |
-| Tool promote to field returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_promote_to_field_returns_preview.approved.txt) |
-| Tool pull up field returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_pull_up_field_returns_preview.approved.txt) |
-| Tool pull up method returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_pull_up_method_returns_preview.approved.txt) |
-| Tool push down field returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_push_down_field_returns_preview.approved.txt) |
-| Tool push down method returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_push_down_method_returns_preview.approved.txt) |
-| Tool remove param returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_remove_param_returns_preview.approved.txt) |
-| Tool rename package returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/mcp/RefactoringServerToolTest.tool_rename_package_returns_preview.approved.txt) |
+| Tool change method signature returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_change_method_signature_returns_preview.approved.txt) |
+| Tool convert anonymous to nested returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_convert_anonymous_to_nested_returns_preview.approved.txt) |
+| Tool convert nested to top level returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_convert_nested_to_top_level_returns_preview.approved.txt) |
+| Tool decompose conditional returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_decompose_conditional_returns_preview.approved.txt) |
+| Tool encapsulate field returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_encapsulate_field_returns_preview.approved.txt) |
+| Tool extract constant returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_extract_constant_returns_preview.approved.txt) |
+| Tool extract interface returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_extract_interface_returns_preview.approved.txt) |
+| Tool extract method returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_extract_method_returns_preview.approved.txt) |
+| Tool extract superclass returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_extract_superclass_returns_preview.approved.txt) |
+| Tool extract variable returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_extract_variable_returns_preview.approved.txt) |
+| Tool inline constant returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_inline_constant_returns_preview.approved.txt) |
+| Tool inline method returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_inline_method_returns_preview.approved.txt) |
+| Tool inline variable returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_inline_variable_returns_preview.approved.txt) |
+| Tool introduce indirection returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_introduce_indirection_returns_preview.approved.txt) |
+| Tool introduce param returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_introduce_param_returns_preview.approved.txt) |
+| Tool introduce parameter object returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_introduce_parameter_object_returns_preview.approved.txt) |
+| Tool introduce static factory returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_introduce_static_factory_returns_preview.approved.txt) |
+| Tool move class returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_move_class_returns_preview.approved.txt) |
+| Tool move method returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_move_method_returns_preview.approved.txt) |
+| Tool move static member returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_move_static_member_returns_preview.approved.txt) |
+| Tool promote to field returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_promote_to_field_returns_preview.approved.txt) |
+| Tool pull up field returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_pull_up_field_returns_preview.approved.txt) |
+| Tool pull up method returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_pull_up_method_returns_preview.approved.txt) |
+| Tool push down field returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_push_down_field_returns_preview.approved.txt) |
+| Tool push down method returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_push_down_method_returns_preview.approved.txt) |
+| Tool remove param returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_remove_param_returns_preview.approved.txt) |
+| Tool rename package returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_rename_package_returns_preview.approved.txt) |
 
 ### Remove method
 | Test case | Approval |
 |-----------|----------|
-| Remove method: print() from class — cascades to subclasses | [→](refactor-core/src/test/java/com/github/pfichtner/RemoveMethodTest.remove_class_method_cascades_to_subclasses.approved.md) |
-| Remove method: print() from interface — cascades to all implementors | [→](refactor-core/src/test/java/com/github/pfichtner/RemoveMethodTest.remove_interface_method_cascades_to_all_implementors.approved.md) |
-| Remove method: describe() from interface — only one implementor | [→](refactor-core/src/test/java/com/github/pfichtner/RemoveMethodTest.remove_interface_method_with_single_implementor.approved.md) |
-| Remove method: print() from Document only — cascade=false | [→](refactor-core/src/test/java/com/github/pfichtner/RemoveMethodTest.remove_method_no_cascade.approved.md) |
+| Remove method: print() from class — cascades to subclasses | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RemoveMethodTest.remove_class_method_cascades_to_subclasses.approved.md) |
+| Remove method: print() from interface — cascades to all implementors | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RemoveMethodTest.remove_interface_method_cascades_to_all_implementors.approved.md) |
+| Remove method: describe() from interface — only one implementor | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RemoveMethodTest.remove_interface_method_with_single_implementor.approved.md) |
+| Remove method: print() from Document only — cascade=false | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RemoveMethodTest.remove_method_no_cascade.approved.md) |
 
