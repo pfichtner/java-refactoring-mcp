@@ -1,0 +1,7 @@
+=== Foo.java ===
+public class Foo {
+    public void run() {
+        System.out.println("Hello");
+        System.err.println("Hello");
+    }
+}

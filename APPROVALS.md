@@ -219,164 +219,6 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 
 ---
 
-## CLI
-
-### Cli rename
-| Test case | Approval |
-|-----------|----------|
-| Apply writes changed files | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRenameTest.apply_writes_changed_files.approved.txt) |
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRenameTest.dry_run_prints_preview_without_writing.approved.txt) |
-
-### Cli rename package
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRenamePackageTest.dry_run_prints_preview_without_writing.approved.txt) |
-
-### Cli change method signature
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliChangeMethodSignatureTest.dry_run_prints_preview_without_writing.approved.txt) |
-
-### Cli convert anonymous
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliConvertAnonymousTest.dry_run_prints_preview_without_writing.approved.txt) |
-
-### Cli convert nested
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliConvertNestedTest.dry_run_prints_preview_without_writing.approved.txt) |
-
-### Cli convert to record
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliConvertToRecordTest.dry_run_prints_preview_without_writing.approved.txt) |
-
-### Cli decompose conditional
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliDecomposeConditionalTest.dry_run_prints_preview_without_writing.approved.txt) |
-
-### Cli encapsulate field
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints getter and setter preview | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliEncapsulateFieldTest.dry_run_prints_getter_and_setter_preview.approved.txt) |
-| Dry run prints getter preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliEncapsulateFieldTest.dry_run_prints_getter_preview_without_writing.approved.txt) |
-
-### Cli extract const
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliExtractConstTest.dry_run_prints_preview_without_writing.approved.txt) |
-
-### Cli extract interface
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliExtractInterfaceTest.dry_run_prints_preview_without_writing.approved.txt) |
-
-### Cli extract superclass
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliExtractSuperclassTest.dry_run_prints_preview_without_writing.approved.txt) |
-
-### Cli extract
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliExtractTest.dry_run_prints_preview_without_writing.approved.txt) |
-
-### Cli extract var
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliExtractVarTest.dry_run_prints_preview_without_writing.approved.txt) |
-
-### Cli inline const
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliInlineConstTest.dry_run_prints_preview_without_writing.approved.txt) |
-
-### Cli inline method
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliInlineMethodTest.dry_run_prints_preview_without_writing.approved.txt) |
-
-### Cli inline var
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliInlineVarTest.dry_run_prints_preview_without_writing.approved.txt) |
-
-### Cli introduce indirection
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliIntroduceIndirectionTest.dry_run_prints_preview_without_writing.approved.txt) |
-
-### Cli introduce param object
-| Test case | Approval |
-|-----------|----------|
-| Apply record writes record and updates call sites | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliIntroduceParamObjectTest.apply_record_writes_record_and_updates_call_sites.approved.txt) |
-| Dry run record prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliIntroduceParamObjectTest.dry_run_record_prints_preview_without_writing.approved.txt) |
-
-### Cli introduce param
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliIntroduceParamTest.dry_run_prints_preview_without_writing.approved.txt) |
-
-### Cli introduce static factory
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliIntroduceStaticFactoryTest.dry_run_prints_preview_without_writing.approved.txt) |
-| Dry run with private constructor | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliIntroduceStaticFactoryTest.dry_run_with_private_constructor.approved.txt) |
-
-### Cli locator by name
-| Test case | Approval |
-|-----------|----------|
-| Dry run by method name prints preview | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliLocatorByNameTest.dry_run_by_method_name_prints_preview.approved.txt) |
-
-### Cli move class
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliMoveClassTest.dry_run_prints_preview_without_writing.approved.txt) |
-
-### Cli move method
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliMoveMethodTest.dry_run_prints_preview_without_writing.approved.txt) |
-
-### Cli move static member
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliMoveStaticMemberTest.dry_run_prints_preview_without_writing.approved.txt) |
-
-### Cli promote to field
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliPromoteToFieldTest.dry_run_prints_preview_without_writing.approved.txt) |
-
-### Cli pull up field
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliPullUpFieldTest.dry_run_prints_preview_without_writing.approved.txt) |
-
-### Cli pull up method
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliPullUpMethodTest.dry_run_prints_preview_without_writing.approved.txt) |
-
-### Cli push down field
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliPushDownFieldTest.dry_run_prints_preview_without_writing.approved.txt) |
-
-### Cli push down method
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliPushDownMethodTest.dry_run_prints_preview_without_writing.approved.txt) |
-
-### Cli remove param
-| Test case | Approval |
-|-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRemoveParamTest.dry_run_prints_preview_without_writing.approved.txt) |
-
----
-
 ## MCP server
 
 | Test case | Approval |
@@ -397,10 +239,78 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Change method signature: reorder params + return type Object | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ChangeMethodSignatureTest.reorder_and_return_type_change_applied_together.approved.md) |
 | Change method signature: reorder params convert(int,String) → convert(String,int) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ChangeMethodSignatureTest.reorder_params_updates_declaration_and_call_sites.approved.md) |
 
-### Cli remove method
+### Cli apply story book
 | Test case | Approval |
 |-----------|----------|
-| Dry run prints preview without writing | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRemoveMethodTest.dry_run_prints_preview_without_writing.approved.txt) |
+| Change method signature | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.change_method_signature.approved.txt) |
+| Convert anonymous to nested | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.convert_anonymous_to_nested.approved.txt) |
+| Convert nested to top level | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.convert_nested_to_top_level.approved.txt) |
+| Convert to record | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.convert_to_record.approved.txt) |
+| Decompose conditional | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.decompose_conditional.approved.txt) |
+| Encapsulate field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.encapsulate_field.approved.txt) |
+| Extract constant | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_constant.approved.txt) |
+| Extract interface | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_interface.approved.txt) |
+| Extract method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_method.approved.txt) |
+| Extract superclass | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_superclass.approved.txt) |
+| Extract variable | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_variable.approved.txt) |
+| Inline constant | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.inline_constant.approved.txt) |
+| Inline method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.inline_method.approved.txt) |
+| Inline variable | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.inline_variable.approved.txt) |
+| Introduce indirection | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.introduce_indirection.approved.txt) |
+| Introduce param | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.introduce_param.approved.txt) |
+| Introduce param object | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.introduce_param_object.approved.txt) |
+| Introduce static factory | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.introduce_static_factory.approved.txt) |
+| Move class | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.move_class.approved.txt) |
+| Move method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.move_method.approved.txt) |
+| Move static member | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.move_static_member.approved.txt) |
+| Promote to field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.promote_to_field.approved.txt) |
+| Pull up field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.pull_up_field.approved.txt) |
+| Pull up method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.pull_up_method.approved.txt) |
+| Push down field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.push_down_field.approved.txt) |
+| Push down method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.push_down_method.approved.txt) |
+| Remove method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.remove_method.approved.txt) |
+| Remove method no cascade | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.remove_method_no_cascade.approved.txt) |
+| Remove param | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.remove_param.approved.txt) |
+| Rename method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.rename_method.approved.txt) |
+| Rename method by method name | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.rename_method_by_method_name.approved.txt) |
+| Rename package | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.rename_package.approved.txt) |
+
+### Cli refactoring story book
+| Test case | Approval |
+|-----------|----------|
+| Change method signature | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.change_method_signature.approved.txt) |
+| Convert anonymous to nested | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.convert_anonymous_to_nested.approved.txt) |
+| Convert nested to top level | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.convert_nested_to_top_level.approved.txt) |
+| Convert to record | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.convert_to_record.approved.txt) |
+| Decompose conditional | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.decompose_conditional.approved.txt) |
+| Encapsulate field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.encapsulate_field.approved.txt) |
+| Encapsulate field with setter | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.encapsulate_field_with_setter.approved.txt) |
+| Extract constant | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_constant.approved.txt) |
+| Extract interface | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_interface.approved.txt) |
+| Extract method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_method.approved.txt) |
+| Extract superclass | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_superclass.approved.txt) |
+| Extract variable | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_variable.approved.txt) |
+| Inline constant | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.inline_constant.approved.txt) |
+| Inline method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.inline_method.approved.txt) |
+| Inline variable | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.inline_variable.approved.txt) |
+| Introduce indirection | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.introduce_indirection.approved.txt) |
+| Introduce param | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.introduce_param.approved.txt) |
+| Introduce param object | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.introduce_param_object.approved.txt) |
+| Introduce static factory | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.introduce_static_factory.approved.txt) |
+| Introduce static factory with private constructor | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.introduce_static_factory_with_private_constructor.approved.txt) |
+| Move class | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.move_class.approved.txt) |
+| Move method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.move_method.approved.txt) |
+| Move static member | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.move_static_member.approved.txt) |
+| Promote to field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.promote_to_field.approved.txt) |
+| Pull up field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.pull_up_field.approved.txt) |
+| Pull up method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.pull_up_method.approved.txt) |
+| Push down field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.push_down_field.approved.txt) |
+| Push down method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.push_down_method.approved.txt) |
+| Remove method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.remove_method.approved.txt) |
+| Remove param | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.remove_param.approved.txt) |
+| Rename by method name | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.rename_by_method_name.approved.txt) |
+| Rename method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.rename_method.approved.txt) |
+| Rename package | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.rename_package.approved.txt) |
 
 ### Convert anonymous to nested
 | Test case | Approval |

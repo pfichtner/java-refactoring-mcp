@@ -2,30 +2,15 @@ package com.github.pfichtner.refactoring.cli;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.junit.jupiter.api.Test;
 
 /**
- * Integration tests for the {@code convert-to-record} CLI subcommand.
+ * Error-case tests for the {@code convert-to-record} CLI subcommand.
  */
 @CliFixture(root = "fixtures/projects/convert-to-record/pom.xml")
 class CliConvertToRecordTest {
-
-    @Test
-    void apply_writes_changed_files(CliTestBed bed) throws Exception {
-        Path pointFile = bed.root().resolve("src/main/java/com/example/Point.java");
-        Path appFile   = bed.root().resolve("src/main/java/com/example/App.java");
-
-        int exit = bed.cli().execute(
-                "convert-to-record",
-                "--file", pointFile.toString());
-
-        assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
-        assertThat(Files.readString(pointFile)).as("Point.java should become a record").contains("record Point");
-        assertThat(Files.readString(appFile)).as("App.java getter call sites should be renamed").contains(".x()");
-    }
 
     @Test
     void rejects_class_with_extends_and_returns_error(CliTestBed bed) throws Exception {

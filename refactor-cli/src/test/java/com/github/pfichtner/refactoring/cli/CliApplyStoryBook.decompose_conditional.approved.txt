@@ -1,0 +1,17 @@
+=== Foo.java ===
+public class Foo {
+    private int age;
+    private boolean premium;
+
+    public String classify() {
+        if (isAdultPremium()) {
+            return "adult premium";
+        }
+        return "other";
+    }
+
+
+    private boolean isAdultPremium() {
+        return age >= 18 && premium;
+    }
+}

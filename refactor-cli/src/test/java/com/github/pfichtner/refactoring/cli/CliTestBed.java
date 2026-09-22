@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
 
 import picocli.CommandLine;
 
@@ -77,5 +78,38 @@ class CliTestBed {
         assertThat(exit).as("Expected exit code 0: " + out).isEqualTo(0);
         assertThat(changedFiles()).as("Dry-run must not modify any file").isEmpty();
         return out.toString();
+    }
+
+    /**
+     * Executes an apply CLI command, asserts exit code 0, then returns the
+     * contents of every file that was created, modified, or deleted — ready for
+     * {@code Approvals.verify()}.
+     */
+    String apply(String... args) throws IOException {
+        int exit = cli.execute(args);
+        assertThat(exit).as("Expected exit code 0: " + out).isEqualTo(0);
+        Path dir = Files.isDirectory(root) ? root : root.getParent();
+        Map<Path, String> current;
+        try (var stream = Files.walk(dir)) {
+            current = stream.filter(Files::isRegularFile)
+                    .collect(toMap(identity(), CliTestBed::contentOf));
+        }
+        TreeSet<Path> affected = new TreeSet<>();
+        for (Path p : current.keySet()) {
+            String orig = snapshot.get(p);
+            if (!current.get(p).equals(orig != null ? orig : "")) affected.add(p);
+        }
+        snapshot.keySet().stream().filter(p -> !current.containsKey(p)).forEach(affected::add);
+        StringBuilder sb = new StringBuilder();
+        for (Path p : affected) {
+            String rel = dir.relativize(p).toString();
+            if (current.containsKey(p)) {
+                sb.append("=== ").append(rel).append(" ===\n")
+                  .append(current.get(p).stripTrailing()).append("\n\n");
+            } else {
+                sb.append("=== ").append(rel).append(" [deleted] ===\n\n");
+            }
+        }
+        return sb.toString().stripTrailing();
     }
 }

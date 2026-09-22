@@ -1,0 +1,25 @@
+=== src/main/java/com/example/Client.java ===
+package com.example;
+
+public class Client {
+
+    public int compute() {
+        return Helpers.square(5);
+    }
+}
+
+=== src/main/java/com/example/Helpers.java ===
+package com.example;
+
+public class Helpers {
+
+    public static int square(int x) {
+        return x * x;
+    }
+}
+
+=== src/main/java/com/example/MathUtils.java ===
+package com.example;
+
+public class MathUtils {
+}
