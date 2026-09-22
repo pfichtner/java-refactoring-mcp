@@ -12,7 +12,7 @@ public class App {
     }
 }
 
- MOVE Calculator.java → {ROOT}/target/test-classes/fixtures/projects/rename-package/src/main/java/com/example/util/Calculator.java
+ MOVE Calculator.java → {ROOT}/src/main/java/com/example/util/Calculator.java
 package com.example.util;
 
 public class Calculator {

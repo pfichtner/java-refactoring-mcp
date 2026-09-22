@@ -1,8 +1,8 @@
 package com.github.pfichtner.cli;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -11,9 +11,6 @@ import org.junit.jupiter.api.extension.ExtensionContext.Store;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
-import org.junit.jupiter.api.io.TempDir;
-
-import picocli.CommandLine;
 
 class CliTestBedExtension implements ParameterResolver {
 
@@ -21,61 +18,67 @@ class CliTestBedExtension implements ParameterResolver {
 
     @Override
     public boolean supportsParameter(ParameterContext param, ExtensionContext ctx) {
-        Class<?> type = param.getParameter().getType();
-        return type == CommandLine.class
-                || type == StringWriter.class
-                || (type == Path.class && !param.isAnnotated(TempDir.class));
+        return param.getParameter().getType() == CliTestBed.class;
     }
 
     @Override
     public Object resolveParameter(ParameterContext param, ExtensionContext ctx) {
-        Store store = ctx.getStore(NS);
-        Class<?> type = param.getParameter().getType();
-
-        if (type == StringWriter.class) return getOrCreateOut(store);
-        if (type == CommandLine.class) return getOrCreateCli(store);
-        if (type == Path.class) return resolveRoot(ctx);
-
-        throw new ParameterResolutionException("Unsupported type: " + type);
+        return ctx.getStore(NS).getOrComputeIfAbsent("bed", k -> createBed(ctx), CliTestBed.class);
     }
 
-    private StringWriter getOrCreateOut(Store store) {
-        return store.getOrComputeIfAbsent("out", k -> new StringWriter(), StringWriter.class);
-    }
-
-    private CommandLine getOrCreateCli(Store store) {
-        StringWriter out = getOrCreateOut(store);
-        return store.getOrComputeIfAbsent("cli", k -> buildCli(out), CommandLine.class);
-    }
-
-    private static Path resolveRoot(ExtensionContext ctx) {
-        CliTestBed annotation = ctx.getRequiredTestClass().getAnnotation(CliTestBed.class);
+    private CliTestBed createBed(ExtensionContext ctx) {
+        CliFixture annotation = ctx.getRequiredTestClass().getAnnotation(CliFixture.class);
         if (annotation == null) {
             throw new ParameterResolutionException(
-                    "@CliTestBed not found on " + ctx.getRequiredTestClass().getSimpleName());
+                    "@CliFixture not found on " + ctx.getRequiredTestClass().getSimpleName());
         }
         String resourcePath = annotation.root();
         try {
-            var resource = ctx.getRequiredTestClass().getClassLoader().getResource(resourcePath);
+            URL resource = ctx.getRequiredTestClass().getClassLoader().getResource(resourcePath);
             if (resource == null) {
                 throw new ParameterResolutionException("Classpath resource not found: " + resourcePath);
             }
-            Path path = Path.of(resource.toURI());
-            return resourcePath.endsWith("pom.xml") ? path.getParent() : path;
-        } catch (URISyntaxException e) {
-            throw new ParameterResolutionException("Invalid URI for resource: " + resourcePath, e);
+            Path source = Path.of(resource.toURI());
+            Path tmpDir = Files.createTempDirectory("cli-testbed-");
+            registerCleanup(ctx, tmpDir);
+
+            Path root;
+            if (resourcePath.endsWith("pom.xml")) {
+                copyTree(source.getParent(), tmpDir);
+                root = tmpDir;
+            } else {
+                Path dest = tmpDir.resolve(source.getFileName());
+                Files.copy(source, dest);
+                root = dest;
+            }
+            return new CliTestBed(root);
+        } catch (ParameterResolutionException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ParameterResolutionException("Failed to create test bed for " + resourcePath, e);
         }
     }
 
-    private static CommandLine buildCli(StringWriter out) {
-        CommandLine cmd = new CommandLine(new Main());
-        PrintWriter pw = new PrintWriter(out, true);
-        cmd.setOut(pw);
-        cmd.setErr(pw);
-        cmd.setExecutionExceptionHandler((ex, c, pr) -> {
-            c.getErr().println("Error: " + ex.getMessage());
-            return 1;
-        });
-        return cmd;
+    private static void registerCleanup(ExtensionContext ctx, Path tmpDir) {
+        ctx.getStore(NS).put("tmpDir-cleanup",
+                (Store.CloseableResource) () -> deleteRecursively(tmpDir));
+    }
+
+    private static void copyTree(Path src, Path dst) throws Exception {
+        try (var stream = Files.walk(src)) {
+            for (Path p : (Iterable<Path>) stream::iterator) {
+                Path target = dst.resolve(src.relativize(p));
+                if (Files.isDirectory(p)) Files.createDirectories(target);
+                else Files.copy(p, target);
+            }
+        }
+    }
+
+    private static void deleteRecursively(Path dir) throws Exception {
+        try (var stream = Files.walk(dir)) {
+            stream.sorted(java.util.Comparator.reverseOrder())
+                  .map(Path::toFile)
+                  .forEach(java.io.File::delete);
+        }
     }
 }
