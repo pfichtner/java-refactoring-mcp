@@ -2,6 +2,7 @@ package com.github.pfichtner.refactoring.mcp;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -287,7 +288,7 @@ class RefactoringServerToolTest {
 
     private static Scrubber scrubProjectRoot() {
         String projectRoot = Path.of("").toAbsolutePath().normalize().toString();
-        return input -> input.replace(projectRoot + java.io.File.separator, "{ROOT}/");
+        return input -> input.replace(projectRoot + File.separator, "{ROOT}/");
     }
 
     // -------------------------------------------------------------------------

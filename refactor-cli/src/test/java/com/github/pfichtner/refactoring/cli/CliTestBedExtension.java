@@ -1,9 +1,11 @@
 package com.github.pfichtner.refactoring.cli;
 
+import java.io.File;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
@@ -76,9 +78,9 @@ class CliTestBedExtension implements ParameterResolver {
 
     private static void deleteRecursively(Path dir) throws Exception {
         try (var stream = Files.walk(dir)) {
-            stream.sorted(java.util.Comparator.reverseOrder())
+            stream.sorted(Comparator.reverseOrder())
                   .map(Path::toFile)
-                  .forEach(java.io.File::delete);
+                  .forEach(File::delete);
         }
     }
 }
