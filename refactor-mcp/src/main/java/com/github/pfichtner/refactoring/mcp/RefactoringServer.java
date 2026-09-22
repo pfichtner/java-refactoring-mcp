@@ -1,5 +1,7 @@
 package com.github.pfichtner.refactoring.mcp;
 
+import static com.github.pfichtner.refactoring.mcp.Property.*;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
@@ -243,16 +245,8 @@ public class RefactoringServer {
     private static Map<String, Object> extractSchema() {
         return Map.of(
                 "type", "object",
-                "properties", Map.of(
-                        "file",         Map.of("type", "string",  "description", "Absolute path to the source file."),
-                        "start_line",   Map.of("type", "integer", "description", "1-based start line of the selection."),
-                        "start_column", Map.of("type", "integer", "description", "1-based start column of the selection."),
-                        "end_line",     Map.of("type", "integer", "description", "1-based end line of the selection."),
-                        "end_column",   Map.of("type", "integer", "description", "1-based end column of the selection (exclusive)."),
-                        "method_name",  Map.of("type", "string",  "description", "Name for the extracted method.")
-                ),
-                "required", List.of("file", "start_line", "start_column",
-                        "end_line", "end_column", "method_name")
+                "properties", props(FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, METHOD_NAME),
+                "required",   keys(FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, METHOD_NAME)
         );
     }
 
@@ -264,12 +258,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("rename_package", Map.of(
                         "type", "object",
-                        "properties", Map.of(
-                                "project_root", Map.of("type", "string", "description", "Absolute project root (Maven or Gradle)."),
-                                "old_package",  Map.of("type", "string", "description", "Fully-qualified old package, e.g. com.example.service."),
-                                "new_package",  Map.of("type", "string", "description", "Fully-qualified new package, e.g. com.example.util.")
-                        ),
-                        "required", List.of("project_root", "old_package", "new_package")))
+                        "properties", props(PROJECT_ROOT, OLD_PACKAGE, NEW_PACKAGE),
+                        "required",   keys(PROJECT_ROOT, OLD_PACKAGE, NEW_PACKAGE)))
                         .description("""
                         Rename a package across the project.
                         Updates package declarations, single-class imports, and wildcard imports.
@@ -305,12 +295,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("move_class", Map.of(
                         "type", "object",
-                        "properties", Map.of(
-                                "project_root", Map.of("type", "string", "description", "Absolute project root (Maven or Gradle)."),
-                                "file",         Map.of("type", "string", "description", "Absolute path to the .java file to move."),
-                                "new_package",  Map.of("type", "string", "description", "Target package, e.g. com.example.util.")
-                        ),
-                        "required", List.of("project_root", "file", "new_package")))
+                        "properties", props(PROJECT_ROOT, FILE, NEW_PACKAGE),
+                        "required",   keys(PROJECT_ROOT, FILE, NEW_PACKAGE)))
                         .description("""
                         Move a Java class to a new package.
                         Updates the package declaration and all explicit imports in the project.
@@ -352,13 +338,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("extract_superclass", Map.of(
                         "type", "object",
-                        "properties", Map.of(
-                                "file",            Map.of("type", "string", "description", "Absolute path to the class file."),
-                                "superclass_name", Map.of("type", "string", "description", "Simple name for the new abstract superclass."),
-                                "method_names",    Map.of("type", "array",  "items", Map.of("type", "string"),
-                                                          "description", "Methods to move; empty = all public non-static.")
-                        ),
-                        "required", List.of("file", "superclass_name")))
+                        "properties", props(FILE, SUPERCLASS_NAME, METHOD_NAMES),
+                        "required",   keys(FILE, SUPERCLASS_NAME)))
                         .description("""
                         Move public methods into a new abstract superclass and make the class extend it.
                         Returns the modified class source and the new superclass source.
@@ -396,13 +377,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("extract_interface", Map.of(
                         "type", "object",
-                        "properties", Map.of(
-                                "file",           Map.of("type", "string",  "description", "Absolute path to the class file."),
-                                "interface_name", Map.of("type", "string",  "description", "Simple name for the new interface."),
-                                "method_names",   Map.of("type", "array",   "items", Map.of("type", "string"),
-                                                         "description", "Methods to include; empty = all public non-static.")
-                        ),
-                        "required", List.of("file", "interface_name")))
+                        "properties", props(FILE, INTERFACE_NAME, METHOD_NAMES),
+                        "required",   keys(FILE, INTERFACE_NAME)))
                         .description("""
                         Extract a new interface from the public methods of a class.
                         Returns the modified class source and the new interface source.
@@ -443,16 +419,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("remove_param", Map.of(
                         "type", "object",
-                        "properties", Map.ofEntries(
-                                Map.entry("project_root", Map.of("type", "string",  "description", "Absolute project root (Maven or Gradle).")),
-                                Map.entry("file",         Map.of("type", "string",  "description", "Absolute path to the file with the parameter.")),
-                                Map.entry("line",         Map.of("type", "integer", "description", "1-based line of the parameter. Use with 'column' OR use method+parameter name-based locators.")),
-                                Map.entry("column",       Map.of("type", "integer", "description", "1-based column of the parameter name. Use with 'line'.")),
-                                Map.entry("method",       Map.of("type", "string",  "description", "Name-based: method containing the parameter, e.g. \"setName\" or \"setName(String)\".")),
-                                Map.entry("parameter",    Map.of("type", "string",  "description", "Name-based: identifier of the parameter to remove, e.g. \"unused\". Requires 'method'.")),
-                                Map.entry("class",        Map.of("type", "string",  "description", "Optional: scope to a specific class when the file contains multiple types."))
-                        ),
-                        "required", List.of("project_root", "file")))
+                        "properties", props(PROJECT_ROOT, FILE, LINE, COLUMN, METHOD, PARAMETER, CLASS),
+                        "required",   keys(PROJECT_ROOT, FILE)))
                         .description("""
                         Remove an unused parameter from a method and the corresponding argument
                         from every call site in the project.
@@ -488,16 +456,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("remove_method", Map.of(
                         "type", "object",
-                        "properties", Map.ofEntries(
-                                Map.entry("project_root", Map.of("type", "string",  "description", "Absolute project root (Maven or Gradle).")),
-                                Map.entry("file",         Map.of("type", "string",  "description", "Absolute path to the file containing the method.")),
-                                Map.entry("line",         Map.of("type", "integer", "description", "1-based line of the method name. Use with 'column' OR use the 'method' name-based locator.")),
-                                Map.entry("column",       Map.of("type", "integer", "description", "1-based column of the method name. Use with 'line'.")),
-                                Map.entry("method",       Map.of("type", "string",  "description", "Name-based locator: method name, e.g. \"print\" or \"print()\". Use instead of line/column.")),
-                                Map.entry("class",        Map.of("type", "string",  "description", "Optional: restrict name-based search to this class when the file has multiple types.")),
-                                Map.entry("cascade",      Map.of("type", "boolean", "description", "If true (default), also remove overriding methods in subclasses and implementing methods in implementing classes."))
-                        ),
-                        "required", List.of("project_root", "file")))
+                        "properties", props(PROJECT_ROOT, FILE, LINE, COLUMN, METHOD, CLASS, CASCADE),
+                        "required",   keys(PROJECT_ROOT, FILE)))
                         .description("""
                         Remove a method from a class or interface.
                         When cascade is true (the default), also removes every overriding method
@@ -534,18 +494,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("introduce_param", Map.of(
                         "type", "object",
-                        "properties", Map.of(
-                                "project_root",  Map.of("type", "string",  "description", "Absolute project root (Maven or Gradle)."),
-                                "file",          Map.of("type", "string",  "description", "Absolute path to the source file."),
-                                "start_line",    Map.of("type", "integer", "description", "1-based start line of the expression."),
-                                "start_column",  Map.of("type", "integer", "description", "1-based start column."),
-                                "end_line",      Map.of("type", "integer", "description", "1-based end line."),
-                                "end_column",    Map.of("type", "integer", "description", "1-based end column (exclusive)."),
-                                "param_name",    Map.of("type", "string",  "description", "Name for the new parameter."),
-                                "param_type",    Map.of("type", "string",  "description", "Explicit type (inferred if omitted).")
-                        ),
-                        "required", List.of("project_root", "file", "start_line", "start_column",
-                                "end_line", "end_column", "param_name")))
+                        "properties", props(PROJECT_ROOT, FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, PARAM_NAME, PARAM_TYPE),
+                        "required",   keys(PROJECT_ROOT, FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, PARAM_NAME)))
                         .description("""
                         Promote an expression to a method parameter.
                         Updates the method signature and all call sites in the project.
@@ -590,17 +540,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("extract_constant", Map.of(
                         "type", "object",
-                        "properties", Map.of(
-                                "file",         Map.of("type", "string",  "description", "Absolute path to the source file."),
-                                "start_line",   Map.of("type", "integer", "description", "1-based start line of the expression."),
-                                "start_column", Map.of("type", "integer", "description", "1-based start column."),
-                                "end_line",     Map.of("type", "integer", "description", "1-based end line."),
-                                "end_column",   Map.of("type", "integer", "description", "1-based end column (exclusive)."),
-                                "const_name",   Map.of("type", "string",  "description", "Name for the constant (conventionally UPPER_CASE)."),
-                                "replace_all",  Map.of("type", "boolean", "description", "Replace all identical occurrences in the class.")
-                        ),
-                        "required", List.of("file", "start_line", "start_column",
-                                "end_line", "end_column", "const_name")))
+                        "properties", props(FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, CONST_NAME, REPLACE_ALL),
+                        "required",   keys(FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, CONST_NAME)))
                         .description("""
                         Extract an expression into a private static final constant at class level.
                         Returns the rewritten source; does not write to disk.
@@ -638,16 +579,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("inline_method", Map.of(
                         "type", "object",
-                        "properties", Map.ofEntries(
-                                Map.entry("project_root",       Map.of("type", "string",  "description", "Absolute project root (Maven or Gradle; enables multi-file inline).")),
-                                Map.entry("file",               Map.of("type", "string",  "description", "Absolute path to the file containing the call.")),
-                                Map.entry("line",               Map.of("type", "integer", "description", "1-based line of the method call. Use with 'column' OR use 'method' name-based locator.")),
-                                Map.entry("column",             Map.of("type", "integer", "description", "1-based column of the method call name. Use with 'line'.")),
-                                Map.entry("method",             Map.of("type", "string",  "description", "Name-based locator: method name, e.g. \"helper\" or \"helper(int)\".")),
-                                Map.entry("class",              Map.of("type", "string",  "description", "Optional: scope to a specific class when the file contains multiple types.")),
-                                Map.entry("remove_declaration", Map.of("type", "boolean", "description", "Also remove the method declaration (default false)."))
-                        ),
-                        "required", List.of("project_root", "file")))
+                        "properties", props(PROJECT_ROOT, FILE, LINE, COLUMN, METHOD, CLASS, REMOVE_DECLARATION),
+                        "required",   keys(PROJECT_ROOT, FILE)))
                         .description("""
                         Inline a method call at all call sites in the project.
                         Optionally removes the method declaration.
@@ -684,17 +617,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("extract_variable", Map.of(
                         "type", "object",
-                        "properties", Map.of(
-                                "file",         Map.of("type", "string",  "description", "Absolute path to the source file."),
-                                "start_line",   Map.of("type", "integer", "description", "1-based start line of the expression."),
-                                "start_column", Map.of("type", "integer", "description", "1-based start column."),
-                                "end_line",     Map.of("type", "integer", "description", "1-based end line of the expression."),
-                                "end_column",   Map.of("type", "integer", "description", "1-based end column (exclusive)."),
-                                "var_name",     Map.of("type", "string",  "description", "Name for the introduced variable."),
-                                "replace_all",  Map.of("type", "boolean", "description", "Replace all identical occurrences in the block.")
-                        ),
-                        "required", List.of("file", "start_line", "start_column",
-                                "end_line", "end_column", "var_name")))
+                        "properties", props(FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, VAR_NAME, REPLACE_ALL),
+                        "required",   keys(FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, VAR_NAME)))
                         .description("""
                         Extract an expression into a new local variable.
                         Returns the rewritten source; does not write to disk.
@@ -733,13 +657,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("inline_variable", Map.of(
                         "type", "object",
-                        "properties", Map.of(
-                                "file",     Map.of("type", "string",  "description", "Absolute path to the source file."),
-                                "line",     Map.of("type", "integer", "description", "1-based line number. Use with 'column' OR use 'variable' name-based locator."),
-                                "column",   Map.of("type", "integer", "description", "1-based column number. Use with 'line'."),
-                                "variable", Map.of("type", "string",  "description", "Name-based locator: local variable name, e.g. \"result\".")
-                        ),
-                        "required", List.of("file")))
+                        "properties", props(FILE, LINE, COLUMN, VARIABLE),
+                        "required",   keys(FILE)))
                         .description("""
                         Inline a local variable: replace every use with its initializer expression
                         and remove the declaration. Returns the rewritten source; does not write to disk.
@@ -770,16 +689,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("inline_constant", Map.of(
                         "type", "object",
-                        "properties", Map.ofEntries(
-                                Map.entry("file",               Map.of("type", "string",  "description", "Absolute path to the source file.")),
-                                Map.entry("line",               Map.of("type", "integer", "description", "1-based line of the constant. Use with 'column' OR use 'field' name-based locator.")),
-                                Map.entry("column",             Map.of("type", "integer", "description", "1-based column of the constant name. Use with 'line'.")),
-                                Map.entry("field",              Map.of("type", "string",  "description", "Name-based locator: constant field name, e.g. \"MAX_SIZE\".")),
-                                Map.entry("class",              Map.of("type", "string",  "description", "Optional: scope to a specific class when the file contains multiple types.")),
-                                Map.entry("all_occurrences",    Map.of("type", "boolean", "description", "Replace all references in the file (default: only the reference at line/column).")),
-                                Map.entry("remove_declaration", Map.of("type", "boolean", "description", "Also delete the field declaration (requires all_occurrences=true)."))
-                        ),
-                        "required", List.of("file")))
+                        "properties", props(FILE, LINE, COLUMN, FIELD, CLASS, ALL_OCCURRENCES, REMOVE_DECLARATION),
+                        "required",   keys(FILE)))
                         .description("""
                         Inline a static final constant: replace one or all references with its
                         initializer expression, and optionally remove the field declaration.
@@ -958,29 +869,8 @@ public class RefactoringServer {
     private static Map<String, Object> renameSchema() {
         return Map.of(
                 "type", "object",
-                "properties", Map.ofEntries(
-                        Map.entry("project_root", Map.of("type", "string",
-                                "description", "Absolute path to the project root (Maven or Gradle).")),
-                        Map.entry("file", Map.of("type", "string",
-                                "description", "Source file — absolute or relative to project_root.")),
-                        Map.entry("line", Map.of("type", "integer",
-                                "description", "1-based line number. Use with 'column' OR use a name-based locator instead.")),
-                        Map.entry("column", Map.of("type", "integer",
-                                "description", "1-based column number. Use with 'line' OR use a name-based locator instead.")),
-                        Map.entry("method", Map.of("type", "string",
-                                "description", "Name-based locator for a method, e.g. \"add\" or \"add(int,int)\" for overloads.")),
-                        Map.entry("field", Map.of("type", "string",
-                                "description", "Name-based locator for a field, e.g. \"amount\".")),
-                        Map.entry("type", Map.of("type", "string",
-                                "description", "Name-based locator for a type (class/interface/enum), e.g. \"OrderService\".")),
-                        Map.entry("class", Map.of("type", "string",
-                                "description", "Optional: scope name-based locator to a specific class when the file contains multiple types.")),
-                        Map.entry("refactoring", Map.of("type", "string",
-                                "description", "Refactoring type. Currently supported: \"rename\".")),
-                        Map.entry("new_name", Map.of("type", "string",
-                                "description", "New name for the symbol."))
-                ),
-                "required", List.of("project_root", "file", "refactoring", "new_name")
+                "properties", props(PROJECT_ROOT, FILE, LINE, COLUMN, METHOD, FIELD, TYPE, CLASS, REFACTORING, NEW_NAME),
+                "required",   keys(PROJECT_ROOT, FILE, REFACTORING, NEW_NAME)
         );
     }
 
@@ -992,15 +882,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("pull_up_method", Map.of(
                         "type", "object",
-                        "properties", Map.ofEntries(
-                                Map.entry("project_root", Map.of("type", "string", "description", "Absolute project root (Maven or Gradle).")),
-                                Map.entry("file",         Map.of("type", "string", "description", "Absolute path to the .java file containing the subclass.")),
-                                Map.entry("line",         Map.of("type", "integer", "description", "1-based line of the method to pull up. Use with 'column' OR use 'method' name-based locator.")),
-                                Map.entry("column",       Map.of("type", "integer", "description", "1-based column of the method name. Use with 'line'.")),
-                                Map.entry("method",       Map.of("type", "string",  "description", "Name-based locator: method name, e.g. \"speak\" or \"speak(int)\".")),
-                                Map.entry("class",        Map.of("type", "string",  "description", "Optional: scope to a specific class when the file contains multiple types."))
-                        ),
-                        "required", List.of("project_root", "file")))
+                        "properties", props(PROJECT_ROOT, FILE, LINE, COLUMN, METHOD, CLASS),
+                        "required",   keys(PROJECT_ROOT, FILE)))
                         .description("""
                         Pull a method up from a subclass to its direct superclass.
                         The superclass must be in the project source roots.
@@ -1037,15 +920,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("push_down_method", Map.of(
                         "type", "object",
-                        "properties", Map.ofEntries(
-                                Map.entry("project_root", Map.of("type", "string", "description", "Absolute project root (Maven or Gradle).")),
-                                Map.entry("file",         Map.of("type", "string", "description", "Absolute path to the .java file containing the superclass.")),
-                                Map.entry("line",         Map.of("type", "integer", "description", "1-based line of the method to push down. Use with 'column' OR use 'method' name-based locator.")),
-                                Map.entry("column",       Map.of("type", "integer", "description", "1-based column of the method name. Use with 'line'.")),
-                                Map.entry("method",       Map.of("type", "string",  "description", "Name-based locator: method name, e.g. \"speak\" or \"speak(int)\".")),
-                                Map.entry("class",        Map.of("type", "string",  "description", "Optional: scope to a specific class when the file contains multiple types."))
-                        ),
-                        "required", List.of("project_root", "file")))
+                        "properties", props(PROJECT_ROOT, FILE, LINE, COLUMN, METHOD, CLASS),
+                        "required",   keys(PROJECT_ROOT, FILE)))
                         .description("""
                         Push a method down from a class to all its direct subclasses in the project.
                         The method is removed from the superclass and added to every subclass found.
@@ -1081,16 +957,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("move_method", Map.of(
                         "type", "object",
-                        "properties", Map.ofEntries(
-                                Map.entry("project_root",  Map.of("type", "string", "description", "Absolute project root (Maven or Gradle).")),
-                                Map.entry("file",          Map.of("type", "string", "description", "Absolute path to the .java file containing the method to move.")),
-                                Map.entry("target_class",  Map.of("type", "string", "description", "Fully-qualified name of the target class, e.g. \"com.example.Report\".")),
-                                Map.entry("line",          Map.of("type", "integer", "description", "1-based line of the method to move. Use with 'column' OR use 'method' name-based locator.")),
-                                Map.entry("column",        Map.of("type", "integer", "description", "1-based column of the method name. Use with 'line'.")),
-                                Map.entry("method",        Map.of("type", "string",  "description", "Name-based locator: method name, e.g. \"format\" or \"format(Report)\".")),
-                                Map.entry("class",         Map.of("type", "string",  "description", "Optional: scope to a specific class when the file contains multiple types."))
-                        ),
-                        "required", List.of("project_root", "file", "target_class")))
+                        "properties", props(PROJECT_ROOT, FILE, TARGET_CLASS, LINE, COLUMN, METHOD, CLASS),
+                        "required",   keys(PROJECT_ROOT, FILE, TARGET_CLASS)))
                         .description("""
                         Move a method from one class to another class within the project.
                         The method is removed from the source class and added to the target class.
@@ -1128,15 +996,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("pull_up_field", Map.of(
                         "type", "object",
-                        "properties", Map.ofEntries(
-                                Map.entry("project_root", Map.of("type", "string",  "description", "Absolute path to the project root (Maven or Gradle).")),
-                                Map.entry("file",         Map.of("type", "string",  "description", "Source file path relative to project_root")),
-                                Map.entry("line",         Map.of("type", "integer", "description", "1-based line of the field to pull up. Use with 'column' OR use 'field' name-based locator.")),
-                                Map.entry("column",       Map.of("type", "integer", "description", "1-based column inside the field declaration. Use with 'line'.")),
-                                Map.entry("field",        Map.of("type", "string",  "description", "Name-based locator: field name, e.g. \"amount\".")),
-                                Map.entry("class",        Map.of("type", "string",  "description", "Optional: scope to a specific class when the file contains multiple types."))
-                        ),
-                        "required", List.of("project_root", "file")
+                        "properties", props(PROJECT_ROOT, FILE, LINE, COLUMN, FIELD, CLASS),
+                        "required",   keys(PROJECT_ROOT, FILE)
                 )).build())
                 .callHandler((exchange, request) -> {
                     try {
@@ -1165,15 +1026,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("push_down_field", Map.of(
                         "type", "object",
-                        "properties", Map.ofEntries(
-                                Map.entry("project_root", Map.of("type", "string",  "description", "Absolute path to the project root (Maven or Gradle).")),
-                                Map.entry("file",         Map.of("type", "string",  "description", "Source file path relative to project_root")),
-                                Map.entry("line",         Map.of("type", "integer", "description", "1-based line of the field to push down. Use with 'column' OR use 'field' name-based locator.")),
-                                Map.entry("column",       Map.of("type", "integer", "description", "1-based column inside the field declaration. Use with 'line'.")),
-                                Map.entry("field",        Map.of("type", "string",  "description", "Name-based locator: field name, e.g. \"amount\".")),
-                                Map.entry("class",        Map.of("type", "string",  "description", "Optional: scope to a specific class when the file contains multiple types."))
-                        ),
-                        "required", List.of("project_root", "file")
+                        "properties", props(PROJECT_ROOT, FILE, LINE, COLUMN, FIELD, CLASS),
+                        "required",   keys(PROJECT_ROOT, FILE)
                 )).build())
                 .callHandler((exchange, request) -> {
                     try {
@@ -1202,16 +1056,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("introduce_static_factory", Map.of(
                         "type", "object",
-                        "properties", Map.ofEntries(
-                                Map.entry("project_root",            Map.of("type", "string",  "description", "Absolute path to the project root (Maven or Gradle).")),
-                                Map.entry("file",                    Map.of("type", "string",  "description", "Source file path relative to project_root")),
-                                Map.entry("line",                    Map.of("type", "integer", "description", "1-based line of the constructor. Use with 'column' OR use 'method' name-based locator.")),
-                                Map.entry("column",                  Map.of("type", "integer", "description", "1-based column inside the constructor. Use with 'line'.")),
-                                Map.entry("method",                  Map.of("type", "string",  "description", "Name-based locator: constructor class name, e.g. \"Calculator\" or \"Calculator(int,int)\".")),
-                                Map.entry("factory_method_name",     Map.of("type", "string",  "description", "Simple name for the new factory method, e.g. 'of' or 'create'")),
-                                Map.entry("make_constructor_private",Map.of("type", "boolean", "description", "When true, changes the constructor visibility to private"))
-                        ),
-                        "required", List.of("project_root", "file", "factory_method_name")
+                        "properties", props(PROJECT_ROOT, FILE, LINE, COLUMN, METHOD, FACTORY_METHOD_NAME, MAKE_CONSTRUCTOR_PRIVATE),
+                        "required",   keys(PROJECT_ROOT, FILE, FACTORY_METHOD_NAME)
                 )).build())
                 .callHandler((exchange, request) -> {
                     try {
@@ -1244,20 +1090,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("introduce_parameter_object", Map.of(
                         "type", "object",
-                        "properties", Map.ofEntries(
-                                Map.entry("project_root",      Map.of("type", "string",  "description", "Absolute path to the project root (Maven or Gradle).")),
-                                Map.entry("file",              Map.of("type", "string",  "description", "Source file path relative to project_root")),
-                                Map.entry("line",              Map.of("type", "integer", "description", "1-based line of the method declaration. Use with 'column' OR use 'method' name-based locator.")),
-                                Map.entry("column",            Map.of("type", "integer", "description", "1-based column inside the method declaration. Use with 'line'.")),
-                                Map.entry("method",            Map.of("type", "string",  "description", "Name-based locator: method name, e.g. \"process\" or \"process(String,int)\".")),
-                                Map.entry("class",             Map.of("type", "string",  "description", "Optional: scope to a specific class when the file contains multiple types.")),
-                                Map.entry("param_names",       Map.of("type", "array", "items", Map.of("type", "string"),
-                                                                      "description", "Names of the contiguous parameters to group (>=2)")),
-                                Map.entry("class_name",        Map.of("type", "string",  "description", "Simple name for the new parameter-object class")),
-                                Map.entry("param_object_name", Map.of("type", "string",  "description", "Name for the new parameter in the method (optional, defaults to lower-camel of class_name)")),
-                                Map.entry("as_record", Map.of("type", "boolean", "description", "If true, generate a record instead of a plain class (Java 16+)."))
-                        ),
-                        "required", List.of("project_root", "file", "param_names", "class_name")
+                        "properties", props(PROJECT_ROOT, FILE, LINE, COLUMN, METHOD, CLASS, PARAM_NAMES, CLASS_NAME, PARAM_OBJECT_NAME, AS_RECORD),
+                        "required",   keys(PROJECT_ROOT, FILE, PARAM_NAMES, CLASS_NAME)
                 )).build())
                 .callHandler((exchange, request) -> {
                     try {
@@ -1294,13 +1128,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("convert_to_record", Map.of(
                         "type", "object",
-                        "properties", Map.of(
-                                "project_root", Map.of("type", "string",
-                                        "description", "Absolute path to the project root (Maven or Gradle)."),
-                                "file", Map.of("type", "string",
-                                        "description", "Source file path relative to project_root")
-                        ),
-                        "required", List.of("project_root", "file")
+                        "properties", props(PROJECT_ROOT, FILE),
+                        "required",   keys(PROJECT_ROOT, FILE)
                 )).build())
                 .callHandler((exchange, request) -> {
                     try {
@@ -1327,18 +1156,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("change_method_signature", Map.of(
                         "type", "object",
-                        "properties", Map.ofEntries(
-                                Map.entry("project_root",   Map.of("type", "string",  "description", "Absolute project root (Maven or Gradle).")),
-                                Map.entry("file",           Map.of("type", "string",  "description", "Source file containing the method declaration.")),
-                                Map.entry("line",           Map.of("type", "integer", "description", "1-based line of the method name.")),
-                                Map.entry("column",         Map.of("type", "integer", "description", "1-based column of the method name.")),
-                                Map.entry("method",         Map.of("type", "string",  "description", "Name-based locator: method name, e.g. \"convert\" or \"convert(int,String)\".")),
-                                Map.entry("class",          Map.of("type", "string",  "description", "Optional: scope to a specific class when the file contains multiple types.")),
-                                Map.entry("new_return_type",Map.of("type", "string",  "description", "New return type source text (e.g. \"double\"). Omit to leave unchanged.")),
-                                Map.entry("param_order",    Map.of("type", "array", "items", Map.of("type", "integer"),
-                                        "description", "New parameter order as 0-based indices (e.g. [1,0] swaps two params). Omit to leave unchanged."))
-                        ),
-                        "required", List.of("project_root", "file")))
+                        "properties", props(PROJECT_ROOT, FILE, LINE, COLUMN, METHOD, CLASS, NEW_RETURN_TYPE, PARAM_ORDER),
+                        "required",   keys(PROJECT_ROOT, FILE)))
                         .description("""
                         Change a method's return type and/or reorder its parameters project-wide.
                         param_order: integer array where param_order[i] is the original index of the
@@ -1378,16 +1197,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("encapsulate_field", Map.of(
                         "type", "object",
-                        "properties", Map.ofEntries(
-                                Map.entry("project_root",    Map.of("type", "string",  "description", "Absolute project root (Maven or Gradle).")),
-                                Map.entry("file",            Map.of("type", "string",  "description", "Source file containing the field declaration.")),
-                                Map.entry("line",            Map.of("type", "integer", "description", "1-based line of the field name.")),
-                                Map.entry("column",          Map.of("type", "integer", "description", "1-based column of the field name.")),
-                                Map.entry("field",           Map.of("type", "string",  "description", "Name-based locator: field name, e.g. \"name\".")),
-                                Map.entry("class",           Map.of("type", "string",  "description", "Optional: scope to a specific class when the file contains multiple types.")),
-                                Map.entry("generate_setter", Map.of("type", "boolean", "description", "Also generate a setter and rewrite write access sites (default false)."))
-                        ),
-                        "required", List.of("project_root", "file")))
+                        "properties", props(PROJECT_ROOT, FILE, LINE, COLUMN, FIELD, CLASS, GENERATE_SETTER),
+                        "required",   keys(PROJECT_ROOT, FILE)))
                         .description("""
                         Make a public field private, generate a getter (and optional setter),
                         and rewrite all read access sites (and write sites if generate_setter=true)
@@ -1420,13 +1231,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("decompose_conditional", Map.of(
                         "type", "object",
-                        "properties", Map.ofEntries(
-                                Map.entry("file",        Map.of("type", "string",  "description", "Absolute path to the source file.")),
-                                Map.entry("line",        Map.of("type", "integer", "description", "1-based line within the boolean condition.")),
-                                Map.entry("column",      Map.of("type", "integer", "description", "1-based column within the condition.")),
-                                Map.entry("method_name", Map.of("type", "string",  "description", "Name for the extracted boolean method (e.g. 'isAdultPremium')."))
-                        ),
-                        "required", List.of("file", "method_name")))
+                        "properties", props(FILE, LINE, COLUMN, METHOD_NAME),
+                        "required",   keys(FILE, METHOD_NAME)))
                         .description("""
                         Extract a compound boolean condition from an if/while/for statement
                         into a private boolean method. Single-file operation.
@@ -1455,13 +1261,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("convert_anonymous_to_nested", Map.of(
                         "type", "object",
-                        "properties", Map.of(
-                                "file",              Map.of("type", "string", "description", "Source file (absolute or relative to project_root)"),
-                                "line",              Map.of("type", "integer", "description", "1-based line inside the anonymous class"),
-                                "column",            Map.of("type", "integer", "description", "1-based column inside the anonymous class"),
-                                "nested_class_name", Map.of("type", "string",  "description", "Simple name for the new nested class")
-                        ),
-                        "required", List.of("file", "line", "column", "nested_class_name")
+                        "properties", props(FILE, LINE, COLUMN, NESTED_CLASS_NAME),
+                        "required",   keys(FILE, LINE, COLUMN, NESTED_CLASS_NAME)
                 ))
                 .description("Convert an anonymous class at the given position to a private named nested class.")
                 .build())
@@ -1487,13 +1288,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("introduce_indirection", Map.of(
                         "type", "object",
-                        "properties", Map.of(
-                                "file",                   Map.of("type", "string",  "description", "Source file containing the method (absolute path)"),
-                                "line",                   Map.of("type", "integer", "description", "1-based line inside the method"),
-                                "column",                 Map.of("type", "integer", "description", "1-based column inside the method"),
-                                "indirection_method_name", Map.of("type", "string", "description", "Name for the new static wrapper method")
-                        ),
-                        "required", List.of("file", "line", "column", "indirection_method_name")
+                        "properties", props(FILE, LINE, COLUMN, INDIRECTION_METHOD_NAME),
+                        "required",   keys(FILE, LINE, COLUMN, INDIRECTION_METHOD_NAME)
                 ))
                 .description("Add a public static indirection (wrapper) method that delegates to the method at the given position.")
                 .build())
@@ -1519,14 +1315,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("move_static_member", Map.of(
                         "type", "object",
-                        "properties", Map.of(
-                                "project_root",   Map.of("type", "string",  "description", "Absolute path to the Maven project root"),
-                                "file",           Map.of("type", "string",  "description", "Source file containing the static member (absolute path)"),
-                                "line",           Map.of("type", "integer", "description", "1-based line of the static member"),
-                                "column",         Map.of("type", "integer", "description", "1-based column of the static member"),
-                                "target_class",   Map.of("type", "string",  "description", "Fully-qualified name of the target class (e.g. \"com.example.Helpers\")")
-                        ),
-                        "required", List.of("project_root", "file", "line", "column", "target_class")
+                        "properties", props(PROJECT_ROOT, FILE, LINE, COLUMN, TARGET_CLASS),
+                        "required",   keys(PROJECT_ROOT, FILE, LINE, COLUMN, TARGET_CLASS)
                 ))
                 .description("Move a static method or static field to another class and update call sites.")
                 .build())
@@ -1557,12 +1347,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("promote_to_field", Map.of(
                         "type", "object",
-                        "properties", Map.of(
-                                "file",   Map.of("type", "string",  "description", "Source file containing the local variable (absolute path)"),
-                                "line",   Map.of("type", "integer", "description", "1-based line of the local variable declaration"),
-                                "column", Map.of("type", "integer", "description", "1-based column of the local variable declaration")
-                        ),
-                        "required", List.of("file", "line", "column")
+                        "properties", props(FILE, LINE, COLUMN),
+                        "required",   keys(FILE, LINE, COLUMN)
                 ))
                 .description("Promote a local variable declaration to a private instance field of the enclosing class.")
                 .build())
@@ -1587,12 +1373,8 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("convert_nested_to_top_level", Map.of(
                         "type", "object",
-                        "properties", Map.of(
-                                "file",   Map.of("type", "string",  "description", "Source file containing the nested type (absolute path)"),
-                                "line",   Map.of("type", "integer", "description", "1-based line inside the nested type"),
-                                "column", Map.of("type", "integer", "description", "1-based column inside the nested type")
-                        ),
-                        "required", List.of("file", "line", "column")
+                        "properties", props(FILE, LINE, COLUMN),
+                        "required",   keys(FILE, LINE, COLUMN)
                 ))
                 .description("Convert a nested (member) type to a top-level type. Returns both the modified outer source and the new type's source.")
                 .build())
