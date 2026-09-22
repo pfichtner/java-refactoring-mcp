@@ -31,7 +31,6 @@ enum Property {
     // Boolean flags
     // -------------------------------------------------------------------------
     REPLACE_ALL("replace_all",                   bool("Replace all identical occurrences.")),
-    ALL_OCCURRENCES("all_occurrences",           bool("Replace all references in the file.")),
     REMOVE_DECLARATION("remove_declaration",     bool("Also remove the declaration.")),
     CASCADE("cascade",                           bool("Also remove overriding/implementing methods in subclasses (default true).")),
     AS_RECORD("as_record",                       bool("Generate a record instead of a plain class (Java 16+).")),
