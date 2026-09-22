@@ -17,9 +17,7 @@ import java.util.Map;
  *         .build();
  *
  * // schema registration:
- * Map.of("type", "object",
- *        "properties", opts.properties(),
- *        "required",   opts.required())
+ * Tool.builder("my_tool", opts.toSchema())
  *
  * // inside the call handler:
  * var args = opts.reader(request.arguments());
@@ -37,9 +35,6 @@ public final class Options {
         this.properties = Collections.unmodifiableMap(new LinkedHashMap<>(builder.properties));
         this.required   = List.copyOf(builder.required);
     }
-
-    public Map<String, Object> properties() { return properties; }
-    public List<String> required()          { return required; }
 
     /** Returns the JSON-Schema map {@code {"type":"object","properties":…,"required":…}}. */
     public Map<String, Object> toSchema() {
