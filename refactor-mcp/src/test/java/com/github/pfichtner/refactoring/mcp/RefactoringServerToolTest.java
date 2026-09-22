@@ -286,6 +286,22 @@ class RefactoringServerToolTest {
         Approvals.verify(text, new Options().withScrubber(scrubProjectRoot()));
     }
 
+    @Test
+    void tool_convert_to_record_returns_preview() {
+        String text = call(RefactoringServer.convertToRecord(), Map.of(
+                "project_root", project("convert-to-record"),
+                "file", "src/main/java/com/example/Point.java"));
+        Approvals.verify(text);
+    }
+
+    @Test
+    void tool_convert_to_record_rejects_class_with_extends() {
+        String text = callRaw(RefactoringServer.convertToRecord(), Map.of(
+                "project_root", project("convert-to-record"),
+                "file", "src/main/java/com/example/Derived.java"));
+        Approvals.verify(text);
+    }
+
     private static Scrubber scrubProjectRoot() {
         String projectRoot = Path.of("").toAbsolutePath().normalize().toString();
         return input -> input.replace(projectRoot + File.separator, "{ROOT}/");
@@ -301,6 +317,11 @@ class RefactoringServerToolTest {
                 .as("Tool call should not fail: " + textOf(result))
                 .isFalse();
         return textOf(result);
+    }
+
+    private static String callRaw(SyncToolSpecification spec, Map<String, Object> arguments) {
+        CallToolResult result = spec.callHandler().apply(null, fakeRequest(arguments));
+        return (result.isError() ? "[ERROR]" : "[OK]") + "\n" + textOf(result);
     }
 
     private static String fixture(String relative) {
