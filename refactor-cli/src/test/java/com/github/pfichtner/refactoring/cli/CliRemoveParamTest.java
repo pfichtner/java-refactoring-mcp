@@ -17,7 +17,6 @@ class CliRemoveParamTest {
     @Test
     void dry_run_prints_preview_without_writing(CliTestBed bed) throws Exception {
         Path computationFile = bed.root().resolve("src/main/java/com/example/Computation.java");
-        String before = Files.readString(computationFile);
 
         int exit = bed.cli().execute(
                 "remove-param",
@@ -27,7 +26,7 @@ class CliRemoveParamTest {
                 "--dry-run");
 
         assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
-        assertThat(Files.readString(computationFile)).as("Dry-run must not modify file on disk").isEqualTo(before);
+        bed.assertUnchanged();
 
         Approvals.verify(bed.out().toString());
     }

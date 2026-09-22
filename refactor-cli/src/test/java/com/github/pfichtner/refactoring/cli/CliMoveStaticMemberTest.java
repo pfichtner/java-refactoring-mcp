@@ -17,7 +17,6 @@ class CliMoveStaticMemberTest {
     @Test
     void dry_run_prints_preview_without_writing(CliTestBed bed) throws Exception {
         Path mathUtilsFile = bed.root().resolve("src/main/java/com/example/MathUtils.java");
-        String before = Files.readString(mathUtilsFile);
 
         int exit = bed.cli().execute(
                 "move-static",
@@ -27,7 +26,7 @@ class CliMoveStaticMemberTest {
                 "--dry-run");
 
         assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
-        assertThat(Files.readString(mathUtilsFile)).as("Dry-run must not modify file on disk").isEqualTo(before);
+        bed.assertUnchanged();
 
         Approvals.verify(bed.out().toString());
     }

@@ -15,7 +15,6 @@ class CliExtractTest {
 
     @Test
     void dry_run_prints_preview_without_writing(CliTestBed bed) throws Exception {
-        String before = Files.readString(bed.root());
 
         int exit = bed.cli().execute(
                 "extract",
@@ -26,7 +25,7 @@ class CliExtractTest {
                 "--dry-run");
 
         assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
-        assertThat(Files.readString(bed.root())).as("Dry-run must not modify file on disk").isEqualTo(before);
+        bed.assertUnchanged();
 
         Approvals.verify(bed.out().toString());
     }

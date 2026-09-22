@@ -14,7 +14,6 @@ class CliIntroduceParamObjectTest {
     @Test
     void dry_run_record_prints_preview_without_writing(CliTestBed bed) throws Exception {
         Path printerFile = bed.root().resolve("src/main/java/com/example/Printer.java");
-        String before = Files.readString(printerFile);
 
         int exit = bed.cli().execute(
                 "introduce-param-object",
@@ -27,8 +26,7 @@ class CliIntroduceParamObjectTest {
                 "--dry-run");
 
         assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
-        assertThat(Files.readString(printerFile))
-                .as("Dry-run must not modify file on disk").isEqualTo(before);
+        bed.assertUnchanged();
 
         Approvals.verify(bed.out().toString());
     }

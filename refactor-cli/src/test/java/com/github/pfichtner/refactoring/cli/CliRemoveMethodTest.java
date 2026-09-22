@@ -17,7 +17,6 @@ class CliRemoveMethodTest {
     @Test
     void dry_run_prints_preview_without_writing(CliTestBed bed) throws Exception {
         Path printableFile = bed.root().resolve("src/main/java/com/example/Printable.java");
-        String before = Files.readString(printableFile);
 
         int exit = bed.cli().execute(
                 "remove-method",
@@ -26,8 +25,7 @@ class CliRemoveMethodTest {
                 "--dry-run");
 
         assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
-        assertThat(Files.readString(printableFile))
-                .as("Dry-run must not modify file on disk").isEqualTo(before);
+        bed.assertUnchanged();
 
         Approvals.verify(bed.out().toString());
     }

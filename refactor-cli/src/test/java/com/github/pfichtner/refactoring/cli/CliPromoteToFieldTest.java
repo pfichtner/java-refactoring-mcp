@@ -17,7 +17,6 @@ class CliPromoteToFieldTest {
     @Test
     void dry_run_prints_preview_without_writing(CliTestBed bed) throws Exception {
         Path source = bed.root();
-        String before = Files.readString(source);
 
         int exit = bed.cli().execute(
                 "promote-to-field",
@@ -26,7 +25,7 @@ class CliPromoteToFieldTest {
                 "--dry-run");
 
         assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
-        assertThat(Files.readString(source)).as("Dry-run must not modify file on disk").isEqualTo(before);
+        bed.assertUnchanged();
 
         Approvals.verify(bed.out().toString());
     }
