@@ -24,7 +24,7 @@ class CliIntroduceIndirectionTest {
                 "--dry-run");
 
         assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
-        bed.assertUnchanged();
+        assertThat(bed.changedFiles()).isEmpty();
 
         Approvals.verify(bed.out().toString());
     }
