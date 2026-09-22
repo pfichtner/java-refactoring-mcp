@@ -1,0 +1,2 @@
+[ERROR]
+Error: Cannot convert class 'Derived' to a record: it extends 'Base'. Records cannot extend classes.

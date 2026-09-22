@@ -393,6 +393,8 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Tool change method signature returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_change_method_signature_returns_preview.approved.txt) |
 | Tool convert anonymous to nested returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_convert_anonymous_to_nested_returns_preview.approved.txt) |
 | Tool convert nested to top level returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_convert_nested_to_top_level_returns_preview.approved.txt) |
+| Tool convert to record rejects class with extends | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_convert_to_record_rejects_class_with_extends.approved.txt) |
+| Tool convert to record returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_convert_to_record_returns_preview.approved.txt) |
 | Tool decompose conditional returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_decompose_conditional_returns_preview.approved.txt) |
 | Tool encapsulate field returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_encapsulate_field_returns_preview.approved.txt) |
 | Tool extract constant returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_extract_constant_returns_preview.approved.txt) |
