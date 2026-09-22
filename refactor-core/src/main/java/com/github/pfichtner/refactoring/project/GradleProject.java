@@ -2,12 +2,10 @@ package com.github.pfichtner.refactoring.project;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -20,24 +18,12 @@ import java.util.regex.Pattern;
  * Classpath resolution delegates to Gradle via a temporary init script, analogous
  * to how {@link MavenProject} invokes {@code mvn dependency:build-classpath}.
  */
-public class GradleProject implements JavaProject {
-
-    private static final ConcurrentHashMap<Path, String[]> CLASSPATH_CACHE = new ConcurrentHashMap<>();
+public class GradleProject extends AbstractProject {
 
     private static final Pattern JAVA_VERSION_PATTERN = Pattern.compile(
             "(?:sourceCompatibility|targetCompatibility|release)\\s*[=:]?\\s*(?:JavaVersion\\.VERSION_)?(\\d+)");
 
-    private final Path root;
-    private volatile String[] cachedClasspath;
-
-    public GradleProject(Path root) {
-        this.root = root.toAbsolutePath();
-    }
-
-    @Override
-    public Path root() {
-        return root;
-    }
+    public GradleProject(Path root) { super(root); }
 
     /**
      * Returns source roots. Defaults to {@code src/main/java} + {@code src/test/java}.
@@ -83,29 +69,9 @@ public class GradleProject implements JavaProject {
         return "21";
     }
 
-    /**
-     * Resolves compile-scope dependencies by running Gradle with a temporary init
-     * script that prints the {@code compileClasspath} jar paths. Result is cached.
-     */
-    @Override
-    public String[] classpath() throws IOException, InterruptedException {
-        if (cachedClasspath != null) return cachedClasspath;
-        try {
-            cachedClasspath = CLASSPATH_CACHE.computeIfAbsent(root, k -> {
-                try { return resolveClasspath(); }
-                catch (IOException e)          { throw new UncheckedIOException(e); }
-                catch (InterruptedException e) { Thread.currentThread().interrupt(); throw new RuntimeException(e); }
-            });
-        } catch (UncheckedIOException e) {
-            throw e.getCause();
-        } catch (RuntimeException e) {
-            if (e.getCause() instanceof InterruptedException ie) throw ie;
-            throw e;
-        }
-        return cachedClasspath;
-    }
 
-    private String[] resolveClasspath() throws IOException, InterruptedException {
+    @Override
+    protected String[] resolveClasspath() throws IOException, InterruptedException {
         if (hasNoDependencies()) return new String[0];
 
         String initScript = """

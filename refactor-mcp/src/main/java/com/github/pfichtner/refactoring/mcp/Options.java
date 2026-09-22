@@ -43,6 +43,9 @@ public final class Options {
     /** Binds {@code args} (from {@code request.arguments()}) to typed accessors. */
     public Reader reader(Map<String, Object> args) { return new Reader(args); }
 
+    /** Shorthand for an all-required schema (no optional properties). */
+    public static Options of(Property... required) { return builder().addRequired(required).build(); }
+
     public static Builder builder() { return new Builder(); }
 
     // -------------------------------------------------------------------------

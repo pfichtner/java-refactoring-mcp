@@ -2,12 +2,10 @@ package com.github.pfichtner.refactoring.project;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -25,21 +23,9 @@ import org.w3c.dom.NodeList;
  * Dependency resolution delegates to {@code mvn dependency:build-classpath}.
  * The result is cached after the first call.
  */
-public class MavenProject implements JavaProject {
+public class MavenProject extends AbstractProject {
 
-    /** Shared across the JVM: each unique project root pays mvn startup cost at most once. */
-    private static final ConcurrentHashMap<Path, String[]> CLASSPATH_CACHE = new ConcurrentHashMap<>();
-
-    private final Path root;
-    private volatile String[] cachedClasspath;
-
-    public MavenProject(Path root) {
-        this.root = root.toAbsolutePath();
-    }
-
-    public Path root() {
-        return root;
-    }
+    public MavenProject(Path root) { super(root); }
 
     /**
      * Returns compile and test source roots. Defaults to {@code src/main/java}
@@ -85,28 +71,9 @@ public class MavenProject implements JavaProject {
         return "21";
     }
 
-    /**
-     * Resolves compile-scope dependencies to a classpath array by invoking
-     * {@code mvn dependency:build-classpath}. Result is cached.
-     */
-    public String[] classpath() throws IOException, InterruptedException {
-        if (cachedClasspath != null) return cachedClasspath;
-        try {
-            cachedClasspath = CLASSPATH_CACHE.computeIfAbsent(root, k -> {
-                try { return resolveClasspath(); }
-                catch (IOException e)          { throw new UncheckedIOException(e); }
-                catch (InterruptedException e) { Thread.currentThread().interrupt(); throw new RuntimeException(e); }
-            });
-        } catch (UncheckedIOException e) {
-            throw e.getCause();
-        } catch (RuntimeException e) {
-            if (e.getCause() instanceof InterruptedException ie) throw ie;
-            throw e;
-        }
-        return cachedClasspath;
-    }
 
-    private String[] resolveClasspath() throws IOException, InterruptedException {
+    @Override
+    protected String[] resolveClasspath() throws IOException, InterruptedException {
         // Fast path: if the pom has no parent and no dependencies, the classpath is empty.
         // This avoids a ~4 s Maven JVM startup for projects with no deps (e.g. test fixtures).
         if (hasNoDependenciesAndNoParent()) return new String[0];
