@@ -2,6 +2,8 @@ package com.github.pfichtner.refactoring.cli;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.nio.file.Files;
+
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -36,7 +38,7 @@ class CliConvertAnonymousTest {
                 "--name", "Worker");
 
         assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
-        String result = java.nio.file.Files.readString(bed.root());
+        String result = Files.readString(bed.root());
         assertThat(result).as("Anonymous class should be replaced by a named class").contains("new Worker()");
         assertThat(result).as("Named class declaration should be added").contains("private class Worker");
     }

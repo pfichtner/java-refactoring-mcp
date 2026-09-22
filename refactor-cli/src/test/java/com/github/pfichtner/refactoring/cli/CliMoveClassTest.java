@@ -2,6 +2,7 @@ package com.github.pfichtner.refactoring.cli;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -33,7 +34,7 @@ class CliMoveClassTest {
     }
 
     private static Scrubber scrubRoot(CliTestBed bed) {
-        String root = bed.root().toString() + java.io.File.separator;
+        String root = bed.root().toString() + File.separator;
         return input -> input.replace(root, "{ROOT}/");
     }
 

@@ -2,6 +2,8 @@ package com.github.pfichtner.refactoring.cli;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.nio.file.Files;
+
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
@@ -38,7 +40,7 @@ class CliExtractConstTest {
                 "--name", "PI");
 
         assertThat(exit).as("Expected exit code 0: " + bed.out()).isEqualTo(0);
-        assertThat(java.nio.file.Files.readString(bed.root())).as("File should declare the new constant")
+        assertThat(Files.readString(bed.root())).as("File should declare the new constant")
                 .contains("private static final double PI = 3.14159;");
     }
 }
