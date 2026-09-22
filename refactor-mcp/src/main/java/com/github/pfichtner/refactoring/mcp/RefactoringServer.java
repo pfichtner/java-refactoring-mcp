@@ -655,7 +655,7 @@ public class RefactoringServer {
     // -------------------------------------------------------------------------
 
     static SyncToolSpecification inlineConstant() {
-        Options opts = Options.builder().add(LINE, COLUMN, FIELD, CLASS, ALL_OCCURRENCES, REMOVE_DECLARATION).addRequired(FILE).build();
+        Options opts = Options.builder().add(LINE, COLUMN, FIELD, CLASS, REPLACE_ALL, REMOVE_DECLARATION).addRequired(FILE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("inline_constant", opts.toSchema())
                         .description("""
@@ -668,7 +668,7 @@ public class RefactoringServer {
                     try {
                         var args       = opts.reader(request.arguments());
                         Path file      = args.getPath(FILE);
-                        boolean allOcc = args.getBoolean(ALL_OCCURRENCES);
+                        boolean allOcc = args.getBoolean(REPLACE_ALL);
                         boolean removeDecl = args.getBoolean(REMOVE_DECLARATION);
 
                         String source = Files.readString(file);

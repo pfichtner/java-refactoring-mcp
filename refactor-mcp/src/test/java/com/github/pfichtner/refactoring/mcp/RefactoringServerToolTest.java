@@ -92,7 +92,7 @@ class RefactoringServerToolTest {
         String text = call(RefactoringServer.inlineConstant(), Map.of(
                 "file", fixture("inline-constant/int-constant/input/Foo.java"),
                 "line", 5, "column", 21,
-                "all_occurrences", true, "remove_declaration", true));
+                "replace_all", true, "remove_declaration", true));
         Approvals.verify(text);
     }
 
