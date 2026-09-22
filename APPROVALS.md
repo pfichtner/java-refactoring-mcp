@@ -70,6 +70,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Extract constant — rejected: selection is a simple name | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ExtractConstantTest.extract_constant_rejected_when_selection_is_simple_name.approved.md) |
 | Extract constant: 3.14159 → PI | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ExtractConstantTest.extract_numeric_literal_as_constant.approved.md) |
 | Extract constant: "HELLO" → GREETING (replace all) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ExtractConstantTest.extract_string_literal_replaces_all_occurrences.approved.md) |
+| Extract constant: "HELLO" → GREETING (selected occurrence only) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ExtractConstantTest.extract_string_literal_without_replace_all_keeps_other_occurrences.approved.md) |
 
 ### Extract interface
 | Test case | Approval |
@@ -249,6 +250,8 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | decompose-conditional | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.decompose_conditional.approved.md) |
 | encapsulate-field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.encapsulate_field.approved.md) |
 | extract-const | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_constant.approved.md) |
+| extract-const | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_constant_no_replace_all.approved.md) |
+| extract-const | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_constant_replace_all.approved.md) |
 | extract-interface | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_interface.approved.md) |
 | extract | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_method.approved.md) |
 | extract-superclass | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_superclass.approved.md) |
@@ -286,6 +289,8 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | encapsulate-field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.encapsulate_field.approved.md) |
 | encapsulate-field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.encapsulate_field_with_setter.approved.md) |
 | extract-const | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_constant.approved.md) |
+| extract-const | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_constant_no_replace_all.approved.md) |
+| extract-const | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_constant_replace_all.approved.md) |
 | extract-interface | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_interface.approved.md) |
 | extract | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_method.approved.md) |
 | extract-superclass | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_superclass.approved.md) |
@@ -397,7 +402,9 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Tool convert to record returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_convert_to_record_returns_preview.approved.txt) |
 | Tool decompose conditional returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_decompose_conditional_returns_preview.approved.txt) |
 | Tool encapsulate field returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_encapsulate_field_returns_preview.approved.txt) |
+| Tool extract constant replace all returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_extract_constant_replace_all_returns_preview.approved.txt) |
 | Tool extract constant returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_extract_constant_returns_preview.approved.txt) |
+| Tool extract constant without replace all returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_extract_constant_without_replace_all_returns_preview.approved.txt) |
 | Tool extract interface returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_extract_interface_returns_preview.approved.txt) |
 | Tool extract method returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_extract_method_returns_preview.approved.txt) |
 | Tool extract superclass returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_extract_superclass_returns_preview.approved.txt) |

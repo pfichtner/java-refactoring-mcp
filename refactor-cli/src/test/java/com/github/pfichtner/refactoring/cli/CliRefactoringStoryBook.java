@@ -57,6 +57,31 @@ class CliRefactoringStoryBook {
     }
 
     @Test
+    @CliFixture(root = "fixtures/extract-const/replaces-all/input/Foo.java")
+    void extract_constant_replace_all(CliTestBed bed) throws Exception {
+        Approvals.verify(bed.preview(
+                "extract-const",
+                "--file", bed.root().toString(),
+                "--start-line", "3", "--start-column", "28",
+                "--end-line", "3", "--end-column", "35",
+                "--name", "GREETING",
+                "--replace-all",
+                "--dry-run"));
+    }
+
+    @Test
+    @CliFixture(root = "fixtures/extract-const/replaces-all/input/Foo.java")
+    void extract_constant_no_replace_all(CliTestBed bed) throws Exception {
+        Approvals.verify(bed.preview(
+                "extract-const",
+                "--file", bed.root().toString(),
+                "--start-line", "3", "--start-column", "28",
+                "--end-line", "3", "--end-column", "35",
+                "--name", "GREETING",
+                "--dry-run"));
+    }
+
+    @Test
     @CliFixture(root = "fixtures/inline-var/multiple-uses/input/Foo.java")
     void inline_variable(CliTestBed bed) throws Exception {
         Approvals.verify(bed.preview(
