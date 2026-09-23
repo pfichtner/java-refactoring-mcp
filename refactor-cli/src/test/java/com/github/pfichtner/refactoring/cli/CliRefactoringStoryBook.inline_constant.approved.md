@@ -10,8 +10,10 @@ inline-const --file {root}/Foo.java --line 5 --column 21 --all-occurrences --rem
 
 ### Output:
 ```
-Dry run — no file written.
+Dry run — no files written.
+Would change (1):
 
+=== Foo.java ===
 public class Foo {
 
     public boolean isValid(int x) {

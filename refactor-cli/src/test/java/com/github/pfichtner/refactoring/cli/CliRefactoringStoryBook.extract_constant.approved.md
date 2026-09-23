@@ -10,8 +10,10 @@ extract-const --file {root}/Foo.java --start-line 3 --start-column 16 --end-line
 
 ### Output:
 ```
-Dry run — no file written.
+Dry run — no files written.
+Would change (1):
 
+=== Foo.java ===
 public class Foo {
     private static final double PI = 3.14159;
     public double area(double r) {

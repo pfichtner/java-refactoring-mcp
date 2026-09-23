@@ -10,8 +10,10 @@ extract-var --file {root}/Foo.java --start-line 3 --start-column 16 --end-line 3
 
 ### Output:
 ```
-Dry run — no file written.
+Dry run — no files written.
+Would change (1):
 
+=== Foo.java ===
 public class Foo {
     public int compute() {
         int answer = 6 * 7;

@@ -11,8 +11,15 @@ extract-interface --file {root}/Calculator.java --name Arithmetic --output-file 
 ### Output:
 ```
 Dry run — no files written.
+Would change (2):
 
-=== Calculator.java (modified) ===
+=== Arithmetic.java ===
+public interface Arithmetic {
+    int add(int a, int b);
+    int subtract(int a, int b);
+}
+
+=== Calculator.java ===
 public class Calculator implements Arithmetic {
     public int add(int a, int b) {
         return a + b;
@@ -25,11 +32,5 @@ public class Calculator implements Arithmetic {
     private int helper(int x) {
         return x * 2;
     }
-}
-
-=== Arithmetic.java (new) ===
-public interface Arithmetic {
-    int add(int a, int b);
-    int subtract(int a, int b);
 }
 ```
