@@ -185,8 +185,7 @@ public class JdtRenamer {
     // -------------------------------------------------------------------------
 
     private static void validateRenameTarget(IBinding binding, int offset) {
-        if (binding instanceof IVariableBinding vb) {
-            // Fields, locals, and parameters are all valid
+        if (binding instanceof IVariableBinding) {
             return;
         }
         if (binding instanceof IMethodBinding mb) {

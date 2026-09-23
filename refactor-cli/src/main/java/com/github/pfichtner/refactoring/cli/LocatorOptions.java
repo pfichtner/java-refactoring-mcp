@@ -1,7 +1,5 @@
 package com.github.pfichtner.refactoring.cli;
 
-import java.nio.file.Path;
-
 import com.github.pfichtner.refactoring.locator.Locator;
 import com.github.pfichtner.refactoring.locator.LocatorResolver;
 
