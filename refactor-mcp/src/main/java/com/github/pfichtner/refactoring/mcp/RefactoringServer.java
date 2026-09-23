@@ -105,7 +105,12 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public class RefactoringServer {
 
     static final String SERVER_NAME    = "java-refactoring-mcp";
-    static final String SERVER_VERSION = "0.1.0";
+    static final String SERVER_VERSION = readVersion();
+
+    private static String readVersion() {
+        String version = RefactoringServer.class.getPackage().getImplementationVersion();
+        return version != null ? version : "unknown";
+    }
 
     /** Builds and returns the configured server (transport already attached). */
     public static McpSyncServer build() {
