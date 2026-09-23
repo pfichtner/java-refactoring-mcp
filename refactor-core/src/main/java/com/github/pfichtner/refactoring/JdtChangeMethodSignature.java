@@ -30,18 +30,18 @@ import com.github.pfichtner.refactoring.project.JavaProject;
 /**
  * Headless Change Method Signature refactoring using JDT ASTParser.
  *
- * <p>Supports two independent axes:
+ * <p>Supports three independent axes (at least one must be provided):
  * <ul>
  *   <li><b>Parameter reorder</b>: supply {@code paramOrder} — an int array where
  *       {@code paramOrder[i]} is the index of the original parameter that should
- *       appear at position {@code i} in the new signature.  All call sites in the
+ *       appear at position {@code i} in the new signature. All call sites in the
  *       project are updated to match.</li>
  *   <li><b>Return type change</b>: supply {@code newReturnType} (e.g. {@code "double"},
- *       {@code "List<String>"}). Only the declaration is modified; callers are not
- *       changed (type compatibility is the caller's responsibility).</li>
+ *       {@code "List<String>"}). Only the declaration is modified.</li>
+ *   <li><b>Parameter type change</b>: supply {@code paramTypes} — a parallel String array
+ *       where {@code paramTypes[i]} is the new type for parameter {@code i}, or {@code null}/empty
+ *       to leave it unchanged. Only the declaration is modified.</li>
  * </ul>
- *
- * <p>At least one of the two must be provided.
  *
  * <p>Precondition failures (diagnostic, no files modified):
  * <ul>
@@ -49,7 +49,8 @@ import com.github.pfichtner.refactoring.project.JavaProject;
  *   <li>Binding cannot be resolved (no classpath)</li>
  *   <li>paramOrder length does not match parameter count</li>
  *   <li>paramOrder is not a valid permutation</li>
- *   <li>Both newReturnType and paramOrder are null / identity</li>
+ *   <li>paramTypes length does not match parameter count</li>
+ *   <li>All of newReturnType, paramOrder, and paramTypes are absent/identity</li>
  * </ul>
  */
 public class JdtChangeMethodSignature {
@@ -62,11 +63,12 @@ public class JdtChangeMethodSignature {
      * @param offset        character offset within the method name
      * @param newReturnType new return type source text, or {@code null} to leave unchanged
      * @param paramOrder    permutation array for parameters (0-based); {@code null} to leave unchanged
+     * @param paramTypes    parallel array of new parameter types; null entries leave the type unchanged
      * @return map of absolute path → new source for every changed file
      */
     public static Map<Path, String> changeSignature(
             JavaProject project, Path sourceFile, int offset,
-            String newReturnType, int[] paramOrder)
+            String newReturnType, int[] paramOrder, String[] paramTypes)
             throws IOException, InterruptedException {
 
         String[] classpath = project.classpath();
@@ -114,9 +116,19 @@ public class JdtChangeMethodSignature {
             if (IntStream.range(0, order.length).allMatch(i -> order[i] == i)) paramOrder = null;
         }
 
-        if (newReturnType == null && paramOrder == null) {
+        // Validate paramTypes
+        if (paramTypes != null) {
+            if (paramTypes.length != paramCount) {
+                throw new IllegalArgumentException(
+                        "paramTypes length " + paramTypes.length
+                        + " does not match parameter count " + paramCount + ".");
+            }
+        }
+        boolean hasParamTypes = paramTypes != null && Arrays.stream(paramTypes).anyMatch(t -> t != null && !t.isBlank());
+
+        if (newReturnType == null && paramOrder == null && !hasParamTypes) {
             throw new IllegalArgumentException(
-                    "Nothing to change: provide newReturnType, paramOrder, or both.");
+                    "Nothing to change: provide newReturnType, paramOrder, paramTypes, or any combination.");
         }
 
         // -------------------------------------------------------------------------
@@ -139,9 +151,19 @@ public class JdtChangeMethodSignature {
         }
 
         if (paramOrder != null) {
-            // Build the new parameter list text
+            // Build the new parameter list text (with optional type overrides from paramTypes)
             String[] paramTexts = IntStream.range(0, paramCount)
-                    .mapToObj(i -> { var p = params.get(i); return targetSource.substring(p.getStartPosition(), p.getStartPosition() + p.getLength()); })
+                    .mapToObj(i -> {
+                        var p = params.get(i);
+                        String raw = targetSource.substring(p.getStartPosition(), p.getStartPosition() + p.getLength());
+                        if (paramTypes != null && i < paramTypes.length && paramTypes[i] != null && !paramTypes[i].isBlank()) {
+                            var typeNode = p.getType();
+                            int relStart = typeNode.getStartPosition() - p.getStartPosition();
+                            int relEnd   = relStart + typeNode.getLength();
+                            raw = raw.substring(0, relStart) + paramTypes[i] + raw.substring(relEnd);
+                        }
+                        return raw;
+                    })
                     .toArray(String[]::new);
             // Replace the entire parameter span (first param start → last param end)
             int firstStart = params.get(0).getStartPosition();
@@ -151,6 +173,7 @@ public class JdtChangeMethodSignature {
             targetEdits.add(new Object[]{firstStart, lastEnd, newParams});
 
             // --- Call site edits (all files) ---
+
             final int[] finalParamOrder = paramOrder;
             for (Map.Entry<Path, CompilationUnit> entry : cus.entrySet()) {
                 Path filePath = entry.getKey();
@@ -177,6 +200,16 @@ public class JdtChangeMethodSignature {
                         return true;
                     }
                 });
+            }
+        } else if (hasParamTypes) {
+            // Declaration-only: replace each flagged parameter's type node individually
+            for (int i = 0; i < paramCount; i++) {
+                String newType = paramTypes[i];
+                if (newType == null || newType.isBlank()) continue;
+                var typeNode = params.get(i).getType();
+                int start = typeNode.getStartPosition();
+                int end   = start + typeNode.getLength();
+                targetEdits.add(new Object[]{start, end, newType});
             }
         }
 

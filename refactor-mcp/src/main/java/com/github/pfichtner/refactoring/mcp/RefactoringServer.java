@@ -29,6 +29,7 @@ import static com.github.pfichtner.refactoring.mcp.Property.PARAM_NAME;
 import static com.github.pfichtner.refactoring.mcp.Property.PARAM_NAMES;
 import static com.github.pfichtner.refactoring.mcp.Property.PARAM_OBJECT_NAME;
 import static com.github.pfichtner.refactoring.mcp.Property.PARAM_ORDER;
+import static com.github.pfichtner.refactoring.mcp.Property.PARAM_TYPES;
 import static com.github.pfichtner.refactoring.mcp.Property.PARAM_TYPE;
 import static com.github.pfichtner.refactoring.mcp.Property.PROJECT_ROOT;
 import static com.github.pfichtner.refactoring.mcp.Property.REFACTORING;
@@ -446,8 +447,9 @@ public class RefactoringServer {
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("remove_param", opts.toSchema())
                         .description("""
-                        Remove an unused parameter from a method and the corresponding argument
-                        from every call site in the project.
+                        Remove a parameter from a method and the corresponding argument from every call site in the project.
+                        The parameter must not be referenced inside the method body (the engine enforces this).
+                        To change a parameter's type without removing it, use change_method_signature with param_types instead.
                         Returns a map of filename → new source for each changed file.
                         """)
                         .build())
@@ -1085,14 +1087,17 @@ public class RefactoringServer {
     // -------------------------------------------------------------------------
 
     static SyncToolSpecification changeMethodSignature() {
-        Options opts = Options.builder().add(LINE, COLUMN, METHOD, CLASS, NEW_RETURN_TYPE, PARAM_ORDER).addRequired(PROJECT_ROOT, FILE).build();
+        Options opts = Options.builder().add(LINE, COLUMN, METHOD, CLASS, NEW_RETURN_TYPE, PARAM_ORDER, PARAM_TYPES).addRequired(PROJECT_ROOT, FILE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("change_method_signature", opts.toSchema())
                         .description("""
-                        Change a method's return type and/or reorder its parameters project-wide.
-                        param_order: integer array where param_order[i] is the original index of the
-                        parameter that should appear at position i. Call sites are updated when
-                        parameters are reordered. Returns changed file contents; does not write to disk.
+                        Change a method's return type, reorder its parameters, and/or change parameter types — declaration-only edits except param_order which also updates call sites project-wide.
+                        Axes (at least one required):
+                          new_return_type: new return type text (e.g. "double") — declaration only.
+                          param_order: integer array where param_order[i] is the original index of the parameter that should appear at position i — call sites updated.
+                          param_types: parallel string array where param_types[i] is the new type for parameter i (null/empty = leave unchanged) — declaration only.
+                        Does NOT add or remove parameters; use introduce_param to add and remove_param to drop one.
+                        Returns changed file contents; does not write to disk.
                         """)
                         .build())
                 .callHandler((exchange, request) -> {
@@ -1103,9 +1108,10 @@ public class RefactoringServer {
                         String source = Files.readString(file);
                         int offset = resolveOffset(args, source, file.getFileName().toString());
                         String newReturnType = args.getString(NEW_RETURN_TYPE);
-                        int[] paramOrder     = args.getIntArray(PARAM_ORDER);
+                        int[]    paramOrder = args.getIntArray(PARAM_ORDER);
+                        String[] paramTypes = args.getStringArray(PARAM_TYPES);
                         var changed = JdtChangeMethodSignature.changeSignature(
-                                ProjectDetector.detect(root), file, offset, newReturnType, paramOrder);
+                                ProjectDetector.detect(root), file, offset, newReturnType, paramOrder, paramTypes);
                         return ok(formatPreview(changed));
                     } catch (Exception e) {
                         return error(e.getMessage());

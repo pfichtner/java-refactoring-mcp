@@ -18,5 +18,5 @@ public class Converter {
 
 ### Diagnostic:
 ```
-Nothing to change: provide newReturnType, paramOrder, or both.
+Nothing to change: provide newReturnType, paramOrder, paramTypes, or any combination.
 ```

@@ -65,7 +65,8 @@ enum Property {
     // -------------------------------------------------------------------------
     METHOD_NAMES("method_names", array("string",  "Methods to include; empty = all public non-static.")),
     PARAM_NAMES("param_names",   array("string",  "Names of the contiguous parameters to group (>=2).")),
-    PARAM_ORDER("param_order",   array("integer", "New parameter order as 0-based indices, e.g. [1,0] swaps two params."));
+    PARAM_ORDER("param_order",   array("integer", "New parameter order as 0-based indices, e.g. [1,0] swaps two params.")),
+    PARAM_TYPES("param_types",   array("string",  "New types for parameters (parallel array; null or empty string leaves a parameter's type unchanged), e.g. [\"long\",null] changes the first param to long."));
 
     // -------------------------------------------------------------------------
 

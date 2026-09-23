@@ -40,7 +40,7 @@ class ChangeMethodSignatureTest {
         // convert(int value, String prefix) → convert(String prefix, int value)
         int offset = Fixtures.offsetOf(converterSrc, "convert(int");
         Map<Path, String> changed = JdtChangeMethodSignature.changeSignature(
-                project, converterFile, offset, null, new int[]{1, 0});
+                project, converterFile, offset, null, new int[]{1, 0}, null);
 
         Path absConverter = converterFile.toAbsolutePath().normalize();
         Path absApp       = appFile.toAbsolutePath().normalize();
@@ -74,7 +74,7 @@ class ChangeMethodSignatureTest {
 
         int offset = Fixtures.offsetOf(converterSrc, "convert(int");
         Map<Path, String> changed = JdtChangeMethodSignature.changeSignature(
-                project, converterFile, offset, "Object", null);
+                project, converterFile, offset, "Object", null, null);
 
         Path absConverter = converterFile.toAbsolutePath().normalize();
         assertThat(changed).containsKey(absConverter);
@@ -108,7 +108,7 @@ class ChangeMethodSignatureTest {
 
         int offset = Fixtures.offsetOf(converterSrc, "convert(int");
         Map<Path, String> changed = JdtChangeMethodSignature.changeSignature(
-                project, converterFile, offset, "Object", new int[]{1, 0});
+                project, converterFile, offset, "Object", new int[]{1, 0}, null);
 
         assertThat(changed).containsKey(converterFile.toAbsolutePath().normalize());
         assertThat(changed).containsKey(appFile.toAbsolutePath().normalize());
@@ -138,7 +138,7 @@ class ChangeMethodSignatureTest {
 
         IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class)
                 .isThrownBy(() -> JdtChangeMethodSignature.changeSignature(
-                        project, converterFile, offset, null, null))
+                        project, converterFile, offset, null, null, null))
                 .actual();
 
         assertThat(ex.getMessage()).contains("Nothing to change");
@@ -164,7 +164,7 @@ class ChangeMethodSignatureTest {
 
         IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class)
                 .isThrownBy(() -> JdtChangeMethodSignature.changeSignature(
-                        project, converterFile, offset, null, new int[]{0}))
+                        project, converterFile, offset, null, new int[]{0}, null))
                 .actual();
 
         assertThat(ex.getMessage()).contains("does not match parameter count");
@@ -176,6 +176,44 @@ class ChangeMethodSignatureTest {
                         "`convert` — paramOrder length 1 but method has 2 params",
                         "")
                 .diagnostic(ex.getMessage())
+                .build()
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // Param type changes
+    // -------------------------------------------------------------------------
+
+    @Test
+    void param_types_change_declaration_only() throws Exception {
+        Path projectRoot = fixtures.projectPath("projects/change-method-signature");
+        MavenProject project = new MavenProject(projectRoot);
+        Path srcRoot       = project.sourceRoots().get(0);
+        Path converterFile = srcRoot.resolve("com/example/Converter.java");
+        Path appFile       = srcRoot.resolve("com/example/App.java");
+
+        String converterSrc = Files.readString(converterFile);
+        String appSrc       = Files.readString(appFile);
+
+        int offset = Fixtures.offsetOf(converterSrc, "convert(int");
+        // Change first param int → long; leave String unchanged
+        Map<Path, String> changed = JdtChangeMethodSignature.changeSignature(
+                project, converterFile, offset, null, null, new String[]{"long", null});
+
+        Path absConverter = converterFile.toAbsolutePath().normalize();
+        Path absApp       = appFile.toAbsolutePath().normalize();
+
+        assertThat(changed).containsKey(absConverter);
+        assertThat(changed).doesNotContainKey(absApp);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Change method signature: change param type int → long (declaration only)")
+                .javaSection("Input: Converter.java", converterSrc)
+                .javaSection("Input: App.java", appSrc)
+                .refactoring("change method signature",
+                        "`convert(int value, String prefix)` → `convert(long value, String prefix)`",
+                        "declaration only — call sites unchanged")
+                .javaSection("Output: Converter.java", changed.get(absConverter))
                 .build()
         );
     }
