@@ -152,6 +152,17 @@ public final class Options {
             return list == null ? null : list.stream().mapToInt(Number::intValue).toArray();
         }
 
+        /**
+         * Returns the value as a {@code String[]}; null if absent.
+         * Entries may themselves be null (e.g. param_types sparse override).
+         * Use for optional string-array properties (e.g. param_types).
+         */
+        @SuppressWarnings("unchecked")
+        public String[] getStringArray(Property p) {
+            List<String> list = (List<String>) args.get(p.key);
+            return list == null ? null : list.toArray(String[]::new);
+        }
+
 		public Locator getLocator() {
 		    boolean hasLine      = has(LINE);
 		    boolean hasCol       = has(COLUMN);
