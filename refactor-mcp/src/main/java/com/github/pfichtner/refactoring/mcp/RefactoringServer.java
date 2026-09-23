@@ -1,6 +1,46 @@
 package com.github.pfichtner.refactoring.mcp;
 
-import static com.github.pfichtner.refactoring.mcp.Property.*;
+import static com.github.pfichtner.refactoring.mcp.Property.AS_RECORD;
+import static com.github.pfichtner.refactoring.mcp.Property.CASCADE;
+import static com.github.pfichtner.refactoring.mcp.Property.CLASS;
+import static com.github.pfichtner.refactoring.mcp.Property.CLASS_NAME;
+import static com.github.pfichtner.refactoring.mcp.Property.COLUMN;
+import static com.github.pfichtner.refactoring.mcp.Property.CONST_NAME;
+import static com.github.pfichtner.refactoring.mcp.Property.END_COLUMN;
+import static com.github.pfichtner.refactoring.mcp.Property.END_LINE;
+import static com.github.pfichtner.refactoring.mcp.Property.FACTORY_METHOD_NAME;
+import static com.github.pfichtner.refactoring.mcp.Property.FIELD;
+import static com.github.pfichtner.refactoring.mcp.Property.FILE;
+import static com.github.pfichtner.refactoring.mcp.Property.GENERATE_SETTER;
+import static com.github.pfichtner.refactoring.mcp.Property.INDIRECTION_METHOD_NAME;
+import static com.github.pfichtner.refactoring.mcp.Property.INTERFACE_NAME;
+import static com.github.pfichtner.refactoring.mcp.Property.LINE;
+import static com.github.pfichtner.refactoring.mcp.Property.MAKE_CONSTRUCTOR_PRIVATE;
+import static com.github.pfichtner.refactoring.mcp.Property.METHOD;
+import static com.github.pfichtner.refactoring.mcp.Property.METHOD_NAME;
+import static com.github.pfichtner.refactoring.mcp.Property.METHOD_NAMES;
+import static com.github.pfichtner.refactoring.mcp.Property.NESTED_CLASS_NAME;
+import static com.github.pfichtner.refactoring.mcp.Property.NEW_NAME;
+import static com.github.pfichtner.refactoring.mcp.Property.NEW_PACKAGE;
+import static com.github.pfichtner.refactoring.mcp.Property.NEW_RETURN_TYPE;
+import static com.github.pfichtner.refactoring.mcp.Property.OLD_PACKAGE;
+import static com.github.pfichtner.refactoring.mcp.Property.PARAMETER;
+import static com.github.pfichtner.refactoring.mcp.Property.PARAM_NAME;
+import static com.github.pfichtner.refactoring.mcp.Property.PARAM_NAMES;
+import static com.github.pfichtner.refactoring.mcp.Property.PARAM_OBJECT_NAME;
+import static com.github.pfichtner.refactoring.mcp.Property.PARAM_ORDER;
+import static com.github.pfichtner.refactoring.mcp.Property.PARAM_TYPE;
+import static com.github.pfichtner.refactoring.mcp.Property.PROJECT_ROOT;
+import static com.github.pfichtner.refactoring.mcp.Property.REFACTORING;
+import static com.github.pfichtner.refactoring.mcp.Property.REMOVE_DECLARATION;
+import static com.github.pfichtner.refactoring.mcp.Property.REPLACE_ALL;
+import static com.github.pfichtner.refactoring.mcp.Property.START_COLUMN;
+import static com.github.pfichtner.refactoring.mcp.Property.START_LINE;
+import static com.github.pfichtner.refactoring.mcp.Property.SUPERCLASS_NAME;
+import static com.github.pfichtner.refactoring.mcp.Property.TARGET_CLASS;
+import static com.github.pfichtner.refactoring.mcp.Property.TYPE;
+import static com.github.pfichtner.refactoring.mcp.Property.VARIABLE;
+import static com.github.pfichtner.refactoring.mcp.Property.VAR_NAME;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -39,7 +79,6 @@ import com.github.pfichtner.refactoring.JdtRemoveMethod;
 import com.github.pfichtner.refactoring.JdtRemoveParam;
 import com.github.pfichtner.refactoring.JdtRenamePackage;
 import com.github.pfichtner.refactoring.JdtRenamer;
-import com.github.pfichtner.refactoring.locator.Locator;
 import com.github.pfichtner.refactoring.locator.LocatorResolver;
 import com.github.pfichtner.refactoring.project.ProjectDetector;
 
@@ -717,68 +756,7 @@ public class RefactoringServer {
      * (with optional {@code class} scope qualifier).
      */
     static int resolveOffset(Options.Reader args, String source, String unitName) {
-        return LocatorResolver.resolve(buildLocatorFromArgs(args), source, unitName);
-    }
-
-
-
-    private static Locator buildLocatorFromArgs(Options.Reader args) {
-        boolean hasLine      = args.has(LINE);
-        boolean hasCol       = args.has(COLUMN);
-        boolean hasMethod    = args.has(METHOD);
-        boolean hasField     = args.has(FIELD);
-        boolean hasType      = args.has(TYPE);
-        boolean hasParameter = args.has(PARAMETER);
-        boolean hasVariable  = args.has(VARIABLE);
-
-        boolean hasPosition = hasLine || hasCol;
-        boolean hasName     = hasMethod || hasField || hasType || hasParameter || hasVariable;
-
-        if (hasCol && !hasLine)
-            throw new IllegalArgumentException("'column' requires 'line' to also be specified.");
-
-        if (hasPosition && hasName) {
-            throw new IllegalArgumentException(
-                    "Specify either a position (line / line+column) OR a name-based locator (method/field/type/variable/parameter), not both.");
-        }
-        if (!hasPosition && !hasName) {
-            throw new IllegalArgumentException(
-                    "Specify either a position (line, or line+column) or a name-based locator (method, field, type, variable, or parameter).");
-        }
-
-        if (hasPosition) {
-            if (!hasCol)
-                return new Locator.LineOnly(args.getInt(LINE));
-            return new Locator.Position(args.getInt(LINE), args.getInt(COLUMN));
-        }
-
-        String className = args.getString(CLASS);
-
-        if (hasParameter) {
-            if (!hasMethod) {
-                throw new IllegalArgumentException("'parameter' requires 'method' to also be specified.");
-            }
-            return new Locator.ParameterInMethod(args.getString(METHOD), args.getString(PARAMETER));
-        }
-
-        if (hasVariable) {
-            if (!hasMethod)
-                throw new IllegalArgumentException(
-                        "'variable' requires 'method' to also be specified " +
-                        "(local variables can share names across methods).");
-            return new Locator.VariableName(args.getString(VARIABLE), args.getString(METHOD));
-        }
-
-        int kindCount = (hasMethod ? 1 : 0) + (hasField ? 1 : 0) + (hasType ? 1 : 0);
-        if (kindCount > 1) {
-            throw new IllegalArgumentException("Specify only one of: method, field, or type.");
-        }
-
-        if (hasMethod) return new Locator.MethodName(args.getString(METHOD), className);
-        if (hasField)  return new Locator.FieldName(args.getString(FIELD), className);
-        if (hasType)   return new Locator.TypeName(args.getString(TYPE));
-
-        throw new IllegalArgumentException("No valid locator found in arguments.");
+        return LocatorResolver.resolve(args.getLocator(), source, unitName);
     }
 
     // -------------------------------------------------------------------------

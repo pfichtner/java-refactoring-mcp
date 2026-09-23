@@ -3,7 +3,6 @@ package com.github.pfichtner.refactoring.mcp;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -89,44 +88,51 @@ class RefactoringServerByNameTest {
 
     @Test
     void no_locator_at_all_throws() {
-        Map<String, Object> empty = new java.util.HashMap<>();
-        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> RefactoringServer.resolveOffset(new Options.Reader(empty), "class Foo {}", "Foo.java")).actual();
+        Map<String, Object> empty = Map.of();
+        String source = "class Foo {}";
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> RefactoringServer.resolveOffset(new Options.Reader(empty), source, "Foo.java")).actual();
         assertThat(ex.getMessage()).contains("Specify either");
     }
 
     @Test
     void position_and_name_together_throws() {
-        Map<String, Object> args = new java.util.HashMap<>();
-        args.put("line", 1); args.put("column", 1); args.put("method", "foo");
-        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> RefactoringServer.resolveOffset(new Options.Reader(args), "class Foo { void foo() {} }", "Foo.java")).actual();
+        Map<String, Object> args = Map.of("line", 1, "column", 1, "method", "foo");
+        String source = "class Foo { void foo() {} }";
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> RefactoringServer.resolveOffset(new Options.Reader(args), source, "Foo.java")).actual();
         assertThat(ex.getMessage()).contains("not both");
     }
 
     @Test
     void only_column_without_line_throws() {
-        Map<String, Object> args = new java.util.HashMap<>();
-        args.put("column", 7);
+        Map<String, Object> args = Map.of("column", 7);
+        String source = "class Foo {}";
         var ex = assertThatExceptionOfType(IllegalArgumentException.class)
-                .isThrownBy(() -> RefactoringServer.resolveOffset(new Options.Reader(args), "class Foo {}", "Foo.java")).actual();
+                .isThrownBy(() -> RefactoringServer.resolveOffset(new Options.Reader(args), source, "Foo.java")).actual();
         assertThat(ex.getMessage()).containsIgnoringCase("line");
     }
 
     @Test
     void line_without_column_resolves_single_element() throws Exception {
-        Map<String, Object> args = new java.util.HashMap<>();
-        args.put("line", 2);
+        Map<String, Object> args = Map.of("line", 2);
         // line 2 has exactly one named declaration: the field "count"
-        String source = "class Counter {\n    int count;\n}";
+        String source = """
+			class Counter {
+			    int count;
+			}""";
         int offset = RefactoringServer.resolveOffset(new Options.Reader(args), source, "Counter.java");
         assertThat(source.substring(offset, offset + 5)).isEqualTo("count");
     }
 
     @Test
     void line_without_column_ambiguous_throws() {
-        Map<String, Object> args = new java.util.HashMap<>();
-        args.put("line", 3);
+        Map<String, Object> args = Map.of("line", 3);
         // line 3 has two variable declarations: i and j
-        String source = "class C {\n    void m() {\n        int i=0, j=0;\n    }\n}";
+        String source = """
+			class C {
+			    void m() {
+			        int i=0, j=0;
+			    }
+			}""";
         var ex = assertThatExceptionOfType(IllegalArgumentException.class)
                 .isThrownBy(() -> RefactoringServer.resolveOffset(new Options.Reader(args), source, "C.java")).actual();
         assertThat(ex.getMessage()).containsIgnoringCase("ambiguous");
@@ -134,19 +140,20 @@ class RefactoringServerByNameTest {
 
     @Test
     void parameter_without_method_throws() {
-        Map<String, Object> args = new java.util.HashMap<>();
-        args.put("parameter", "unused");
+        Map<String, Object> args = Map.of("parameter", "unused");
+        String source = "class Foo { void bar(int unused) {} }";
         var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> RefactoringServer.resolveOffset(
-                new Options.Reader(args), "class Foo { void bar(int unused) {} }", "Foo.java")).actual();
+		        new Options.Reader(args), source, "Foo.java")).actual();
         assertThat(ex.getMessage()).contains("'method'");
     }
 
     @Test
     void two_name_kinds_together_throws() {
-        Map<String, Object> args = new java.util.HashMap<>();
-        args.put("method", "foo"); args.put("field", "bar");
+        Map<String, Object> args = Map.of("method", "foo", "field", "bar");
+        String source = "class Foo { void foo() {} int bar; }";
         var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> RefactoringServer.resolveOffset(
-                new Options.Reader(args), "class Foo { void foo() {} int bar; }", "Foo.java")).actual();
+		        new Options.Reader(args), source, "Foo.java")).actual();
         assertThat(ex.getMessage()).contains("only one");
     }
+
 }

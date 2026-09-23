@@ -1,10 +1,21 @@
 package com.github.pfichtner.refactoring.mcp;
 
+import static com.github.pfichtner.refactoring.mcp.Property.CLASS;
+import static com.github.pfichtner.refactoring.mcp.Property.COLUMN;
+import static com.github.pfichtner.refactoring.mcp.Property.FIELD;
+import static com.github.pfichtner.refactoring.mcp.Property.LINE;
+import static com.github.pfichtner.refactoring.mcp.Property.METHOD;
+import static com.github.pfichtner.refactoring.mcp.Property.PARAMETER;
+import static com.github.pfichtner.refactoring.mcp.Property.TYPE;
+import static com.github.pfichtner.refactoring.mcp.Property.VARIABLE;
+
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.github.pfichtner.refactoring.locator.Locator;
 
 /**
  * Collects optional and required {@link Property} entries for an MCP tool schema,
@@ -140,5 +151,65 @@ public final class Options {
             List<Number> list = (List<Number>) args.get(p.key);
             return list == null ? null : list.stream().mapToInt(Number::intValue).toArray();
         }
+
+		public Locator getLocator() {
+		    boolean hasLine      = has(LINE);
+		    boolean hasCol       = has(COLUMN);
+		    boolean hasMethod    = has(METHOD);
+		    boolean hasField     = has(FIELD);
+		    boolean hasType      = has(TYPE);
+		    boolean hasParameter = has(PARAMETER);
+		    boolean hasVariable  = has(VARIABLE);
+		
+		    boolean hasPosition = hasLine || hasCol;
+		    boolean hasName     = hasMethod || hasField || hasType || hasParameter || hasVariable;
+		
+		    if (hasCol && !hasLine)
+		        throw new IllegalArgumentException("'column' requires 'line' to also be specified.");
+		
+		    if (hasPosition && hasName) {
+		        throw new IllegalArgumentException(
+		                "Specify either a position (line / line+column) OR a name-based locator (method/field/type/variable/parameter), not both.");
+		    }
+		    if (!hasPosition && !hasName) {
+		        throw new IllegalArgumentException(
+		                "Specify either a position (line, or line+column) or a name-based locator (method, field, type, variable, or parameter).");
+		    }
+		
+		    if (hasPosition) {
+		        if (!hasCol)
+		            return new Locator.LineOnly(getInt(LINE));
+		        return new Locator.Position(getInt(LINE), getInt(COLUMN));
+		    }
+		
+		    String className = getString(CLASS);
+		
+		    if (hasParameter) {
+		        if (!hasMethod) {
+		            throw new IllegalArgumentException("'parameter' requires 'method' to also be specified.");
+		        }
+		        return new Locator.ParameterInMethod(getString(METHOD), getString(PARAMETER));
+		    }
+		
+		    if (hasVariable) {
+		        if (!hasMethod)
+		            throw new IllegalArgumentException(
+		                    "'variable' requires 'method' to also be specified " +
+		                    "(local variables can share names across methods).");
+		        return new Locator.VariableName(getString(VARIABLE), getString(METHOD));
+		    }
+		
+		    int kindCount = (hasMethod ? 1 : 0) + (hasField ? 1 : 0) + (hasType ? 1 : 0);
+		    if (kindCount > 1) {
+		        throw new IllegalArgumentException("Specify only one of: method, field, or type.");
+		    }
+		
+		    if (hasMethod) return new Locator.MethodName(getString(METHOD), className);
+		    if (hasField)  return new Locator.FieldName(getString(FIELD), className);
+		    if (hasType)   return new Locator.TypeName(getString(TYPE));
+		
+		    throw new IllegalArgumentException("No valid locator found in arguments.");
+		}
     }
+    
 }
