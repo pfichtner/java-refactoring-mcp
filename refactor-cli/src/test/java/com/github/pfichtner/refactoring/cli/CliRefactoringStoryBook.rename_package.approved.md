@@ -11,7 +11,9 @@ rename-package --project {root} --old-package com.example.service --new-package 
 ### Output:
 ```
 Dry run — no files written.
- UPDATE App.java
+Would change (2):
+
+=== App.java ===
 package com.example.app;
 
 import com.example.util.Calculator;
@@ -24,7 +26,7 @@ public class App {
     }
 }
 
- MOVE Calculator.java → {root}/src/main/java/com/example/util/Calculator.java
+=== Calculator.java ===
 package com.example.util;
 
 public class Calculator {

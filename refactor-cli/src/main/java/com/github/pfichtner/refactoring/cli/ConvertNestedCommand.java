@@ -2,15 +2,14 @@ package com.github.pfichtner.refactoring.cli;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.Callable;
+import java.util.List;
 
+import com.github.pfichtner.refactoring.FileChange;
 import com.github.pfichtner.refactoring.JdtConvertNestedToTopLevel;
 import com.github.pfichtner.refactoring.JdtRenamer;
 
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
-import picocli.CommandLine.Spec;
 
 /**
  * CLI subcommand for converting a nested type to a top-level type.
@@ -20,9 +19,7 @@ import picocli.CommandLine.Spec;
     mixinStandardHelpOptions = true,
     description = "Convert a nested (member) type to a top-level class in its own file."
 )
-public class ConvertNestedCommand implements Callable<Integer> {
-
-    @Spec CommandSpec spec;
+public class ConvertNestedCommand extends AbstractRefactoringCommand {
 
     @Option(names = {"--file", "-f"}, required = true,
             description = "Source file containing the nested type.")
@@ -40,18 +37,18 @@ public class ConvertNestedCommand implements Callable<Integer> {
             description = "Directory to write the new top-level file (defaults to same directory as source).")
     Path outputDir;
 
-    @Option(names = "--dry-run",
-            description = "Print both modified and new source without writing to disk.")
-    boolean dryRun;
+    private Path absFile;
+    private Path newFile;
+    private String newTypeName;
 
     @Override
-    public Integer call() throws Exception {
-        Path absFile = file.toAbsolutePath().normalize();
-        if (!Files.isRegularFile(absFile)) {
-            spec.commandLine().getErr().println("Error: file not found: " + absFile);
-            return 1;
-        }
+    protected int validate() {
+        absFile = checkedFile(file);
+        return absFile == null ? 1 : 0;
+    }
 
+    @Override
+    protected List<FileChange> refactor() throws Exception {
         String source = Files.readString(absFile);
         int offset    = JdtRenamer.toOffset(source, line, column);
         JdtConvertNestedToTopLevel.Result result =
@@ -59,22 +56,28 @@ public class ConvertNestedCommand implements Callable<Integer> {
 
         Path targetDir = outputDir != null ? outputDir.toAbsolutePath().normalize()
                                            : absFile.getParent();
-        Path newFile   = targetDir.resolve(result.newTypeName() + ".java");
+        newTypeName = result.newTypeName();
+        newFile = targetDir.resolve(newTypeName + ".java");
+        return List.of(
+                new FileChange(absFile, absFile, result.outerSource()),
+                new FileChange(newFile, newFile, result.newTypeSource()));
+    }
 
+    @Override
+    protected void printDryRun(List<FileChange> changes) {
         var out = spec.commandLine().getOut();
-        if (dryRun) {
-            out.println("Dry run — no files written.");
-            out.println();
-            out.println("=== " + absFile.getFileName() + " (modified) ===");
-            out.println(result.outerSource());
-            out.println("=== " + newFile.getFileName() + " (new) ===");
-            out.println(result.newTypeSource());
-        } else {
-            Files.writeString(absFile, result.outerSource());
-            Files.writeString(newFile, result.newTypeSource());
-            out.println("Moved '" + result.newTypeName() + "' to " + newFile);
-            out.println("Updated " + absFile.getFileName());
-        }
-        return 0;
+        out.println("Dry run — no files written.");
+        out.println();
+        out.println("=== " + absFile.getFileName() + " (modified) ===");
+        out.println(changes.get(0).newSource());
+        out.println("=== " + newFile.getFileName() + " (new) ===");
+        out.println(changes.get(1).newSource());
+    }
+
+    @Override
+    protected void printApplyReport(List<FileChange> changes) {
+        var out = spec.commandLine().getOut();
+        out.println("Moved '" + newTypeName + "' to " + newFile);
+        out.println("Updated " + absFile.getFileName());
     }
 }

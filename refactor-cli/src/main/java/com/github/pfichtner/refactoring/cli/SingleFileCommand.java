@@ -2,24 +2,26 @@ package com.github.pfichtner.refactoring.cli;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.Callable;
+import java.util.List;
 
-import picocli.CommandLine.Model.CommandSpec;
+import com.github.pfichtner.refactoring.FileChange;
+
 import picocli.CommandLine.Option;
-import picocli.CommandLine.Spec;
 
 /** Shared skeleton for single-file, single-String-result refactoring commands. */
-abstract class SingleFileCommand implements Callable<Integer> {
-
-    @Spec CommandSpec spec;
+abstract class SingleFileCommand extends AbstractRefactoringCommand {
 
     @Option(names = {"--file", "-f"}, required = true,
             description = "Source file to refactor.")
     Path file;
 
-    @Option(names = "--dry-run",
-            description = "Print result without writing to disk.")
-    boolean dryRun;
+    private Path absFile;
+
+    @Override
+    protected int validate() {
+        absFile = checkedFile(file);
+        return absFile == null ? 1 : 0;
+    }
 
     /** Resolves the target offset inside {@code source}. Subclasses add the locator options. */
     protected abstract int resolveOffset(String source, String unitName);
@@ -31,24 +33,23 @@ abstract class SingleFileCommand implements Callable<Integer> {
     protected abstract String successMessage(Path absFile);
 
     @Override
-    public Integer call() throws Exception {
-        Path absFile = file.toAbsolutePath().normalize();
-        if (!Files.isRegularFile(absFile)) {
-            spec.commandLine().getErr().println("Error: file not found: " + absFile);
-            return 1;
-        }
+    protected List<FileChange> refactor() throws Exception {
         String source = Files.readString(absFile);
         int    offset = resolveOffset(source, absFile.getFileName().toString());
         String result = transform(source, absFile.getFileName().toString(), offset);
+        return List.of(new FileChange(absFile, absFile, result));
+    }
+
+    @Override
+    protected void printDryRun(List<FileChange> changes) {
         var out = spec.commandLine().getOut();
-        if (dryRun) {
-            out.println("Dry run — no file written.");
-            out.println();
-            out.println(result);
-        } else {
-            Files.writeString(absFile, result);
-            out.println(successMessage(absFile));
-        }
-        return 0;
+        out.println("Dry run — no file written.");
+        out.println();
+        out.println(changes.get(0).newSource());
+    }
+
+    @Override
+    protected void printApplyReport(List<FileChange> changes) {
+        spec.commandLine().getOut().println(successMessage(changes.get(0).newPath()));
     }
 }
