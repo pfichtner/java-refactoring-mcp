@@ -72,52 +72,16 @@ public class LocatorOptions {
     }
 
     private Locator buildLocator() {
-        boolean hasPosition = position != null;
-        boolean hasName     = name != null;
-
-        if (!hasPosition && !hasName) {
-            throw new IllegalArgumentException(
-                    "Specify either (--line + --column) or a name-based locator " +
-                    "(--method, --field, --type, --variable, or --parameter with --method).");
-        }
-        if (hasPosition && hasName) {
-            throw new IllegalArgumentException(
-                    "Specify either (--line + --column) OR a name-based locator, not both.");
-        }
-
-        if (hasPosition) {
-            if (position.column == null)
-                return new Locator.LineOnly(position.line);
-            return new Locator.Position(position.line, position.column);
-        }
-
-        if (name.parameter != null) {
-            if (name.method == null) {
-                throw new IllegalArgumentException("--parameter requires --method to also be specified.");
-            }
-            return new Locator.ParameterInMethod(name.method, name.parameter);
-        }
-
-        if (name.variable != null) {
-            if (name.method == null) {
-                throw new IllegalArgumentException(
-                        "--variable requires --method to also be specified " +
-                        "(local variables can share names across methods).");
-            }
-            return new Locator.VariableName(name.variable, name.method);
-        }
-
-        int kindCount = (name.method != null ? 1 : 0) + (name.field != null ? 1 : 0)
-                + (name.type != null ? 1 : 0);
-        if (kindCount > 1) {
-            throw new IllegalArgumentException("Specify only one of: --method, --field, or --type.");
-        }
-
-        if (name.method   != null) return new Locator.MethodName(name.method, name.enclosingClass);
-        if (name.field    != null) return new Locator.FieldName(name.field, name.enclosingClass);
-        if (name.type     != null) return new Locator.TypeName(name.type);
-
-        throw new IllegalArgumentException("No valid locator provided.");
+        return Locator.from(
+            position != null ? position.line   : null,
+            position != null ? position.column : null,
+            name != null ? name.method         : null,
+            name != null ? name.field          : null,
+            name != null ? name.type           : null,
+            name != null ? name.parameter      : null,
+            name != null ? name.variable       : null,
+            name != null ? name.enclosingClass : null
+        );
     }
 
 }

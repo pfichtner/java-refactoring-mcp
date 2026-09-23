@@ -58,4 +58,51 @@ public sealed interface Locator
      * not sensible.
      */
     record VariableName(String name, String methodSpec) implements Locator {}
+
+    /**
+     * Builds a {@link Locator} from nullable inputs. {@code null} means "not specified".
+     * Validates mutual-exclusion rules and throws {@link IllegalArgumentException} on conflict.
+     */
+    static Locator from(Integer line, Integer column,
+                        String method, String field, String type,
+                        String parameter, String variable, String className) {
+        boolean hasPosition = line != null || column != null;
+        boolean hasName     = method != null || field != null || type != null
+                              || parameter != null || variable != null;
+
+        if (column != null && line == null)
+            throw new IllegalArgumentException("column requires line to also be specified.");
+        if (hasPosition && hasName)
+            throw new IllegalArgumentException(
+                    "Specify either a position (line / line+column) OR a name-based locator (method/field/type/variable/parameter), not both.");
+        if (!hasPosition && !hasName)
+            throw new IllegalArgumentException(
+                    "Specify either a position (line, or line+column) or a name-based locator (method, field, type, variable, or parameter).");
+
+        if (hasPosition)
+            return column == null ? new LineOnly(line) : new Position(line, column);
+
+        if (parameter != null) {
+            if (method == null)
+                throw new IllegalArgumentException("parameter requires 'method' to also be specified.");
+            return new ParameterInMethod(method, parameter);
+        }
+        if (variable != null) {
+            if (method == null)
+                throw new IllegalArgumentException(
+                        "variable requires 'method' to also be specified " +
+                        "(local variables can share names across methods).");
+            return new VariableName(variable, method);
+        }
+
+        int kindCount = (method != null ? 1 : 0) + (field != null ? 1 : 0) + (type != null ? 1 : 0);
+        if (kindCount > 1)
+            throw new IllegalArgumentException("Specify only one of: method, field, or type.");
+
+        if (method != null) return new MethodName(method, className);
+        if (field  != null) return new FieldName(field, className);
+        if (type   != null) return new TypeName(type);
+
+        throw new IllegalArgumentException("No valid locator provided.");
+    }
 }

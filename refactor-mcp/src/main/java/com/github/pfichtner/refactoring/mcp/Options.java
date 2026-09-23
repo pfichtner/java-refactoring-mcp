@@ -164,62 +164,12 @@ public final class Options {
         }
 
 		public Locator getLocator() {
-		    boolean hasLine      = has(LINE);
-		    boolean hasCol       = has(COLUMN);
-		    boolean hasMethod    = has(METHOD);
-		    boolean hasField     = has(FIELD);
-		    boolean hasType      = has(TYPE);
-		    boolean hasParameter = has(PARAMETER);
-		    boolean hasVariable  = has(VARIABLE);
-		
-		    boolean hasPosition = hasLine || hasCol;
-		    boolean hasName     = hasMethod || hasField || hasType || hasParameter || hasVariable;
-		
-		    if (hasCol && !hasLine)
-		        throw new IllegalArgumentException("'column' requires 'line' to also be specified.");
-		
-		    if (hasPosition && hasName) {
-		        throw new IllegalArgumentException(
-		                "Specify either a position (line / line+column) OR a name-based locator (method/field/type/variable/parameter), not both.");
-		    }
-		    if (!hasPosition && !hasName) {
-		        throw new IllegalArgumentException(
-		                "Specify either a position (line, or line+column) or a name-based locator (method, field, type, variable, or parameter).");
-		    }
-		
-		    if (hasPosition) {
-		        if (!hasCol)
-		            return new Locator.LineOnly(getInt(LINE));
-		        return new Locator.Position(getInt(LINE), getInt(COLUMN));
-		    }
-		
-		    String className = getString(CLASS);
-		
-		    if (hasParameter) {
-		        if (!hasMethod) {
-		            throw new IllegalArgumentException("'parameter' requires 'method' to also be specified.");
-		        }
-		        return new Locator.ParameterInMethod(getString(METHOD), getString(PARAMETER));
-		    }
-		
-		    if (hasVariable) {
-		        if (!hasMethod)
-		            throw new IllegalArgumentException(
-		                    "'variable' requires 'method' to also be specified " +
-		                    "(local variables can share names across methods).");
-		        return new Locator.VariableName(getString(VARIABLE), getString(METHOD));
-		    }
-		
-		    int kindCount = (hasMethod ? 1 : 0) + (hasField ? 1 : 0) + (hasType ? 1 : 0);
-		    if (kindCount > 1) {
-		        throw new IllegalArgumentException("Specify only one of: method, field, or type.");
-		    }
-		
-		    if (hasMethod) return new Locator.MethodName(getString(METHOD), className);
-		    if (hasField)  return new Locator.FieldName(getString(FIELD), className);
-		    if (hasType)   return new Locator.TypeName(getString(TYPE));
-		
-		    throw new IllegalArgumentException("No valid locator found in arguments.");
+		    return Locator.from(
+		        has(LINE)     ? getInt(LINE)       : null,
+		        has(COLUMN)   ? getInt(COLUMN)     : null,
+		        getString(METHOD), getString(FIELD), getString(TYPE),
+		        getString(PARAMETER), getString(VARIABLE), getString(CLASS)
+		    );
 		}
     }
     
