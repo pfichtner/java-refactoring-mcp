@@ -4,7 +4,7 @@
   "mcp": {
     "java-refactoring": {
       "type": "local",
-      "command": ["java", "-jar", "/workspace/refactor-mcp/target/refactor-mcp-0.1.2-fat.jar"]
+      "command": ["java", "-jar", "/workspace/refactor-mcp/target/refactor-mcp-0.1.3-SNAPSHOT-fat.jar"]
     }
   }
 }
