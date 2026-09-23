@@ -9,7 +9,7 @@ import json
 import subprocess
 import sys
 
-JAR = "/workspace/refactor-mcp/target/refactor-mcp-0.1.1-SNAPSHOT-fat.jar"
+JAR = "/workspace/refactor-mcp/target/refactor-mcp-0.1.2-fat.jar"
 
 
 class McpClient:
