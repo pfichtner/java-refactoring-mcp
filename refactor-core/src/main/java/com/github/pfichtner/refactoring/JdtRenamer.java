@@ -67,9 +67,9 @@ public class JdtRenamer {
         String[] sourcePaths = project.sourceRoots().stream()
                 .map(Path::toString).toArray(String[]::new);
 
-        List<Path> allFiles = collectSourceFiles(project);
-        Map<Path, String> sources = readAll(allFiles);
-        Map<Path, CompilationUnit> cus = parseAll(allFiles, classpath, sourcePaths);
+        List<Path> allFiles = JdtProjectSources.collectSourceFiles(project);
+        Map<Path, String> sources = JdtProjectSources.readAll(allFiles);
+        Map<Path, CompilationUnit> cus = JdtProjectSources.parseAll(allFiles, classpath, sourcePaths);
 
         Path absTarget = sourceFile.toAbsolutePath().normalize();
         CompilationUnit targetCu = cus.get(absTarget);
@@ -288,28 +288,6 @@ public class JdtRenamer {
     // Parsing
     // -------------------------------------------------------------------------
 
-    /** Parses all files together for cross-file binding resolution. */
-    private static Map<Path, CompilationUnit> parseAll(
-            List<Path> sourceFiles, String[] classpath, String[] sourcePaths) {
-        ASTParser parser = ASTParser.newParser(AST.JLS21);
-        parser.setEnvironment(classpath, sourcePaths, null, true);
-        parser.setResolveBindings(true);
-        parser.setBindingsRecovery(true);
-
-        String[] paths = sourceFiles.stream()
-                .map(p -> p.toAbsolutePath().normalize().toString())
-                .toArray(String[]::new);
-
-        Map<Path, CompilationUnit> result = new LinkedHashMap<>();
-        parser.createASTs(paths, null, new String[0], new FileASTRequestor() {
-            @Override
-            public void acceptAST(String sourceFilePath, CompilationUnit ast) {
-                result.put(Path.of(sourceFilePath).toAbsolutePath().normalize(), ast);
-            }
-        }, null);
-        return result;
-    }
-
     /** Parses a single source string — for the snippet-based API. */
     private static CompilationUnit parseSingle(
             String source, String unitName, String[] classpath, String[] sourcePaths) {
@@ -326,26 +304,6 @@ public class JdtRenamer {
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
-
-    private static List<Path> collectSourceFiles(JavaProject project) throws IOException {
-        List<Path> files = new ArrayList<>();
-        for (Path root : project.sourceRoots()) {
-            if (!Files.isDirectory(root)) continue;
-            try (var stream = Files.walk(root)) {
-                files.addAll(stream.filter(p -> p.toString().endsWith(".java"))
-                        .map(p -> p.toAbsolutePath().normalize())
-                        .sorted()
-                        .toList());
-            }
-        }
-        return files;
-    }
-
-    private static Map<Path, String> readAll(List<Path> files) throws IOException {
-        Map<Path, String> map = new LinkedHashMap<>();
-        for (Path f : files) map.put(f, Files.readString(f));
-        return map;
-    }
 
     private static SimpleName findSimpleName(CompilationUnit cu, int offset) {
         ASTNode node = NodeFinder.perform(cu, offset, 1);

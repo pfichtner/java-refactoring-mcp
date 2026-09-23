@@ -64,10 +64,10 @@ public class JdtRemoveParam {
         String[] classpath   = project.classpath();
         String[] sourcePaths = project.sourceRoots().stream()
                 .map(Path::toString).toArray(String[]::new);
-        List<Path> allFiles  = collectSourceFiles(project);
-        Map<Path, String> sources = readAll(allFiles);
+        List<Path> allFiles  = JdtProjectSources.collectSourceFiles(project);
+        Map<Path, String> sources = JdtProjectSources.readAll(allFiles);
 
-        Map<Path, CompilationUnit> cus = parseAll(allFiles, classpath, sourcePaths);
+        Map<Path, CompilationUnit> cus = JdtProjectSources.parseAll(allFiles, classpath, sourcePaths);
         Path absTarget = sourceFile.toAbsolutePath().normalize();
         CompilationUnit targetCu = cus.get(absTarget);
         if (targetCu == null) {
@@ -334,41 +334,4 @@ public class JdtRemoveParam {
     // -------------------------------------------------------------------------
     // Infrastructure (shared with JdtIntroduceParam)
     // -------------------------------------------------------------------------
-
-    private static List<Path> collectSourceFiles(JavaProject project) throws IOException {
-        List<Path> files = new ArrayList<>();
-        for (Path root : project.sourceRoots()) {
-            if (!Files.isDirectory(root)) continue;
-            try (var stream = Files.walk(root)) {
-                files.addAll(stream.filter(p -> p.toString().endsWith(".java"))
-                        .map(p -> p.toAbsolutePath().normalize())
-                        .sorted().toList());
-            }
-        }
-        return files;
-    }
-
-    private static Map<Path, String> readAll(List<Path> files) throws IOException {
-        Map<Path, String> map = new LinkedHashMap<>();
-        for (Path f : files) map.put(f, Files.readString(f));
-        return map;
-    }
-
-    private static Map<Path, CompilationUnit> parseAll(
-            List<Path> sourceFiles, String[] classpath, String[] sourcePaths) {
-        ASTParser parser = ASTParser.newParser(AST.JLS21);
-        parser.setEnvironment(classpath, sourcePaths, null, true);
-        parser.setResolveBindings(true);
-        parser.setBindingsRecovery(true);
-        String[] paths = sourceFiles.stream()
-                .map(p -> p.toAbsolutePath().normalize().toString()).toArray(String[]::new);
-        Map<Path, CompilationUnit> result = new LinkedHashMap<>();
-        parser.createASTs(paths, null, new String[0], new FileASTRequestor() {
-            @Override
-            public void acceptAST(String path, CompilationUnit ast) {
-                result.put(Path.of(path).toAbsolutePath().normalize(), ast);
-            }
-        }, null);
-        return result;
-    }
 }

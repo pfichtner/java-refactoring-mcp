@@ -155,7 +155,7 @@ public class JdtMoveStaticMember {
         String newTargetText = insertMember(targetText, targetType, rawMember, memberIndent);
 
         // Update call sites across all project files
-        List<Path> allFiles = collectSourceFiles(project);
+        List<Path> allFiles = JdtProjectSources.collectSourceFiles(project);
 
         Map<Path, String> result = new LinkedHashMap<>();
         result.put(absSource, newSourceText);
@@ -214,20 +214,6 @@ public class JdtMoveStaticMember {
         String before = targetSource.substring(0, closingBrace).stripTrailing();
         String after  = targetSource.substring(closingBrace);
         return before + "\n\n" + reindented + "\n" + after;
-    }
-
-    private static List<Path> collectSourceFiles(JavaProject project)
-            throws IOException, InterruptedException {
-        List<Path> files = new ArrayList<>();
-        for (Path root : project.sourceRoots()) {
-            if (!Files.isDirectory(root)) continue;
-            try (var stream = Files.walk(root)) {
-                stream.filter(p -> p.toString().endsWith(".java"))
-                      .map(p -> p.toAbsolutePath().normalize())
-                      .forEach(files::add);
-            }
-        }
-        return files;
     }
 
     // -------------------------------------------------------------------------
