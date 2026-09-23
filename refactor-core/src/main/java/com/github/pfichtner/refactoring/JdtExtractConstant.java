@@ -58,11 +58,12 @@ public class JdtExtractConstant {
      * @return rewritten source
      */
     public static String extractConstant(
-            String source, String unitName,
+            SourceUnit unit,
             int selectionStart, int selectionLength,
             String constName, boolean replaceAll) {
 
-        CompilationUnit cu = parse(source, unitName);
+        String source = unit.source();
+        CompilationUnit cu = parse(source, unit.unitName());
 
         ASTNode node = NodeFinder.perform(cu, selectionStart, selectionLength);
         if (node == null) {

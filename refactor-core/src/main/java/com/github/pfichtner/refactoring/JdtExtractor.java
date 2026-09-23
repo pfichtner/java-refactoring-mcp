@@ -64,11 +64,12 @@ public class JdtExtractor {
      * @throws IllegalArgumentException if the selection is not safe to extract
      */
     public static String extractMethod(
-            String source, String unitName,
+            SourceUnit unit,
             int selectionStart, int selectionLength,
             String methodName) {
 
-        CompilationUnit cu = parse(source, unitName);
+        String source = unit.source();
+        CompilationUnit cu = parse(source, unit.unitName());
 
         List<Statement> selected = findSelectedStatements(cu, selectionStart, selectionLength);
         if (selected.isEmpty()) {

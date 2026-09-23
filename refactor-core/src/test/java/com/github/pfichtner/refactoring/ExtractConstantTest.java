@@ -24,7 +24,7 @@ class ExtractConstantTest {
         int len   = "3.14159".length();
 
         String result = JdtExtractConstant.extractConstant(
-                source, "Foo.java", start, len, "PI", false);
+                new SourceUnit(source, "Foo.java"), start, len, "PI", false);
 
         Approvals.verify(
             RefactoringStoryBoard.titled("Extract constant: 3.14159 → PI")
@@ -43,7 +43,7 @@ class ExtractConstantTest {
         int len   = "\"HELLO\"".length();
 
         String result = JdtExtractConstant.extractConstant(
-                source, "Foo.java", start, len, "GREETING", true);
+                new SourceUnit(source, "Foo.java"), start, len, "GREETING", true);
 
         Approvals.verify(
             RefactoringStoryBoard.titled("Extract constant: \"HELLO\" → GREETING (replace all)")
@@ -62,7 +62,7 @@ class ExtractConstantTest {
         int len = "\"HELLO\"".length();
 
         String result = JdtExtractConstant.extractConstant(
-                source, "Foo.java", start, len, "GREETING", false);
+                new SourceUnit(source, "Foo.java"), start, len, "GREETING", false);
 
         Approvals.verify(
                 RefactoringStoryBoard.titled("Extract constant: \"HELLO\" → GREETING (selected occurrence only)")
@@ -81,7 +81,7 @@ class ExtractConstantTest {
         int len   = "x".length();
 
         IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtExtractConstant.extractConstant(
-                source, "Foo.java", start, len, "X", false)).actual();
+                new SourceUnit(source, "Foo.java"), start, len, "X", false)).actual();
         assertThat(ex.getMessage()).contains("simple name");
 
         Approvals.verify(

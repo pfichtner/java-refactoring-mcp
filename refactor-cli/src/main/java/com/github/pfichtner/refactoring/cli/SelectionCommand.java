@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.util.concurrent.Callable;
 
 import com.github.pfichtner.refactoring.JdtRenamer;
+import com.github.pfichtner.refactoring.SourceUnit;
 
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
@@ -32,7 +33,7 @@ abstract class SelectionCommand implements Callable<Integer> {
     boolean dryRun;
 
     /** Applies the refactoring and returns the modified source. */
-    protected abstract String transform(String source, String unitName, int selStart, int selLen) throws Exception;
+    protected abstract String transform(SourceUnit unit, int selStart, int selLen) throws Exception;
 
     /** One-line success message printed after writing. */
     protected abstract String successMessage(Path absFile);
@@ -47,7 +48,7 @@ abstract class SelectionCommand implements Callable<Integer> {
         String source = Files.readString(absFile);
         int selStart  = JdtRenamer.toOffset(source, startLine, startColumn);
         int selLen    = JdtRenamer.toOffset(source, endLine, endColumn) - selStart;
-        String result = transform(source, absFile.getFileName().toString(), selStart, selLen);
+        String result = transform(new SourceUnit(source, absFile.getFileName().toString()), selStart, selLen);
         var out = spec.commandLine().getOut();
         if (dryRun) {
             out.println("Dry run — no file written.");

@@ -24,7 +24,7 @@ class ExtractMethodTest {
         int end   = Fixtures.offsetOf(source, "System.out.println(\"World\")")
                     + "System.out.println(\"World\");".length();
 
-        String result = JdtExtractor.extractMethod(source, "Greeter.java",
+        String result = JdtExtractor.extractMethod(new SourceUnit(source, "Greeter.java"),
                 start, end - start, "greet");
 
         Approvals.verify(
@@ -45,7 +45,7 @@ class ExtractMethodTest {
         int end   = Fixtures.offsetOf(source, "System.out.println(result);")
                     + "System.out.println(result);".length();
 
-        String result = JdtExtractor.extractMethod(source, "Computation.java",
+        String result = JdtExtractor.extractMethod(new SourceUnit(source, "Computation.java"),
                 start, end - start, "compute");
 
         Approvals.verify(
@@ -65,7 +65,7 @@ class ExtractMethodTest {
         int start = Fixtures.offsetOf(source, "int sum = a + b;");
         int end   = start + "int sum = a + b;".length();
 
-        String result = JdtExtractor.extractMethod(source, "Computation.java",
+        String result = JdtExtractor.extractMethod(new SourceUnit(source, "Computation.java"),
                 start, end - start, "add");
 
         Approvals.verify(
@@ -87,7 +87,7 @@ class ExtractMethodTest {
         int end = source.indexOf("}\n        return n * 2;") + "}".length();
 
         IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() ->
-                JdtExtractor.extractMethod(source, "Computation.java",
+                JdtExtractor.extractMethod(new SourceUnit(source, "Computation.java"),
                         start, end - start, "validate")).actual();
 
         Approvals.verify(
@@ -108,7 +108,7 @@ class ExtractMethodTest {
         int end   = Fixtures.offsetOf(source, "int b = 4;") + "int b = 4;".length();
 
         IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() ->
-                JdtExtractor.extractMethod(source, "Computation.java",
+                JdtExtractor.extractMethod(new SourceUnit(source, "Computation.java"),
                         start, end - start, "init")).actual();
 
         Approvals.verify(

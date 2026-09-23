@@ -58,11 +58,12 @@ public class JdtExtractVariable {
      * @throws IllegalArgumentException if the selection cannot be extracted
      */
     public static String extractVariable(
-            String source, String unitName,
+            SourceUnit unit,
             int selectionStart, int selectionLength,
             String varName, boolean replaceAll) {
 
-        CompilationUnit cu = parse(source, unitName);
+        String source = unit.source();
+        CompilationUnit cu = parse(source, unit.unitName());
 
         // Find the selected expression
         ASTNode node = NodeFinder.perform(cu, selectionStart, selectionLength);
