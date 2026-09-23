@@ -9,6 +9,8 @@ import java.util.Map;
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
 
+import com.github.pfichtner.refactoring.locator.LocatorResolver;
+
 /**
  * Integration tests for name-based locator support in the MCP layer.
  *
@@ -90,7 +92,7 @@ class RefactoringServerByNameTest {
     void no_locator_at_all_throws() {
         Map<String, Object> empty = Map.of();
         String source = "class Foo {}";
-        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> RefactoringServer.resolveOffset(new Options.Reader(empty), source, "Foo.java")).actual();
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> LocatorResolver.resolve(new Options.Reader(empty).getLocator(), source, "Foo.java")).actual();
         assertThat(ex.getMessage()).contains("Specify either");
     }
 
@@ -98,7 +100,7 @@ class RefactoringServerByNameTest {
     void position_and_name_together_throws() {
         Map<String, Object> args = Map.of("line", 1, "column", 1, "method", "foo");
         String source = "class Foo { void foo() {} }";
-        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> RefactoringServer.resolveOffset(new Options.Reader(args), source, "Foo.java")).actual();
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> LocatorResolver.resolve(new Options.Reader(args).getLocator(), source, "Foo.java")).actual();
         assertThat(ex.getMessage()).contains("not both");
     }
 
@@ -107,7 +109,7 @@ class RefactoringServerByNameTest {
         Map<String, Object> args = Map.of("column", 7);
         String source = "class Foo {}";
         var ex = assertThatExceptionOfType(IllegalArgumentException.class)
-                .isThrownBy(() -> RefactoringServer.resolveOffset(new Options.Reader(args), source, "Foo.java")).actual();
+                .isThrownBy(() -> LocatorResolver.resolve(new Options.Reader(args).getLocator(), source, "Foo.java")).actual();
         assertThat(ex.getMessage()).containsIgnoringCase("line");
     }
 
@@ -119,7 +121,7 @@ class RefactoringServerByNameTest {
 			class Counter {
 			    int count;
 			}""";
-        int offset = RefactoringServer.resolveOffset(new Options.Reader(args), source, "Counter.java");
+        int offset = LocatorResolver.resolve(new Options.Reader(args).getLocator(), source, "Counter.java");
         assertThat(source.substring(offset, offset + 5)).isEqualTo("count");
     }
 
@@ -134,7 +136,7 @@ class RefactoringServerByNameTest {
 			    }
 			}""";
         var ex = assertThatExceptionOfType(IllegalArgumentException.class)
-                .isThrownBy(() -> RefactoringServer.resolveOffset(new Options.Reader(args), source, "C.java")).actual();
+                .isThrownBy(() -> LocatorResolver.resolve(new Options.Reader(args).getLocator(), source, "C.java")).actual();
         assertThat(ex.getMessage()).containsIgnoringCase("ambiguous");
     }
 
@@ -142,8 +144,7 @@ class RefactoringServerByNameTest {
     void parameter_without_method_throws() {
         Map<String, Object> args = Map.of("parameter", "unused");
         String source = "class Foo { void bar(int unused) {} }";
-        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> RefactoringServer.resolveOffset(
-		        new Options.Reader(args), source, "Foo.java")).actual();
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> LocatorResolver.resolve(new Options.Reader(args).getLocator(), source, "Foo.java")).actual();
         assertThat(ex.getMessage()).contains("'method'");
     }
 
@@ -151,8 +152,7 @@ class RefactoringServerByNameTest {
     void two_name_kinds_together_throws() {
         Map<String, Object> args = Map.of("method", "foo", "field", "bar");
         String source = "class Foo { void foo() {} int bar; }";
-        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> RefactoringServer.resolveOffset(
-		        new Options.Reader(args), source, "Foo.java")).actual();
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> LocatorResolver.resolve(new Options.Reader(args).getLocator(), source, "Foo.java")).actual();
         assertThat(ex.getMessage()).contains("only one");
     }
 

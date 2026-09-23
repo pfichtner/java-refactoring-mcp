@@ -458,7 +458,7 @@ public class RefactoringServer {
                         var args   = opts.reader(request.arguments());
                         Path file   = args.getPath(FILE);
                         String source = Files.readString(file);
-                        int offset    = resolveOffset(args, source, file.getFileName().toString());
+                        int offset    = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
                         var changed = JdtRemoveParam.removeParam(
                                 ProjectDetector.detect(
                                         args.getPath(PROJECT_ROOT)),
@@ -494,7 +494,7 @@ public class RefactoringServer {
                         var args    = opts.reader(request.arguments());
                         Path file    = args.getPath(FILE);
                         String source = Files.readString(file);
-                        int offset    = resolveOffset(args, source, file.getFileName().toString());
+                        int offset    = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
                         boolean cascade = args.getBoolean(CASCADE, true);
                         var changed = JdtRemoveMethod.removeMethod(
                                 ProjectDetector.detect(args.getPath(PROJECT_ROOT)),
@@ -611,7 +611,7 @@ public class RefactoringServer {
                         Path file     = args.getPath(FILE);
                         boolean removeDel = args.getBoolean(REMOVE_DECLARATION);
                         String source = Files.readString(file);
-                        int offset    = resolveOffset(args, source, file.getFileName().toString());
+                        int offset    = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
                         var changed = JdtInlineMethod.inlineMethod(
                                 ProjectDetector.detect(
                                         args.getPath(PROJECT_ROOT)),
@@ -684,7 +684,7 @@ public class RefactoringServer {
                         Path file   = args.getPath(FILE);
 
                         String source = Files.readString(file);
-                        int offset    = resolveOffset(args, source, file.getFileName().toString());
+                        int offset    = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
                         String result = JdtInliner.inlineVariable(
                                 source, file.getFileName().toString(), offset);
                         return ok(result);
@@ -717,7 +717,7 @@ public class RefactoringServer {
                         boolean removeDecl = args.getBoolean(REMOVE_DECLARATION);
 
                         String source = Files.readString(file);
-                        int offset    = resolveOffset(args, source, file.getFileName().toString());
+                        int offset    = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
                         String result = JdtInliner.inlineConstant(
                                 source, file.getFileName().toString(), offset, allOcc, removeDecl);
                         return ok(result);
@@ -750,20 +750,11 @@ public class RefactoringServer {
                 : root.resolve(filePath);
 
         String source = Files.readString(sourceFile);
-        int offset = resolveOffset(args, source, sourceFile.getFileName().toString());
+        int offset = LocatorResolver.resolve(args.getLocator(), source, sourceFile.getFileName().toString());
 
         return JdtRenamer.rename(ProjectDetector.detect(root), sourceFile, offset, newName);
     }
 
-    /**
-     * Resolves a position or name-based locator from MCP args to a char offset.
-     * Accepts {@code line}+{@code column} (classic) or name fields:
-     * {@code method}, {@code field}, {@code type}, {@code variable}, {@code parameter}
-     * (with optional {@code class} scope qualifier).
-     */
-    static int resolveOffset(Options.Reader args, String source, String unitName) {
-        return LocatorResolver.resolve(args.getLocator(), source, unitName);
-    }
 
     // -------------------------------------------------------------------------
     // Formatting helpers
@@ -844,7 +835,7 @@ public class RefactoringServer {
                         var args   = opts.reader(request.arguments());
                         Path file   = args.getPath(FILE);
                         String source = Files.readString(file);
-                        int offset    = resolveOffset(args, source, file.getFileName().toString());
+                        int offset    = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
                         boolean widen = args.getBoolean(WIDEN_VISIBILITY, true);
                         var changed   = JdtPullUpMethod.pullUp(
                                 ProjectDetector.detect(
@@ -882,7 +873,7 @@ public class RefactoringServer {
                         var args   = opts.reader(request.arguments());
                         Path file   = args.getPath(FILE);
                         String source = Files.readString(file);
-                        int offset    = resolveOffset(args, source, file.getFileName().toString());
+                        int offset    = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
                         var changed   = JdtPushDownMethod.pushDown(
                                 ProjectDetector.detect(
                                         args.getPath(PROJECT_ROOT)),
@@ -920,7 +911,7 @@ public class RefactoringServer {
                         Path file         = args.getPath(FILE);
                         String targetClass = args.getString(TARGET_CLASS);
                         String source     = Files.readString(file);
-                        int offset        = resolveOffset(args, source, file.getFileName().toString());
+                        int offset        = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
                         boolean widen     = args.getBoolean(WIDEN_VISIBILITY, true);
                         var changed = JdtMoveMethod.moveMethod(
                                 ProjectDetector.detect(
@@ -952,7 +943,7 @@ public class RefactoringServer {
                         Path file = root.resolve(args.getPath(FILE));
 
                         String source = Files.readString(file);
-                        int offset    = resolveOffset(args, source, file.getFileName().toString());
+                        int offset    = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
                         boolean widen = args.getBoolean(WIDEN_VISIBILITY, true);
 
                         var changed = JdtPullUpField.pullUp(
@@ -980,7 +971,7 @@ public class RefactoringServer {
                         Path file = root.resolve(args.getPath(FILE));
 
                         String source = Files.readString(file);
-                        int offset    = resolveOffset(args, source, file.getFileName().toString());
+                        int offset    = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
 
                         var changed = JdtPushDownField.pushDown(
                                 ProjectDetector.detect(root), file, offset);
@@ -1009,7 +1000,7 @@ public class RefactoringServer {
                         boolean makePrivate = args.getBoolean(MAKE_CONSTRUCTOR_PRIVATE);
 
                         String source = Files.readString(file);
-                        int offset    = resolveOffset(args, source, file.getFileName().toString());
+                        int offset    = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
 
                         var changed = JdtIntroduceStaticFactory.introduceStaticFactory(
                                 ProjectDetector.detect(root),
@@ -1043,7 +1034,7 @@ public class RefactoringServer {
                                 : Character.toLowerCase(className.charAt(0)) + className.substring(1);
 
                         String source = Files.readString(file);
-                        int offset    = resolveOffset(args, source, file.getFileName().toString());
+                        int offset    = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
 
                         boolean asRecord = args.getBoolean(AS_RECORD);
                         var changed = JdtIntroduceParameterObject.introduce(
@@ -1106,7 +1097,7 @@ public class RefactoringServer {
                         Path root = args.getPath(PROJECT_ROOT);
                         Path file = root.resolve(args.getPath(FILE));
                         String source = Files.readString(file);
-                        int offset = resolveOffset(args, source, file.getFileName().toString());
+                        int offset = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
                         String newReturnType = args.getString(NEW_RETURN_TYPE);
                         int[]    paramOrder = args.getIntArray(PARAM_ORDER);
                         String[] paramTypes = args.getStringArray(PARAM_TYPES);
@@ -1140,7 +1131,7 @@ public class RefactoringServer {
                         Path root = args.getPath(PROJECT_ROOT);
                         Path file = root.resolve(args.getPath(FILE));
                         String source = Files.readString(file);
-                        int offset = resolveOffset(args, source, file.getFileName().toString());
+                        int offset = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
                         boolean generateSetter = args.getBoolean(GENERATE_SETTER);
                         var changed = JdtEncapsulateField.encapsulateField(
                                 ProjectDetector.detect(root), file, offset, generateSetter);
@@ -1172,7 +1163,7 @@ public class RefactoringServer {
                         Path file     = args.getPath(FILE);
                         String source = Files.readString(file);
                         String methodName = args.getString(METHOD_NAME);
-                        int offset    = resolveOffset(args, source, file.getFileName().toString());
+                        int offset    = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
                         String result = JdtDecomposeConditional.decomposeConditional(
                                 source, file.getFileName().toString(), offset, methodName);
                         return ok(result);
@@ -1195,7 +1186,7 @@ public class RefactoringServer {
                         var args          = opts.reader(request.arguments());
                         Path file         = args.getPath(FILE);
                         String source     = Files.readString(file);
-                        int offset        = resolveOffset(args, source, file.getFileName().toString());
+                        int offset        = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
                         String nestedName = args.getString(NESTED_CLASS_NAME);
                         String result     = JdtConvertAnonymousToNested.convert(
                                 source, file.getFileName().toString(), offset, nestedName);
@@ -1219,7 +1210,7 @@ public class RefactoringServer {
                         var args    = opts.reader(request.arguments());
                         Path file   = args.getPath(FILE);
                         String source = Files.readString(file);
-                        int offset  = resolveOffset(args, source, file.getFileName().toString());
+                        int offset  = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
                         String name = args.getString(INDIRECTION_METHOD_NAME);
                         String result = JdtIntroduceIndirection.introduceIndirection(
                                 source, file.getFileName().toString(), offset, name);
@@ -1244,7 +1235,7 @@ public class RefactoringServer {
                         Path projectRoot  = args.getPath(PROJECT_ROOT);
                         Path file         = args.getPath(FILE);
                         String source     = Files.readString(file);
-                        int offset        = resolveOffset(args, source, file.getFileName().toString());
+                        int offset        = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
                         String target     = args.getString(TARGET_CLASS);
                         boolean widen     = args.getBoolean(WIDEN_VISIBILITY, true);
                         var project = new com.github.pfichtner.refactoring.project.MavenProject(projectRoot);
@@ -1273,7 +1264,7 @@ public class RefactoringServer {
                         var args    = opts.reader(request.arguments());
                         Path file   = args.getPath(FILE);
                         String source = Files.readString(file);
-                        int offset  = resolveOffset(args, source, file.getFileName().toString());
+                        int offset  = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
                         String result = JdtPromoteToField.promote(
                                 source, file.getFileName().toString(), offset);
                         return ok(result);
@@ -1296,7 +1287,7 @@ public class RefactoringServer {
                         var args   = opts.reader(request.arguments());
                         Path file  = args.getPath(FILE);
                         String source = Files.readString(file);
-                        int offset = resolveOffset(args, source, file.getFileName().toString());
+                        int offset = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
                         JdtConvertNestedToTopLevel.Result result =
                                 JdtConvertNestedToTopLevel.convert(
                                         source, file.getFileName().toString(), offset);
