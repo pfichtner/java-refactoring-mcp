@@ -1,0 +1,1 @@
+{"path":["refactor-core/src","refactor-mcp/src","refactor-cli/src"],"ignore":["**/target/**","**/test/**"],"threshold":0,"minLines":5,"minTokens":50}

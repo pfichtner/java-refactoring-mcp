@@ -75,7 +75,7 @@ public class JdtConvertNestedToTopLevel {
                     "No nested type declaration found at offset " + offset + ".");
         }
 
-        if (!(nested.getParent() instanceof TypeDeclaration enclosingType)) {
+        if (!(nested.getParent() instanceof TypeDeclaration)) {
             throw new IllegalArgumentException(
                     "The type at offset " + offset + " is not a member of another type.");
         }

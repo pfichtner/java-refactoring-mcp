@@ -36,10 +36,6 @@ class PushDownFieldTest {
 
         assertThat(changed.size()).isEqualTo(3);
 
-        Path absVehicle = vehicleFile.toAbsolutePath().normalize();
-        Path absCar     = carFile.toAbsolutePath().normalize();
-        Path absTruck   = truckFile.toAbsolutePath().normalize();
-
         Approvals.verify(
             RefactoringStoryBoard.titled("Push down field: Vehicle.maxSpeed → Car, Truck")
                 .inputProject(Map.of(

@@ -36,10 +36,6 @@ class PushDownMethodTest {
 
         assertThat(changed.size()).isEqualTo(3);
 
-        Path absShape  = shapeFile.toAbsolutePath().normalize();
-        Path absCircle = circleFile.toAbsolutePath().normalize();
-        Path absRect   = rectFile.toAbsolutePath().normalize();
-
         Approvals.verify(
             RefactoringStoryBoard.titled("Push down method: Shape.area → Circle, Rectangle")
                 .inputProject(Map.of(
