@@ -143,12 +143,9 @@ public class JdtMoveStaticMember {
 
         String rawMember = sourceText.substring(
                 member.getStartPosition(), member.getStartPosition() + member.getLength());
-        if (widenVisibility) {
-            String sourcePackage = JdtPullUpField.packageOf(sourceCu);
-            String targetPackage = JdtPullUpField.packageOf(targetCu);
-            String widenTo = sourcePackage.equals(targetPackage) ? "" : "public";
-            rawMember = JdtPullUpField.widenModifier(member, rawMember, widenTo);
-        }
+        if (widenVisibility)
+            rawMember = JdtPullUpField.widenModifier(member, rawMember,
+                    JdtPullUpField.packageOf(sourceCu).equals(JdtPullUpField.packageOf(targetCu)) ? "" : "public");
 
         // Remove from source
         String newSourceText = removeMember(sourceText, member);

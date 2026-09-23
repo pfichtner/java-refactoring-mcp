@@ -112,7 +112,7 @@ public class JdtMoveClass {
         int typeInsertionPoint; // where "public " should be inserted in newClassSource if needed
         if (pkgDecl != null) {
             int pkgStart = pkgDecl.getStartPosition();
-            int pkgEnd   = pkgDecl.getLength() + pkgStart;
+            int pkgEnd   = pkgStart + pkgDecl.getLength();
             if (pkgEnd < source.length() && source.charAt(pkgEnd) == '\n') pkgEnd++;
             String replacement = newPackage.isEmpty() ? "" : "package " + newPackage + ";\n";
             newClassSource = source.substring(0, pkgStart) + replacement + source.substring(pkgEnd);
@@ -128,7 +128,8 @@ public class JdtMoveClass {
         // -------------------------------------------------------------------------
         // 1a. Widen class visibility to public if package-private and requested
         // -------------------------------------------------------------------------
-        if (widenVisibility && !hasAccessModifier(primaryType)) {
+        if (widenVisibility && primaryType.modifiers().stream()
+                .noneMatch(o -> o instanceof Modifier m && (m.isPublic() || m.isProtected() || m.isPrivate()))) {
             newClassSource = newClassSource.substring(0, typeInsertionPoint)
                     + "public "
                     + newClassSource.substring(typeInsertionPoint);
@@ -223,15 +224,6 @@ public class JdtMoveClass {
                 .map(o -> (TypeDeclaration) o)
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("No type declaration found in the source."));
-    }
-
-    private static boolean hasAccessModifier(TypeDeclaration typeDecl) {
-        for (Object mod : typeDecl.modifiers()) {
-            if (mod instanceof Modifier m && (m.isPublic() || m.isProtected() || m.isPrivate())) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static CompilationUnit parse(String source, String unitName) {
