@@ -25,6 +25,8 @@ import org.w3c.dom.NodeList;
  */
 public class MavenProject extends AbstractProject {
 
+    private Document cachedPom;
+
     public MavenProject(Path root) { super(root); }
 
     /**
@@ -121,10 +123,13 @@ public class MavenProject extends AbstractProject {
     }
 
     private Document parsePom() throws Exception {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware(false);
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        builder.setErrorHandler(null);
-        return builder.parse(root.resolve("pom.xml").toFile());
+        if (cachedPom == null) {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(false);
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            builder.setErrorHandler(null);
+            cachedPom = builder.parse(root.resolve("pom.xml").toFile());
+        }
+        return cachedPom;
     }
 }
