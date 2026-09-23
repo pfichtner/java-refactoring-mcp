@@ -108,21 +108,8 @@ public class JdtEncapsulateField {
 
         // Precondition: accessor methods must not already exist
         TypeDeclaration enclosingType = enclosingTypeDeclaration(frag);
-        if (enclosingType != null) {
-            for (Object bd : enclosingType.bodyDeclarations()) {
-                if (bd instanceof MethodDeclaration md) {
-                    String mn = md.getName().getIdentifier();
-                    if (mn.equals(getterName)) {
-                        throw new IllegalArgumentException(
-                                "Getter '" + getterName + "()' already exists in " + enclosingType.getName().getIdentifier() + ".");
-                    }
-                    if (generateSetter && mn.equals(setterName)) {
-                        throw new IllegalArgumentException(
-                                "Setter '" + setterName + "()' already exists in " + enclosingType.getName().getIdentifier() + ".");
-                    }
-                }
-            }
-        }
+        if (enclosingType != null)
+            rejectDuplicateAccessors(enclosingType, getterName, setterName, generateSetter);
 
         // -------------------------------------------------------------------------
         // Build edits: Object[] = [start, end, replacement]
@@ -265,6 +252,19 @@ public class JdtEncapsulateField {
     // -------------------------------------------------------------------------
     // AST helpers
     // -------------------------------------------------------------------------
+
+    private static void rejectDuplicateAccessors(
+            TypeDeclaration type, String getterName, String setterName, boolean generateSetter) {
+        String typeName = type.getName().getIdentifier();
+        for (Object bd : type.bodyDeclarations()) {
+            if (!(bd instanceof MethodDeclaration md)) continue;
+            String mn = md.getName().getIdentifier();
+            if (mn.equals(getterName))
+                throw new IllegalArgumentException("Getter '" + getterName + "()' already exists in " + typeName + ".");
+            if (generateSetter && mn.equals(setterName))
+                throw new IllegalArgumentException("Setter '" + setterName + "()' already exists in " + typeName + ".");
+        }
+    }
 
     private static VariableDeclarationFragment findField(CompilationUnit cu, int offset) {
         ASTNode node = NodeFinder.perform(cu, offset, 1);
