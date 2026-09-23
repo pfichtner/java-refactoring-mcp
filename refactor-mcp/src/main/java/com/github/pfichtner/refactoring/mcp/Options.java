@@ -70,18 +70,28 @@ public final class Options {
 
         /** Adds optional properties (appear in schema but not in required list). */
         public Builder add(Property... ps) {
-            for (Property p : ps) properties.put(p.key, p.descriptor);
+            for (Property p : ps) properties.put(p.key(), descriptor(p));
             return this;
         }
 
         /** Adds required properties (appear in both schema and required list). */
         public Builder addRequired(Property... ps) {
             for (Property p : ps) {
-                properties.put(p.key, p.descriptor);
-                required.add(p.key);
+                properties.put(p.key(), descriptor(p));
+                required.add(p.key());
             }
             return this;
         }
+
+		private static Map<String, Object> descriptor(Property property) {
+			return property.type().isArray()
+					? Map.of("type", "array", "items", Map.of("type", toType(property.type().getComponentType())), "description", property.description())
+					: Map.of("type", toType(property.type()), "description", property.description());
+		}
+
+		private static String toType(Class<?> clazz) {
+			return clazz.getSimpleName().toLowerCase();
+		}
 
         public Options build() { return new Options(this); }
     }
@@ -96,14 +106,14 @@ public final class Options {
         public Reader(Map<String, Object> args) { this.args = args; }
 
         /** Returns true if the property is present in the args (use for optional properties). */
-        public boolean has(Property p) { return args.containsKey(p.key); }
+        public boolean has(Property p) { return args.containsKey(p.key()); }
 
         /** Returns the value as a String; null if absent (safe for optional String properties). */
-        public String getString(Property p) { return (String) args.get(p.key); }
+        public String getString(Property p) { return (String) args.get(p.key()); }
 
         /** Returns the value as a String, or {@code defaultValue} if absent. */
         public String getString(Property p, String defaultValue) {
-            Object v = args.get(p.key);
+            Object v = args.get(p.key());
             return v == null ? defaultValue : (String) v;
         }
 
@@ -114,20 +124,20 @@ public final class Options {
         }
 
         /** Returns the value as an int. Throws if absent. */
-        public int getInt(Property p) { return ((Number) args.get(p.key)).intValue(); }
+        public int getInt(Property p) { return ((Number) args.get(p.key())).intValue(); }
 
         /**
          * Returns {@code true} only if the value is Boolean.TRUE.
          * Safe for optional boolean flags that default to {@code false}.
          */
-        public boolean getBoolean(Property p) { return Boolean.TRUE.equals(args.get(p.key)); }
+        public boolean getBoolean(Property p) { return Boolean.TRUE.equals(args.get(p.key())); }
 
         /**
          * Returns the boolean value, or {@code defaultValue} if absent.
          * Use for flags that default to {@code true} (e.g. cascade).
          */
         public boolean getBoolean(Property p, boolean defaultValue) {
-            Object v = args.get(p.key);
+            Object v = args.get(p.key());
             return v == null ? defaultValue : Boolean.TRUE.equals(v);
         }
 
@@ -137,7 +147,7 @@ public final class Options {
          */
         @SuppressWarnings("unchecked")
         public List<String> getStringList(Property p) {
-            Object v = args.get(p.key);
+            Object v = args.get(p.key());
             return v == null ? List.of() : (List<String>) v;
         }
 
@@ -148,7 +158,7 @@ public final class Options {
          */
         @SuppressWarnings("unchecked")
         public int[] getIntArray(Property p) {
-            List<Number> list = (List<Number>) args.get(p.key);
+            List<Number> list = (List<Number>) args.get(p.key());
             return list == null ? null : list.stream().mapToInt(Number::intValue).toArray();
         }
 
@@ -159,7 +169,7 @@ public final class Options {
          */
         @SuppressWarnings("unchecked")
         public String[] getStringArray(Property p) {
-            List<String> list = (List<String>) args.get(p.key);
+            List<String> list = (List<String>) args.get(p.key());
             return list == null ? null : list.toArray(String[]::new);
         }
 
