@@ -97,12 +97,9 @@ public class JdtMoveMethod {
 
         String rawMethod = source.substring(
                 method.getStartPosition(), method.getStartPosition() + method.getLength());
-        if (widenVisibility) {
-            String sourcePackage = JdtPullUpField.packageOf(cu);
-            String targetPackage = JdtPullUpField.packageOf(targetCu);
-            String widenTo = sourcePackage.equals(targetPackage) ? "" : "public";
-            rawMethod = JdtPullUpField.widenModifier(method, rawMethod, widenTo);
-        }
+        if (widenVisibility)
+            rawMethod = JdtPullUpField.widenModifier(method, rawMethod,
+                    JdtPullUpField.packageOf(cu).equals(JdtPullUpField.packageOf(targetCu)) ? "" : "public");
 
         String newSourceSource = JdtPullUpMethod.removeMethod(source, method);
         String newTargetSource = JdtPullUpMethod.insertMethod(targetSource, targetType, rawMethod);

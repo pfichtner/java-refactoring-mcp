@@ -139,12 +139,6 @@ public class JdtPullUpField {
     /**
      * If {@code node} has a {@code private} modifier, replaces it with {@code newModifier}
      * in the raw source text {@code rawText} (which starts at {@code node.getStartPosition()}).
-     * Uses the modifier's AST node positions for the edit.  Returns {@code rawText} unchanged
-     * when no {@code private} modifier is present.
-     */
-    /**
-     * If {@code node} has a {@code private} modifier, replaces it with {@code newModifier}
-     * in the raw source text {@code rawText} (which starts at {@code node.getStartPosition()}).
      * Uses the modifier's AST node positions for the edit.  Pass {@code ""} for {@code newModifier}
      * to make the member package-private (the trailing space after {@code private} is also consumed).
      * Returns {@code rawText} unchanged when no {@code private} modifier is present.
