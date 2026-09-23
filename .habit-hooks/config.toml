@@ -1,5 +1,5 @@
 plugins = ["java", "generic"]
-files = ["**/*.java", "!**/target/**/*.java", "!**/build/**/*.java", "!**/test/resources/**/*.java"]
+files = ["**/*.java", "!gilded-rose-demo/**/*.java", "!**/target/**/*.java", "!**/build/**/*.java", "!**/test/resources/**/*.java"]
 
 [sensors.jscpd]
 disabled = true
