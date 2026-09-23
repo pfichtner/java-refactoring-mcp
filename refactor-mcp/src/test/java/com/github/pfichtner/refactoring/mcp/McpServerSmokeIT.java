@@ -46,6 +46,7 @@ class McpServerSmokeIT {
             writer.println("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},\"clientInfo\":{\"name\":\"smoke\",\"version\":\"0\"}}}");
             String initReply = reader.readLine();
             assertThat(initReply).contains("\"result\"").contains("serverInfo");
+            assertThat(initReply).contains("\"version\":\"" + System.getProperty("project.version") + "\"");
 
             // required before sending further requests
             writer.println("{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\",\"params\":{}}");

@@ -116,6 +116,10 @@
                         <manifest>
                             <mainClass>com.github.pfichtner.refactoring.cli.Main</mainClass>
                         </manifest>
+                        <manifestEntries>
+                            <Implementation-Title>java-refactor</Implementation-Title>
+                            <Implementation-Version>${project.version}</Implementation-Version>
+                        </manifestEntries>
                     </archive>
                 </configuration>
             </plugin>
@@ -133,6 +137,10 @@
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>com.github.pfichtner.refactoring.cli.Main</mainClass>
+                                    <manifestEntries>
+                                        <Implementation-Title>java-refactor</Implementation-Title>
+                                        <Implementation-Version>${project.version}</Implementation-Version>
+                                    </manifestEntries>
                                 </transformer>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                             </transformers>
