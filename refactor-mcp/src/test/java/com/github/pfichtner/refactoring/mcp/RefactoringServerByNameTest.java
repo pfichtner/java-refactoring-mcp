@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.approvaltests.Approvals;
@@ -40,20 +41,16 @@ class RefactoringServerByNameTest {
 
     @Test
     void rename_by_method_name_produces_same_result_as_position() throws Exception {
-        Map<String, Object> byPosition = Map.of(
+        Map<String, Object> common = Map.of(
                 "project_root", FIXTURE_ROOT.toString(),
                 "file",         "src/main/java/com/example/Calculator.java",
-                "line",         4, "column", 16,
                 "refactoring",  "rename",
                 "new_name",     "plus"
         );
-        Map<String, Object> byName = Map.of(
-                "project_root", FIXTURE_ROOT.toString(),
-                "file",         "src/main/java/com/example/Calculator.java",
-                "method",       "add",
-                "refactoring",  "rename",
-                "new_name",     "plus"
-        );
+        Map<String, Object> byPosition = new HashMap<>(common);
+        byPosition.putAll(Map.of("line", 4, "column", 16));
+        Map<String, Object> byName = new HashMap<>(common);
+        byName.put("method", "add");
 
         var resultByPosition = RefactoringServer.executeRename(new Options.Reader(byPosition));
         var resultByName     = RefactoringServer.executeRename(new Options.Reader(byName));
