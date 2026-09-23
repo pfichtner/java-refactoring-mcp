@@ -10,8 +10,10 @@ introduce-indirection --file {root}/MathUtils.java --line 3 --column 26 --name c
 
 ### Output:
 ```
-Dry run — no file written.
+Dry run — no files written.
+Would change (1):
 
+=== MathUtils.java ===
 public class MathUtils {
 
     public static int square(int x) {

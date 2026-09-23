@@ -10,8 +10,10 @@ convert-anonymous --file {root}/Outer.java --line 4 --column 22 --name Worker --
 
 ### Output:
 ```
-Dry run — no file written.
+Dry run — no files written.
+Would change (1):
 
+=== Outer.java ===
 public class Outer {
 
     void start() {

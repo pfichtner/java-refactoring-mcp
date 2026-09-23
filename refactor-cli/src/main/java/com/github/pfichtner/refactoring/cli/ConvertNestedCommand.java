@@ -64,17 +64,6 @@ public class ConvertNestedCommand extends AbstractRefactoringCommand {
     }
 
     @Override
-    protected void printDryRun(List<FileChange> changes) {
-        var out = spec.commandLine().getOut();
-        out.println("Dry run — no files written.");
-        out.println();
-        out.println("=== " + absFile.getFileName() + " (modified) ===");
-        out.println(changes.get(0).newSource());
-        out.println("=== " + newFile.getFileName() + " (new) ===");
-        out.println(changes.get(1).newSource());
-    }
-
-    @Override
     protected void printApplyReport(List<FileChange> changes) {
         var out = spec.commandLine().getOut();
         out.println("Moved '" + newTypeName + "' to " + newFile);

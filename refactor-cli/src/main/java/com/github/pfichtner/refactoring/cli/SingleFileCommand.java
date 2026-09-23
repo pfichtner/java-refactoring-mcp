@@ -41,14 +41,6 @@ abstract class SingleFileCommand extends AbstractRefactoringCommand {
     }
 
     @Override
-    protected void printDryRun(List<FileChange> changes) {
-        var out = spec.commandLine().getOut();
-        out.println("Dry run — no file written.");
-        out.println();
-        out.println(changes.get(0).newSource());
-    }
-
-    @Override
     protected void printApplyReport(List<FileChange> changes) {
         spec.commandLine().getOut().println(successMessage(changes.get(0).newPath()));
     }

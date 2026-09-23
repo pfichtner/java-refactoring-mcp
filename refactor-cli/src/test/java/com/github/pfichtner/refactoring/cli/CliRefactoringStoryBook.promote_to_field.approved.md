@@ -10,8 +10,10 @@ promote-to-field --file {root}/Counter.java --line 4 --column 15 --dry-run
 
 ### Output:
 ```
-Dry run — no file written.
+Dry run — no files written.
+Would change (1):
 
+=== Counter.java ===
 public class Counter {
     private int count;
 

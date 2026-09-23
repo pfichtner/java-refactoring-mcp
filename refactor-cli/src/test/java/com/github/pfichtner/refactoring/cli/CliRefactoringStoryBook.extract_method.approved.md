@@ -10,8 +10,10 @@ extract --file {root}/Greeter.java --start-line 3 --start-column 9 --end-line 5 
 
 ### Output:
 ```
-Dry run — no file written.
+Dry run — no files written.
+Would change (1):
 
+=== Greeter.java ===
 public class Greeter {
     public void run() {
         sayHi();
