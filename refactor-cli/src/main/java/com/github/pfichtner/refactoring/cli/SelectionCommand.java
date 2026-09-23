@@ -2,19 +2,16 @@ package com.github.pfichtner.refactoring.cli;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.Callable;
+import java.util.List;
 
+import com.github.pfichtner.refactoring.FileChange;
 import com.github.pfichtner.refactoring.JdtRenamer;
 import com.github.pfichtner.refactoring.SourceUnit;
 
-import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
-import picocli.CommandLine.Spec;
 
 /** Shared skeleton for single-file, selection-range refactoring commands (start/end line+column). */
-abstract class SelectionCommand implements Callable<Integer> {
-
-    @Spec CommandSpec spec;
+abstract class SelectionCommand extends AbstractRefactoringCommand {
 
     @Option(names = {"--file", "-f"}, required = true,
             description = "Source file to refactor.")
@@ -29,8 +26,13 @@ abstract class SelectionCommand implements Callable<Integer> {
     @Option(names = "--end-column",   required = true, description = "1-based end column of the selection (exclusive).")
     int endColumn;
 
-    @Option(names = "--dry-run", description = "Print result without writing to disk.")
-    boolean dryRun;
+    private Path absFile;
+
+    @Override
+    protected int validate() {
+        absFile = checkedFile(file);
+        return absFile == null ? 1 : 0;
+    }
 
     /** Applies the refactoring and returns the modified source. */
     protected abstract String transform(SourceUnit unit, int selStart, int selLen) throws Exception;
@@ -39,25 +41,24 @@ abstract class SelectionCommand implements Callable<Integer> {
     protected abstract String successMessage(Path absFile);
 
     @Override
-    public Integer call() throws Exception {
-        Path absFile = file.toAbsolutePath().normalize();
-        if (!Files.isRegularFile(absFile)) {
-            spec.commandLine().getErr().println("Error: file not found: " + absFile);
-            return 1;
-        }
+    protected List<FileChange> refactor() throws Exception {
         String source = Files.readString(absFile);
         int selStart  = JdtRenamer.toOffset(source, startLine, startColumn);
         int selLen    = JdtRenamer.toOffset(source, endLine, endColumn) - selStart;
         String result = transform(new SourceUnit(source, absFile.getFileName().toString()), selStart, selLen);
+        return List.of(new FileChange(absFile, absFile, result));
+    }
+
+    @Override
+    protected void printDryRun(List<FileChange> changes) {
         var out = spec.commandLine().getOut();
-        if (dryRun) {
-            out.println("Dry run — no file written.");
-            out.println();
-            out.println(result);
-        } else {
-            Files.writeString(absFile, result);
-            out.println(successMessage(absFile));
-        }
-        return 0;
+        out.println("Dry run — no file written.");
+        out.println();
+        out.println(changes.get(0).newSource());
+    }
+
+    @Override
+    protected void printApplyReport(List<FileChange> changes) {
+        spec.commandLine().getOut().println(successMessage(changes.get(0).newPath()));
     }
 }

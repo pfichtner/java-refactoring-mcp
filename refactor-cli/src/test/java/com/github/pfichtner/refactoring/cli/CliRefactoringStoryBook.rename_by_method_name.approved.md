@@ -11,7 +11,7 @@ rename --file {root}/src/main/java/com/example/Calculator.java --method add --na
 ### Output:
 ```
 Dry run — no files written.
-Would change (2): App.java, Calculator.java
+Would change (2):
 
 === App.java ===
 package com.example;

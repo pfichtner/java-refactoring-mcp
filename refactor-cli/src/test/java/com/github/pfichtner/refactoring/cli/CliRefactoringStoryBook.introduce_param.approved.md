@@ -11,6 +11,7 @@ introduce-param --file {root}/src/main/java/com/example/Greeter.java --start-lin
 ### Output:
 ```
 Dry run — no files written.
+Would change (2):
 
 === App.java ===
 package com.example;

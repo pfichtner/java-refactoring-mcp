@@ -1,17 +1,15 @@
 package com.github.pfichtner.refactoring.cli;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 
+import com.github.pfichtner.refactoring.FileChange;
 import com.github.pfichtner.refactoring.JdtMoveClass;
 
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Mixin;
-import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
-import picocli.CommandLine.Spec;
 
 /** CLI subcommand for move-class refactoring. Logic lives in {@link JdtMoveClass}. */
 @Command(
@@ -19,52 +17,31 @@ import picocli.CommandLine.Spec;
     mixinStandardHelpOptions = true,
     description = "Move a class to a new package, updating all imports in the project."
 )
-public class MoveClassCommand implements Callable<Integer> {
-
-    @Spec CommandSpec spec;
+public class MoveClassCommand extends AbstractProjectCommand {
 
     @Option(names = {"--file", "-f"}, required = true) Path file;
     @Option(names = {"--package", "-p"}, required = true,
             description = "Target package, e.g. com.example.util") String targetPackage;
-    @Option(names = "--dry-run") boolean dryRun;
 
-    @Mixin ProjectOptions project;
+    private Path absFile;
 
     @Override
-    public Integer call() throws Exception {
-        Path absFile = file.toAbsolutePath().normalize();
-        if (!Files.isRegularFile(absFile)) {
-            spec.commandLine().getErr().println("Error: file not found: " + absFile);
-            return 1;
-        }
+    protected int validate() {
+        absFile = checkedFile(file);
+        return absFile == null ? 1 : 0;
+    }
+
+    @Override
+    protected List<FileChange> refactor() throws Exception {
         JdtMoveClass.Result result = JdtMoveClass.moveClass(
                 project.resolve(absFile), absFile, targetPackage);
-
-        var out = spec.commandLine().getOut();
-        if (dryRun) {
-            out.println("Dry run — no files written.");
-            out.println("New path: " + result.newFilePath());
-            out.println("\n=== " + result.newFilePath().getFileName() + " (new) ===");
-            out.println(result.newClassSource().stripTrailing());
-            for (Map.Entry<Path, String> e : result.changedImports().entrySet()) {
-                out.println("\n=== " + e.getKey().getFileName() + " (updated import) ===");
-                out.println(e.getValue().stripTrailing());
-            }
-        } else {
-            // Write new file, update imports, delete old file
-            Files.createDirectories(result.newFilePath().getParent());
-            Files.writeString(result.newFilePath(), result.newClassSource());
-            for (Map.Entry<Path, String> e : result.changedImports().entrySet()) {
-                Files.writeString(e.getKey(), e.getValue());
-            }
-            Files.delete(absFile);
-            out.println("Moved " + absFile.getFileName() + " → " + result.newFilePath());
-            if (!result.changedImports().isEmpty()) {
-                out.println("Updated imports in " + result.changedImports().size() + " file(s):");
-                result.changedImports().keySet().stream().sorted()
-                        .forEach(p -> out.println("  " + p.getFileName()));
-            }
+        List<FileChange> changes = new ArrayList<>();
+        changes.add(new FileChange(absFile, result.newFilePath(), result.newClassSource()));
+        for (Map.Entry<Path, String> e : result.changedImports().entrySet()) {
+            changes.add(new FileChange(e.getKey(), e.getKey(), e.getValue()));
         }
-        return 0;
+        return changes;
     }
+
+    @Override protected String successLine(int count) { return "Moved class; " + count + " file(s) changed"; }
 }

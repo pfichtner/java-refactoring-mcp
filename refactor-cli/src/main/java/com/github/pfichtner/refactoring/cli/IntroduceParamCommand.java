@@ -2,17 +2,14 @@ package com.github.pfichtner.refactoring.cli;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
-import java.util.concurrent.Callable;
+import java.util.List;
 
+import com.github.pfichtner.refactoring.FileChange;
 import com.github.pfichtner.refactoring.JdtIntroduceParam;
 import com.github.pfichtner.refactoring.JdtRenamer;
 
 import picocli.CommandLine.Command;
-import picocli.CommandLine.Mixin;
-import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
-import picocli.CommandLine.Spec;
 
 /** CLI subcommand for introduce-parameter refactoring. Logic lives in {@link JdtIntroduceParam}. */
 @Command(
@@ -20,9 +17,7 @@ import picocli.CommandLine.Spec;
     mixinStandardHelpOptions = true,
     description = "Promote an expression to a method parameter and update all call sites."
 )
-public class IntroduceParamCommand implements Callable<Integer> {
-
-    @Spec CommandSpec spec;
+public class IntroduceParamCommand extends AbstractProjectCommand {
 
     @Option(names = {"--file", "-f"}, required = true,
             description = "Source file containing the expression.")
@@ -32,6 +27,7 @@ public class IntroduceParamCommand implements Callable<Integer> {
     @Option(names = "--start-column", required = true) int startColumn;
     @Option(names = "--end-line",     required = true) int endLine;
     @Option(names = "--end-column",   required = true) int endColumn;
+
     @Option(names = {"--name", "-n"}, required = true,
             description = "Name for the new parameter.")
     String paramName;
@@ -39,36 +35,24 @@ public class IntroduceParamCommand implements Callable<Integer> {
     @Option(names = "--type", description = "Explicit type (inferred if omitted).")
     String paramType;
 
-
-    @Option(names = "--dry-run") boolean dryRun;
-
-    @Mixin ProjectOptions project;
+    private Path absFile;
 
     @Override
-    public Integer call() throws Exception {
-        Path absFile = file.toAbsolutePath().normalize();
-        if (!Files.isRegularFile(absFile)) {
-            spec.commandLine().getErr().println("Error: file not found: " + absFile);
-            return 1;
-        }
+    protected int validate() {
+        absFile = checkedFile(file);
+        return absFile == null ? 1 : 0;
+    }
+
+    @Override
+    protected List<FileChange> refactor() throws Exception {
         String source  = Files.readString(absFile);
         int selStart   = JdtRenamer.toOffset(source, startLine, startColumn);
         int selEnd     = JdtRenamer.toOffset(source, endLine, endColumn);
-        Map<Path, String> changed = JdtIntroduceParam.introduceParam(
-                project.resolve(absFile), absFile, selStart, selEnd - selStart,
-                paramName, paramType);
+        return toChanges(JdtIntroduceParam.introduceParam(
+                project.resolve(absFile), absFile, selStart, selEnd - selStart, paramName, paramType));
+    }
 
-        var out = spec.commandLine().getOut();
-        if (dryRun) {
-            out.println("Dry run — no files written.");
-            changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
-                    .forEach(e -> { out.println("\n=== " + e.getKey().getFileName() + " ==="); out.println(e.getValue().stripTrailing()); });
-        } else {
-            for (var entry : changed.entrySet()) Files.writeString(entry.getKey(), entry.getValue());
-            out.println("Introduced parameter '" + paramName + "' in "
-                    + changed.size() + " file(s):");
-            changed.keySet().stream().sorted().forEach(p -> out.println("  " + p.getFileName()));
-        }
-        return 0;
+    @Override protected String successLine(int count) {
+        return "Introduced parameter '" + paramName + "' in " + count + " file(s)";
     }
 }
