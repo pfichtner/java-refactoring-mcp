@@ -92,7 +92,6 @@ public final class LocatorResolver {
                                     String source, String unitName) {
         CompilationUnit cu = parse(source, unitName);
         List<VariableDeclarationFragment> matches = new ArrayList<>();
-
         cu.accept(new ASTVisitor() {
             @Override
             public boolean visit(VariableDeclarationFragment node) {
@@ -103,127 +102,83 @@ public final class LocatorResolver {
                 return true;
             }
         });
-
-        if (matches.isEmpty()) {
-            throw new IllegalArgumentException("Field '" + name + "' not found in " + unitName);
-        }
-        if (matches.size() > 1) {
-            throw new IllegalArgumentException(
-                    "Ambiguous: multiple fields named '" + name + "' in " + unitName +
-                    ". Specify 'class' to narrow the scope.");
-        }
-        return matches.get(0).getName().getStartPosition();
+        return validateSingle(matches,
+                "Field '" + name + "' not found in " + unitName,
+                "Ambiguous: multiple fields named '" + name + "' in " + unitName
+                + ". Specify 'class' to narrow the scope."
+        ).getName().getStartPosition();
     }
 
     private static int resolveType(String name, String source, String unitName) {
         CompilationUnit cu = parse(source, unitName);
         List<AbstractTypeDeclaration> matches = new ArrayList<>();
-
         cu.accept(new ASTVisitor() {
-            @Override
-            public boolean visit(TypeDeclaration node) {
+            private void checkType(AbstractTypeDeclaration node) {
                 if (node.getName().getIdentifier().equals(name)) matches.add(node);
-                return true;
             }
-
-            @Override
-            public boolean visit(EnumDeclaration node) {
-                if (node.getName().getIdentifier().equals(name)) matches.add(node);
-                return true;
-            }
-
-            @Override
-            public boolean visit(AnnotationTypeDeclaration node) {
-                if (node.getName().getIdentifier().equals(name)) matches.add(node);
-                return true;
-            }
+            @Override public boolean visit(TypeDeclaration node)           { checkType(node); return true; }
+            @Override public boolean visit(EnumDeclaration node)           { checkType(node); return true; }
+            @Override public boolean visit(AnnotationTypeDeclaration node) { checkType(node); return true; }
         });
-
-        if (matches.isEmpty()) {
-            throw new IllegalArgumentException("Type '" + name + "' not found in " + unitName);
-        }
-        if (matches.size() > 1) {
-            throw new IllegalArgumentException(
-                    "Ambiguous: multiple types named '" + name + "' in " + unitName);
-        }
-        return matches.get(0).getName().getStartPosition();
+        return validateSingle(matches,
+                "Type '" + name + "' not found in " + unitName,
+                "Ambiguous: multiple types named '" + name + "' in " + unitName
+        ).getName().getStartPosition();
     }
 
     private static int resolveParameter(String methodSpec, String paramName,
                                         String source, String unitName) {
-        ParsedName parsed = ParsedName.parse(methodSpec);
-        CompilationUnit cu = parse(source, unitName);
+        MethodDeclaration enclosing = findMethodBySpec(methodSpec, parse(source, unitName), unitName);
         List<SingleVariableDeclaration> matches = new ArrayList<>();
-
-        cu.accept(new ASTVisitor() {
-            @Override
-            public boolean visit(MethodDeclaration node) {
-                if (!node.getName().getIdentifier().equals(parsed.name())) return true;
-                if (parsed.paramTypes() != null && !paramTypesMatch(node, parsed.paramTypes())) return true;
-                @SuppressWarnings("unchecked")
-                List<SingleVariableDeclaration> params = node.parameters();
-                params.stream()
-                        .filter(p -> p.getName().getIdentifier().equals(paramName))
-                        .forEach(matches::add);
-                return true;
-            }
-        });
-
-        if (matches.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Parameter '" + paramName + "' in method '" + methodSpec + "' not found in " + unitName);
-        }
-        if (matches.size() > 1) {
-            throw new IllegalArgumentException(
-                    "Ambiguous: parameter '" + paramName + "' in method '" + methodSpec + "' matches multiple locations in " + unitName +
-                    ". Specify parameter types in method spec, e.g. '" + parsed.name() + "(String, int)'");
-        }
-        return matches.get(0).getName().getStartPosition();
+        @SuppressWarnings("unchecked")
+        List<SingleVariableDeclaration> params = enclosing.parameters();
+        params.stream()
+                .filter(p -> p.getName().getIdentifier().equals(paramName))
+                .forEach(matches::add);
+        ParsedName parsed = ParsedName.parse(methodSpec);
+        return validateSingle(matches,
+                "Parameter '" + paramName + "' in method '" + methodSpec + "' not found in " + unitName,
+                "Ambiguous: parameter '" + paramName + "' in method '" + methodSpec
+                + "' matches multiple locations in " + unitName
+                + ". Specify parameter types in method spec, e.g. '" + parsed.name() + "(String, int)'"
+        ).getName().getStartPosition();
     }
 
     private static int resolveVariable(String name, String methodSpec, String source, String unitName) {
-        ParsedName parsed = ParsedName.parse(methodSpec);
-        CompilationUnit cu = parse(source, unitName);
+        MethodDeclaration enclosing = findMethodBySpec(methodSpec, parse(source, unitName), unitName);
+        return findLocalVariable(enclosing, name, methodSpec, unitName).getName().getStartPosition();
+    }
 
-        // 1. Find the enclosing method/constructor
-        List<MethodDeclaration> methods = new ArrayList<>();
+    private static MethodDeclaration findMethodBySpec(String methodSpec, CompilationUnit cu, String unitName) {
+        ParsedName parsed = ParsedName.parse(methodSpec);
+        List<MethodDeclaration> matches = new ArrayList<>();
         cu.accept(new ASTVisitor() {
             @Override
             public boolean visit(MethodDeclaration node) {
                 if (!node.getName().getIdentifier().equals(parsed.name())) return true;
                 if (parsed.paramTypes() != null && !paramTypesMatch(node, parsed.paramTypes())) return true;
-                methods.add(node);
+                matches.add(node);
                 return true;
             }
         });
+        return nameOffset(matches, methodSpec, "method", unitName);
+    }
 
-        if (methods.isEmpty())
-            throw new IllegalArgumentException(
-                    "Method '" + methodSpec + "' not found in " + unitName);
-        if (methods.size() > 1)
-            throw new IllegalArgumentException(
-                    "Ambiguous: multiple methods named '" + methodSpec + "' in " + unitName +
-                    ". Specify parameter types, e.g. \"" + parsed.name() + "(int, String)\".");
-
-        // 2. Within that method, find the local variable
+    private static VariableDeclarationFragment findLocalVariable(
+            MethodDeclaration enclosing, String name, String methodSpec, String unitName) {
         List<VariableDeclarationFragment> vars = new ArrayList<>();
-        methods.get(0).accept(new ASTVisitor() {
+        enclosing.accept(new ASTVisitor() {
             @Override
             public boolean visit(VariableDeclarationFragment node) {
-                if (node.getName().getIdentifier().equals(name))
-                    vars.add(node);
+                if (node.getName().getIdentifier().equals(name)) vars.add(node);
                 return true;
             }
         });
-
-        if (vars.isEmpty())
-            throw new IllegalArgumentException(
-                    "Local variable '" + name + "' not found in method '" + methodSpec + "' in " + unitName);
-        if (vars.size() > 1)
-            throw new IllegalArgumentException(
-                    "Ambiguous: multiple variables named '" + name + "' in method '" + methodSpec +
-                    "' in " + unitName + ". Use --line or --line/--column to disambiguate.");
-        return vars.get(0).getName().getStartPosition();
+        return validateSingle(vars,
+                "Local variable '" + name + "' not found in method '" + methodSpec + "' in " + unitName,
+                "Ambiguous: multiple variables named '" + name + "' in method '" + methodSpec
+                + "' in " + unitName + ". Use --line or --line/--column to disambiguate."
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -257,6 +212,12 @@ public final class LocatorResolver {
                 .allMatch(i -> params.get(i).getType().toString().equals(paramTypes.get(i).trim()));
     }
 
+    private static <T> T validateSingle(List<T> matches, String emptyMsg, String ambiguousMsg) {
+        if (matches.isEmpty()) throw new IllegalArgumentException(emptyMsg);
+        if (matches.size() > 1) throw new IllegalArgumentException(ambiguousMsg);
+        return matches.get(0);
+    }
+
     private static MethodDeclaration nameOffset(
             List<MethodDeclaration> matches, String nameSpec, String kind, String unitName) {
         if (matches.isEmpty()) {
@@ -284,15 +245,12 @@ public final class LocatorResolver {
                 return true;
             }
         });
-        if (matches.isEmpty())
-            throw new IllegalArgumentException(
-                    "No named element at line " + line + " in " + unitName +
-                    ". Use --variable, --method, or another name-based locator.");
-        if (matches.size() > 1)
-            throw new IllegalArgumentException(
-                    "Ambiguous: " + matches.size() + " elements at line " + line +
-                    " in " + unitName + ". Specify --column or a name-based locator.");
-        return matches.get(0).getStartPosition();
+        return validateSingle(matches,
+                "No named element at line " + line + " in " + unitName
+                + ". Use --variable, --method, or another name-based locator.",
+                "Ambiguous: " + matches.size() + " elements at line " + line
+                + " in " + unitName + ". Specify --column or a name-based locator."
+        ).getStartPosition();
     }
 
     private static boolean isDeclarationName(SimpleName name) {
