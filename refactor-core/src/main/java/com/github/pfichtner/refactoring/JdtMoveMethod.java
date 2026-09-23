@@ -39,15 +39,29 @@ public class JdtMoveMethod {
 
     /**
      * Moves a method from one class to another class within the project.
-     *
-     * @param project    project used to enumerate source roots
-     * @param sourceFile file containing the class with the method to move
-     * @param offset     character offset in {@code sourceFile} pointing into the method
-     * @param targetClass fully-qualified name of the target class (e.g. {@code "com.example.Report"})
-     * @return {@code path → new source} for the target file and the source file (2 entries)
+     * Equivalent to {@link #moveMethod(JavaProject, Path, int, String, boolean)} with {@code widenVisibility=true}.
      */
     public static Map<Path, String> moveMethod(
             JavaProject project, Path sourceFile, int offset, String targetClass)
+            throws IOException, InterruptedException {
+        return moveMethod(project, sourceFile, offset, targetClass, true);
+    }
+
+    /**
+     * Moves a method from one class to another class within the project.
+     *
+     * @param project         project used to enumerate source roots
+     * @param sourceFile      file containing the class with the method to move
+     * @param offset          character offset in {@code sourceFile} pointing into the method
+     * @param targetClass     fully-qualified name of the target class (e.g. {@code "com.example.Report"})
+     * @param widenVisibility if {@code true} and the method is {@code private}, its modifier is
+     *                        widened to the minimum required: package-private when source and target
+     *                        share the same package, {@code public} when they are in different packages
+     * @return {@code path → new source} for the target file and the source file (2 entries)
+     */
+    public static Map<Path, String> moveMethod(
+            JavaProject project, Path sourceFile, int offset, String targetClass,
+            boolean widenVisibility)
             throws IOException, InterruptedException {
 
         Path absSource = sourceFile.toAbsolutePath().normalize();
@@ -83,6 +97,12 @@ public class JdtMoveMethod {
 
         String rawMethod = source.substring(
                 method.getStartPosition(), method.getStartPosition() + method.getLength());
+        if (widenVisibility) {
+            String sourcePackage = JdtPullUpField.packageOf(cu);
+            String targetPackage = JdtPullUpField.packageOf(targetCu);
+            String widenTo = sourcePackage.equals(targetPackage) ? "" : "public";
+            rawMethod = JdtPullUpField.widenModifier(method, rawMethod, widenTo);
+        }
 
         String newSourceSource = JdtPullUpMethod.removeMethod(source, method);
         String newTargetSource = JdtPullUpMethod.insertMethod(targetSource, targetType, rawMethod);

@@ -14,9 +14,11 @@ import java.util.stream.Collectors;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.BodyDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.PackageDeclaration;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
@@ -49,14 +51,26 @@ public class JdtPullUpField {
 
     /**
      * Pulls a field up from a subclass to its direct superclass.
-     *
-     * @param project    Maven project used to enumerate source roots
-     * @param sourceFile file containing the subclass with the field to pull up
-     * @param offset     character offset in {@code sourceFile} pointing into the field
-     * @return {@code path → new source} for the superclass and the subclass (2 entries)
+     * Equivalent to {@link #pullUp(JavaProject, Path, int, boolean)} with {@code widenVisibility=true}.
      */
     public static Map<Path, String> pullUp(
             JavaProject project, Path sourceFile, int offset)
+            throws IOException, InterruptedException {
+        return pullUp(project, sourceFile, offset, true);
+    }
+
+    /**
+     * Pulls a field up from a subclass to its direct superclass.
+     *
+     * @param project         Maven project used to enumerate source roots
+     * @param sourceFile      file containing the subclass with the field to pull up
+     * @param offset          character offset in {@code sourceFile} pointing into the field
+     * @param widenVisibility if {@code true} and the field is {@code private}, its modifier
+     *                        is changed to {@code protected} in the superclass
+     * @return {@code path → new source} for the superclass and the subclass (2 entries)
+     */
+    public static Map<Path, String> pullUp(
+            JavaProject project, Path sourceFile, int offset, boolean widenVisibility)
             throws IOException, InterruptedException {
 
         Path absSource = sourceFile.toAbsolutePath().normalize();
@@ -107,6 +121,7 @@ public class JdtPullUpField {
 
         String rawField = source.substring(
                 field.getStartPosition(), field.getStartPosition() + field.getLength());
+        if (widenVisibility) rawField = widenModifier(field, rawField, "protected");
 
         String newSubclassSource = removeField(source, field);
         String newSuperSource    = insertField(superSource, superTypeDecl, rawField);
@@ -118,8 +133,43 @@ public class JdtPullUpField {
     }
 
     // -------------------------------------------------------------------------
-    // Helpers — also used by JdtPushDownField
+    // Helpers — also used by JdtPushDownField and other move refactorings
     // -------------------------------------------------------------------------
+
+    /**
+     * If {@code node} has a {@code private} modifier, replaces it with {@code newModifier}
+     * in the raw source text {@code rawText} (which starts at {@code node.getStartPosition()}).
+     * Uses the modifier's AST node positions for the edit.  Returns {@code rawText} unchanged
+     * when no {@code private} modifier is present.
+     */
+    /**
+     * If {@code node} has a {@code private} modifier, replaces it with {@code newModifier}
+     * in the raw source text {@code rawText} (which starts at {@code node.getStartPosition()}).
+     * Uses the modifier's AST node positions for the edit.  Pass {@code ""} for {@code newModifier}
+     * to make the member package-private (the trailing space after {@code private} is also consumed).
+     * Returns {@code rawText} unchanged when no {@code private} modifier is present.
+     */
+    static String widenModifier(BodyDeclaration node, String rawText, String newModifier) {
+        for (Object mod : node.modifiers()) {
+            if (mod instanceof Modifier m && m.isPrivate()) {
+                int relStart = m.getStartPosition() - node.getStartPosition();
+                int relEnd   = relStart + m.getLength();
+                if (newModifier.isEmpty() && relEnd < rawText.length() && rawText.charAt(relEnd) == ' ') {
+                    relEnd++; // consume the space that followed "private" so we don't leave a leading gap
+                }
+                return rawText.substring(0, relStart)
+                        + newModifier
+                        + rawText.substring(relEnd);
+            }
+        }
+        return rawText;
+    }
+
+    /** Returns the package name of the compilation unit, or {@code ""} for the default package. */
+    static String packageOf(CompilationUnit cu) {
+        PackageDeclaration pkg = cu.getPackage();
+        return pkg != null ? pkg.getName().getFullyQualifiedName() : "";
+    }
 
     static FieldDeclaration findFieldAt(CompilationUnit cu, int offset) {
         FieldDeclaration[] found = {null};

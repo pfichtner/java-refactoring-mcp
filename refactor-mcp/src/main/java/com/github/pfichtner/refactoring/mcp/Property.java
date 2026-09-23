@@ -36,6 +36,7 @@ enum Property {
     AS_RECORD("as_record",                       bool("Generate a record instead of a plain class (Java 16+).")),
     GENERATE_SETTER("generate_setter",           bool("Also generate a setter and rewrite write access sites.")),
     MAKE_CONSTRUCTOR_PRIVATE("make_constructor_private", bool("Change the constructor visibility to private.")),
+    WIDEN_VISIBILITY("widen_visibility",         bool("Widen the moved element's visibility to the minimum required for correctness (e.g. private → protected for pull-up, package-private or public for cross-package moves). Defaults to true.")),
 
     // -------------------------------------------------------------------------
     // Name arguments

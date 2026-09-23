@@ -173,17 +173,21 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 ### Pull up method
 | Test case | Approval |
 |-----------|----------|
+| Pull up method without widen_visibility: private modifier preserved | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/PullUpMethodTest.no_widen_visibility_keeps_private_modifier.approved.md) |
 | Pull up method: Dog.speak → Animal (FQN extends clause) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/PullUpMethodTest.pull_up_handles_fqn_extends_clause.approved.md) |
 | Pull up method: Dog.speak → Animal | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/PullUpMethodTest.pull_up_moves_method_to_superclass.approved.md) |
 | Pull up method rejected: Animal has no superclass | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/PullUpMethodTest.reject_class_with_no_explicit_superclass.approved.md) |
 | Pull up method rejected: superclass already has name() | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/PullUpMethodTest.reject_duplicate_method_in_superclass.approved.md) |
+| Pull up method with widen_visibility: private Dog.bark → protected Animal.bark | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/PullUpMethodTest.widen_visibility_changes_private_to_protected.approved.md) |
 
 ### Pull up field
 | Test case | Approval |
 |-----------|----------|
+| Pull up field without widen_visibility: private modifier preserved | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/PullUpFieldTest.no_widen_visibility_keeps_private_modifier.approved.md) |
 | Pull up field: Dog.breed → Animal | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/PullUpFieldTest.pull_up_moves_field_to_superclass.approved.md) |
 | Pull up field rejected: Animal has no superclass | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/PullUpFieldTest.reject_class_with_no_explicit_superclass.approved.md) |
 | Pull up field rejected: superclass already has name | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/PullUpFieldTest.reject_duplicate_field_in_superclass.approved.md) |
+| Pull up field with widen_visibility: private Dog.secret → protected Animal.secret | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/PullUpFieldTest.widen_visibility_changes_private_to_protected.approved.md) |
 
 ### Push down method
 | Test case | Approval |
@@ -207,6 +211,8 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Move class rejected: already in target package | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveClassTest.move_class_rejected_when_already_in_target_package.approved.md) |
 | Move class: Calculator → com.example.util (FQN code references) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveClassTest.move_class_updates_fqn_code_references.approved.md) |
 | Move class: Calculator → com.example.util | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveClassTest.move_class_updates_package_and_imports.approved.md) |
+| Move class without widen_visibility: package-private preserved | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveClassTest.no_widen_visibility_keeps_package_private.approved.md) |
+| Move class with widen_visibility: package-private → public | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveClassTest.widen_visibility_makes_package_private_class_public.approved.md) |
 
 ---
 
@@ -370,15 +376,19 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Move method: FQN selects com.example.Report over com.other.Report | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveMethodTest.disambiguates_target_by_fully_qualified_name.approved.md) |
 | Move method: Printer.format → com.example.Report | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveMethodTest.move_method_moves_to_target_class.approved.md) |
 | Move method to named target: Printer.byline(Report, Author) → com.example.Report | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveMethodTest.move_method_with_multiple_parameter_types_to_named_target.approved.md) |
+| Move method without widen_visibility: private modifier preserved | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveMethodTest.no_widen_visibility_keeps_private_modifier.approved.md) |
 | Move method rejected: Report already declares describe(Report) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveMethodTest.reject_duplicate_method_in_target.approved.md) |
 | Move method rejected: target class not found | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveMethodTest.reject_target_class_not_found.approved.md) |
 | Move method rejected: com.other.Report already declares format | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveMethodTest.reject_when_target_in_other_package_already_has_same_method.approved.md) |
+| Move method with widen_visibility (same package): private → package-private | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveMethodTest.widen_visibility_changes_private_to_package_private_same_package.approved.md) |
 
 ### Move static member
 | Test case | Approval |
 |-----------|----------|
 | Move static member rejected: no static member at offset | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveStaticMemberTest.move_static_member_rejected_when_no_static_member_at_offset.approved.md) |
 | Move static method MathUtils.square → Helpers.square | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveStaticMemberTest.move_static_method_to_another_class_and_update_call_sites.approved.md) |
+| Move static without widen_visibility: private modifier preserved | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveStaticMemberTest.no_widen_visibility_keeps_private_modifier.approved.md) |
+| Move static with widen_visibility (same package): private → package-private | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveStaticMemberTest.widen_visibility_changes_private_to_package_private_same_package.approved.md) |
 
 ### Promote to field
 | Test case | Approval |

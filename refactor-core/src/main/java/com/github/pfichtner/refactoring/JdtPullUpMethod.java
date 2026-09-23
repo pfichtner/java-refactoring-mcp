@@ -45,14 +45,26 @@ public class JdtPullUpMethod {
 
     /**
      * Pulls a method up from a subclass to its direct superclass.
-     *
-     * @param project    Maven project used to enumerate source roots
-     * @param sourceFile file containing the subclass with the method to pull up
-     * @param offset     character offset in {@code sourceFile} pointing into the method
-     * @return {@code path → new source} for the superclass and the subclass (2 entries)
+     * Equivalent to {@link #pullUp(JavaProject, Path, int, boolean)} with {@code widenVisibility=true}.
      */
     public static Map<Path, String> pullUp(
             JavaProject project, Path sourceFile, int offset)
+            throws IOException, InterruptedException {
+        return pullUp(project, sourceFile, offset, true);
+    }
+
+    /**
+     * Pulls a method up from a subclass to its direct superclass.
+     *
+     * @param project         Maven project used to enumerate source roots
+     * @param sourceFile      file containing the subclass with the method to pull up
+     * @param offset          character offset in {@code sourceFile} pointing into the method
+     * @param widenVisibility if {@code true} and the method is {@code private}, its modifier
+     *                        is changed to {@code protected} in the superclass
+     * @return {@code path → new source} for the superclass and the subclass (2 entries)
+     */
+    public static Map<Path, String> pullUp(
+            JavaProject project, Path sourceFile, int offset, boolean widenVisibility)
             throws IOException, InterruptedException {
 
         Path absSource = sourceFile.toAbsolutePath().normalize();
@@ -104,6 +116,7 @@ public class JdtPullUpMethod {
 
         String rawMethod = source.substring(
                 method.getStartPosition(), method.getStartPosition() + method.getLength());
+        if (widenVisibility) rawMethod = JdtPullUpField.widenModifier(method, rawMethod, "protected");
 
         String newSubclassSource = removeMethod(source, method);
         String newSuperSource    = insertMethod(superSource, superTypeDecl, rawMethod);

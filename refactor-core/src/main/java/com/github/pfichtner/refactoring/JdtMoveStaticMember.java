@@ -75,15 +75,30 @@ public class JdtMoveStaticMember {
     /**
      * Moves the static member at {@code offset} from the class in {@code sourceFile}
      * to the class identified by {@code targetClassName}.
+     * Equivalent to {@link #moveStaticMember(JavaProject, Path, int, String, boolean)} with {@code widenVisibility=true}.
+     */
+    public static Map<Path, String> moveStaticMember(
+            JavaProject project, Path sourceFile, int offset, String targetClassName)
+            throws IOException, InterruptedException {
+        return moveStaticMember(project, sourceFile, offset, targetClassName, true);
+    }
+
+    /**
+     * Moves the static member at {@code offset} from the class in {@code sourceFile}
+     * to the class identified by {@code targetClassName}.
      *
      * @param project         Maven project for enumerating source roots
      * @param sourceFile      file containing the static member to move
      * @param offset          character offset inside the member declaration
      * @param targetClassName fully-qualified name of the target class (e.g. {@code "com.example.Helpers"})
+     * @param widenVisibility if {@code true} and the member is {@code private}, its modifier is
+     *                        widened to the minimum required: package-private when source and target
+     *                        share the same package, {@code public} when they are in different packages
      * @return {@code path → new source} for every changed file
      */
     public static Map<Path, String> moveStaticMember(
-            JavaProject project, Path sourceFile, int offset, String targetClassName)
+            JavaProject project, Path sourceFile, int offset, String targetClassName,
+            boolean widenVisibility)
             throws IOException, InterruptedException {
 
         Path absSource = sourceFile.toAbsolutePath().normalize();
@@ -128,6 +143,12 @@ public class JdtMoveStaticMember {
 
         String rawMember = sourceText.substring(
                 member.getStartPosition(), member.getStartPosition() + member.getLength());
+        if (widenVisibility) {
+            String sourcePackage = JdtPullUpField.packageOf(sourceCu);
+            String targetPackage = JdtPullUpField.packageOf(targetCu);
+            String widenTo = sourcePackage.equals(targetPackage) ? "" : "public";
+            rawMember = JdtPullUpField.widenModifier(member, rawMember, widenTo);
+        }
 
         // Remove from source
         String newSourceText = removeMember(sourceText, member);

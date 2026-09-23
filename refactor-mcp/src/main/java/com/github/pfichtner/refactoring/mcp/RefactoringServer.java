@@ -41,6 +41,7 @@ import static com.github.pfichtner.refactoring.mcp.Property.TARGET_CLASS;
 import static com.github.pfichtner.refactoring.mcp.Property.TYPE;
 import static com.github.pfichtner.refactoring.mcp.Property.VARIABLE;
 import static com.github.pfichtner.refactoring.mcp.Property.VAR_NAME;
+import static com.github.pfichtner.refactoring.mcp.Property.WIDEN_VISIBILITY;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -324,7 +325,7 @@ public class RefactoringServer {
     // -------------------------------------------------------------------------
 
     static SyncToolSpecification moveClass() {
-        Options opts = Options.of(PROJECT_ROOT, FILE, NEW_PACKAGE);
+        Options opts = Options.builder().add(WIDEN_VISIBILITY).addRequired(PROJECT_ROOT, FILE, NEW_PACKAGE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("move_class", opts.toSchema())
                         .description("""
@@ -332,6 +333,7 @@ public class RefactoringServer {
                         Updates the package declaration and all explicit imports in the project.
                         Returns: new class source, new canonical file path, updated import files.
                         Does not write to disk or delete the original file.
+                        widen_visibility (default true): if the class is package-private, adds 'public'.
                         """)
                         .build())
                 .callHandler((exchange, request) -> {
@@ -339,10 +341,11 @@ public class RefactoringServer {
                         var args       = opts.reader(request.arguments());
                         Path file         = args.getPath(FILE);
                         String newPackage = args.getString(NEW_PACKAGE);
+                        boolean widen     = args.getBoolean(WIDEN_VISIBILITY, true);
                         var result = JdtMoveClass.moveClass(
                                 ProjectDetector.detect(
                                         args.getPath(PROJECT_ROOT)),
-                                file, newPackage);
+                                file, newPackage, widen);
 
                         String imports = result.changedImports().entrySet().stream()
                                 .sorted(Map.Entry.comparingByKey())
@@ -822,7 +825,7 @@ public class RefactoringServer {
     // -------------------------------------------------------------------------
 
     static SyncToolSpecification pullUpMethod() {
-        Options opts = Options.builder().add(LINE, COLUMN, METHOD, CLASS).addRequired(PROJECT_ROOT, FILE).build();
+        Options opts = Options.builder().add(LINE, COLUMN, METHOD, CLASS, WIDEN_VISIBILITY).addRequired(PROJECT_ROOT, FILE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("pull_up_method", opts.toSchema())
                         .description("""
@@ -830,6 +833,7 @@ public class RefactoringServer {
                         The superclass must be in the project source roots.
                         Returns new source for both the subclass and the superclass.
                         Does not write to disk.
+                        widen_visibility (default true): if the method is private, changes it to protected in the superclass.
                         """)
                         .build())
                 .callHandler((exchange, request) -> {
@@ -838,10 +842,11 @@ public class RefactoringServer {
                         Path file   = args.getPath(FILE);
                         String source = Files.readString(file);
                         int offset    = resolveOffset(args, source, file.getFileName().toString());
+                        boolean widen = args.getBoolean(WIDEN_VISIBILITY, true);
                         var changed   = JdtPullUpMethod.pullUp(
                                 ProjectDetector.detect(
                                         args.getPath(PROJECT_ROOT)),
-                                file, offset);
+                                file, offset, widen);
                         return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
                                 .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
                                         + e.getValue().stripTrailing() + "\n\n")
@@ -893,7 +898,7 @@ public class RefactoringServer {
     // Tool: move_method
 
     static SyncToolSpecification moveMethod() {
-        Options opts = Options.builder().add(LINE, COLUMN, METHOD, CLASS).addRequired(PROJECT_ROOT, FILE, TARGET_CLASS).build();
+        Options opts = Options.builder().add(LINE, COLUMN, METHOD, CLASS, WIDEN_VISIBILITY).addRequired(PROJECT_ROOT, FILE, TARGET_CLASS).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("move_method", opts.toSchema())
                         .description("""
@@ -903,6 +908,7 @@ public class RefactoringServer {
                         Call sites in other files are not updated.
                         Returns new source for both the target file and the source file.
                         Does not write to disk.
+                        widen_visibility (default true): if the method is private, widens to package-private (same package) or public (cross-package).
                         """)
                         .build())
                 .callHandler((exchange, request) -> {
@@ -912,10 +918,11 @@ public class RefactoringServer {
                         String targetClass = args.getString(TARGET_CLASS);
                         String source     = Files.readString(file);
                         int offset        = resolveOffset(args, source, file.getFileName().toString());
+                        boolean widen     = args.getBoolean(WIDEN_VISIBILITY, true);
                         var changed = JdtMoveMethod.moveMethod(
                                 ProjectDetector.detect(
                                         args.getPath(PROJECT_ROOT)),
-                                file, offset, targetClass);
+                                file, offset, targetClass, widen);
                         return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
                                 .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
                                         + e.getValue().stripTrailing() + "\n\n")
@@ -930,9 +937,11 @@ public class RefactoringServer {
     // Tool: pull_up_field
 
     static SyncToolSpecification pullUpField() {
-        Options opts = Options.builder().add(LINE, COLUMN, FIELD, CLASS).addRequired(PROJECT_ROOT, FILE).build();
+        Options opts = Options.builder().add(LINE, COLUMN, FIELD, CLASS, WIDEN_VISIBILITY).addRequired(PROJECT_ROOT, FILE).build();
         return SyncToolSpecification.builder()
-                .tool(Tool.builder("pull_up_field", opts.toSchema()).build())
+                .tool(Tool.builder("pull_up_field", opts.toSchema())
+                        .description("Pull a field up from a subclass to its direct superclass. widen_visibility (default true): if the field is private, changes it to protected in the superclass.")
+                        .build())
                 .callHandler((exchange, request) -> {
                     try {
                         var args  = opts.reader(request.arguments());
@@ -941,9 +950,10 @@ public class RefactoringServer {
 
                         String source = Files.readString(file);
                         int offset    = resolveOffset(args, source, file.getFileName().toString());
+                        boolean widen = args.getBoolean(WIDEN_VISIBILITY, true);
 
                         var changed = JdtPullUpField.pullUp(
-                                ProjectDetector.detect(root), file, offset);
+                                ProjectDetector.detect(root), file, offset, widen);
                         return ok(formatPreview(changed));
                     } catch (IllegalArgumentException e) {
                         return error(e.getMessage());
@@ -1216,10 +1226,10 @@ public class RefactoringServer {
 
     // Tool: move_static_member
     static SyncToolSpecification moveStaticMember() {
-        Options opts = Options.of(PROJECT_ROOT, FILE, LINE, COLUMN, TARGET_CLASS);
+        Options opts = Options.builder().add(WIDEN_VISIBILITY).addRequired(PROJECT_ROOT, FILE, LINE, COLUMN, TARGET_CLASS).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("move_static_member", opts.toSchema())
-                .description("Move a static method or static field to another class and update call sites.")
+                .description("Move a static method or static field to another class and update call sites. widen_visibility (default true): if the member is private, widens to package-private (same package) or public (cross-package).")
                 .build())
                 .callHandler((exchange, request) -> {
                     try {
@@ -1229,9 +1239,10 @@ public class RefactoringServer {
                         String source     = Files.readString(file);
                         int offset        = resolveOffset(args, source, file.getFileName().toString());
                         String target     = args.getString(TARGET_CLASS);
+                        boolean widen     = args.getBoolean(WIDEN_VISIBILITY, true);
                         var project = new com.github.pfichtner.refactoring.project.MavenProject(projectRoot);
                         java.util.Map<java.nio.file.Path, String> changed =
-                                JdtMoveStaticMember.moveStaticMember(project, file, offset, target);
+                                JdtMoveStaticMember.moveStaticMember(project, file, offset, target, widen);
                         StringBuilder sb = new StringBuilder();
                         changed.forEach((p, src) ->
                                 sb.append("=== ").append(p.getFileName()).append(" ===\n").append(src).append("\n"));

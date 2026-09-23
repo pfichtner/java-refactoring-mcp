@@ -61,6 +61,66 @@ class MoveStaticMemberTest {
     }
 
     @Test
+    void widen_visibility_changes_private_to_package_private_same_package() throws Exception {
+        Path projectRoot  = fixtures.projectPath("projects/move-static-private");
+        MavenProject project = new MavenProject(projectRoot);
+        Path sourceRoot   = project.sourceRoots().get(0);
+        Path mathFile     = sourceRoot.resolve("com/example/MathUtils.java");
+        Path helpersFile  = sourceRoot.resolve("com/example/Helpers.java");
+
+        String mathSource    = Files.readString(mathFile);
+        String helpersSource = Files.readString(helpersFile);
+
+        int offset = Fixtures.offsetOf(mathSource, "square");
+        Map<Path, String> result = JdtMoveStaticMember.moveStaticMember(project, mathFile, offset, "com.example.Helpers", true);
+
+        assertThat(result).containsKey(mathFile.toAbsolutePath().normalize());
+        assertThat(result).containsKey(helpersFile.toAbsolutePath().normalize());
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Move static with widen_visibility (same package): private → package-private")
+                .javaSection("Input: MathUtils.java", mathSource)
+                .javaSection("Input: Helpers.java", helpersSource)
+                .refactoring("move static member",
+                    "`MathUtils.square(int)` → `Helpers.square(int)` (widen_visibility=true, same package → package-private)",
+                    Fixtures.lineCol(mathSource, offset))
+                .javaSection("Output: MathUtils.java", result.get(mathFile.toAbsolutePath().normalize()))
+                .javaSection("Output: Helpers.java", result.get(helpersFile.toAbsolutePath().normalize()))
+                .build()
+        );
+    }
+
+    @Test
+    void no_widen_visibility_keeps_private_modifier() throws Exception {
+        Path projectRoot  = fixtures.projectPath("projects/move-static-private");
+        MavenProject project = new MavenProject(projectRoot);
+        Path sourceRoot   = project.sourceRoots().get(0);
+        Path mathFile     = sourceRoot.resolve("com/example/MathUtils.java");
+        Path helpersFile  = sourceRoot.resolve("com/example/Helpers.java");
+
+        String mathSource    = Files.readString(mathFile);
+        String helpersSource = Files.readString(helpersFile);
+
+        int offset = Fixtures.offsetOf(mathSource, "square");
+        Map<Path, String> result = JdtMoveStaticMember.moveStaticMember(project, mathFile, offset, "com.example.Helpers", false);
+
+        assertThat(result).containsKey(mathFile.toAbsolutePath().normalize());
+        assertThat(result).containsKey(helpersFile.toAbsolutePath().normalize());
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Move static without widen_visibility: private modifier preserved")
+                .javaSection("Input: MathUtils.java", mathSource)
+                .javaSection("Input: Helpers.java", helpersSource)
+                .refactoring("move static member",
+                    "`MathUtils.square(int)` → `Helpers.square(int)` (widen_visibility=false)",
+                    Fixtures.lineCol(mathSource, offset))
+                .javaSection("Output: MathUtils.java", result.get(mathFile.toAbsolutePath().normalize()))
+                .javaSection("Output: Helpers.java", result.get(helpersFile.toAbsolutePath().normalize()))
+                .build()
+        );
+    }
+
+    @Test
     void move_static_member_rejected_when_no_static_member_at_offset() throws Exception {
         Path projectRoot = fixtures.projectPath("projects/move-static");
         MavenProject project = new MavenProject(projectRoot);
