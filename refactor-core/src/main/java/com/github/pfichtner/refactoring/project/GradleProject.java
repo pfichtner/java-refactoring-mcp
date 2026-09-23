@@ -23,6 +23,8 @@ public class GradleProject extends AbstractProject {
     private static final Pattern JAVA_VERSION_PATTERN = Pattern.compile(
             "(?:sourceCompatibility|targetCompatibility|release)\\s*[=:]?\\s*(?:JavaVersion\\.VERSION_)?(\\d+)");
 
+    private String cachedBuildScript; // "" = file not found
+
     public GradleProject(Path root) { super(root); }
 
     /**
@@ -134,10 +136,12 @@ public class GradleProject extends AbstractProject {
     }
 
     private String readBuildScript() throws IOException {
-        Path groovy = root.resolve("build.gradle");
-        if (Files.isRegularFile(groovy)) return Files.readString(groovy);
-        Path kts = root.resolve("build.gradle.kts");
-        if (Files.isRegularFile(kts)) return Files.readString(kts);
-        return null;
+        if (cachedBuildScript == null) {
+            Path groovy = root.resolve("build.gradle");
+            if (Files.isRegularFile(groovy)) { cachedBuildScript = Files.readString(groovy); return cachedBuildScript; }
+            Path kts = root.resolve("build.gradle.kts");
+            cachedBuildScript = Files.isRegularFile(kts) ? Files.readString(kts) : "";
+        }
+        return cachedBuildScript.isEmpty() ? null : cachedBuildScript;
     }
 }
