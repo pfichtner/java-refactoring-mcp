@@ -3,6 +3,7 @@ package com.github.pfichtner.refactoring.cli;
 import java.nio.file.Path;
 
 import com.github.pfichtner.refactoring.JdtExtractor;
+import com.github.pfichtner.refactoring.SourceUnit;
 
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -19,8 +20,8 @@ public class ExtractCommand extends SelectionCommand {
             description = "Name for the extracted method.")
     String methodName;
 
-    @Override protected String transform(String source, String unitName, int selStart, int selLen) throws Exception {
-        return JdtExtractor.extractMethod(source, unitName, selStart, selLen, methodName);
+    @Override protected String transform(SourceUnit unit, int selStart, int selLen) throws Exception {
+        return JdtExtractor.extractMethod(unit, selStart, selLen, methodName);
     }
     @Override protected String successMessage(Path f) {
         return "Extracted '" + methodName + "' in " + f.getFileName();

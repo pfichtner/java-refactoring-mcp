@@ -3,6 +3,7 @@ package com.github.pfichtner.refactoring.cli;
 import java.nio.file.Path;
 
 import com.github.pfichtner.refactoring.JdtExtractVariable;
+import com.github.pfichtner.refactoring.SourceUnit;
 
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -22,8 +23,8 @@ public class ExtractVarCommand extends SelectionCommand {
             description = "Replace all identical occurrences in the enclosing block.")
     boolean replaceAll;
 
-    @Override protected String transform(String source, String unitName, int selStart, int selLen) throws Exception {
-        return JdtExtractVariable.extractVariable(source, unitName, selStart, selLen, varName, replaceAll);
+    @Override protected String transform(SourceUnit unit, int selStart, int selLen) throws Exception {
+        return JdtExtractVariable.extractVariable(unit, selStart, selLen, varName, replaceAll);
     }
     @Override protected String successMessage(Path f) {
         return "Extracted variable '" + varName + "' in " + f.getFileName();

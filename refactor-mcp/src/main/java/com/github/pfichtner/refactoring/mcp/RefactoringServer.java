@@ -58,6 +58,7 @@ import com.github.pfichtner.refactoring.JdtConvertToRecord;
 import com.github.pfichtner.refactoring.JdtDecomposeConditional;
 import com.github.pfichtner.refactoring.JdtEncapsulateField;
 import com.github.pfichtner.refactoring.JdtExtractConstant;
+import com.github.pfichtner.refactoring.SourceUnit;
 import com.github.pfichtner.refactoring.JdtExtractInterface;
 import com.github.pfichtner.refactoring.JdtExtractSuperclass;
 import com.github.pfichtner.refactoring.JdtExtractVariable;
@@ -275,7 +276,7 @@ public class RefactoringServer {
                         int selStart   = JdtRenamer.toOffset(source, startLine, startCol);
                         int selEnd     = JdtRenamer.toOffset(source, endLine, endCol);
                         String result  = JdtExtractor.extractMethod(
-                                source, file.getFileName().toString(),
+                                new SourceUnit(source, file.getFileName().toString()),
                                 selStart, selEnd - selStart, methodName);
                         return ok(result);
                     } catch (Exception e) {
@@ -579,7 +580,7 @@ public class RefactoringServer {
                         int selStart   = JdtRenamer.toOffset(source, startLine, startCol);
                         int selEnd     = JdtRenamer.toOffset(source, endLine, endCol);
                         return ok(JdtExtractConstant.extractConstant(
-                                source, file.getFileName().toString(),
+                                new SourceUnit(source, file.getFileName().toString()),
                                 selStart, selEnd - selStart, constName, replaceAll));
                     } catch (Exception e) {
                         return error(e.getMessage());
@@ -652,7 +653,7 @@ public class RefactoringServer {
                         int selStart   = JdtRenamer.toOffset(source, startLine, startCol);
                         int selEnd     = JdtRenamer.toOffset(source, endLine, endCol);
                         String result  = JdtExtractVariable.extractVariable(
-                                source, file.getFileName().toString(),
+                                new SourceUnit(source, file.getFileName().toString()),
                                 selStart, selEnd - selStart, varName, replaceAll);
                         return ok(result);
                     } catch (Exception e) {

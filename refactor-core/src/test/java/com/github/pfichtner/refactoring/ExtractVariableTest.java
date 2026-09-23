@@ -24,7 +24,7 @@ class ExtractVariableTest {
         int len   = "6 * 7".length();
 
         String result = JdtExtractVariable.extractVariable(
-                source, "Foo.java", start, len, "answer", false);
+                new SourceUnit(source, "Foo.java"), start, len, "answer", false);
 
         Approvals.verify(
             RefactoringStoryBoard.titled("Extract variable: 6 * 7 → answer")
@@ -43,7 +43,7 @@ class ExtractVariableTest {
         int len   = "42".length();
 
         String result = JdtExtractVariable.extractVariable(
-                source, "Foo.java", start, len, "MAGIC", true);
+                new SourceUnit(source, "Foo.java"), start, len, "MAGIC", true);
 
         Approvals.verify(
             RefactoringStoryBoard.titled("Extract variable: 42 → MAGIC (replace all occurrences)")
@@ -62,7 +62,7 @@ class ExtractVariableTest {
         int len   = "name.toUpperCase()".length();
 
         String result = JdtExtractVariable.extractVariable(
-                source, "Foo.java", start, len, "upper", false);
+                new SourceUnit(source, "Foo.java"), start, len, "upper", false);
 
         Approvals.verify(
             RefactoringStoryBoard.titled("Extract variable: name.toUpperCase() → upper")
@@ -82,7 +82,7 @@ class ExtractVariableTest {
         int len   = "x".length();
 
         IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtExtractVariable.extractVariable(
-                source, "Foo.java", start, len, "y", false)).actual();
+                new SourceUnit(source, "Foo.java"), start, len, "y", false)).actual();
         assertThat(ex.getMessage()).contains("simple name");
 
         Approvals.verify(
@@ -103,7 +103,7 @@ class ExtractVariableTest {
         int len   = "x = 2".length();
 
         IllegalArgumentException ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> JdtExtractVariable.extractVariable(
-                source, "Foo.java", start, len, "val", false)).actual();
+                new SourceUnit(source, "Foo.java"), start, len, "val", false)).actual();
         assertThat(ex.getMessage()).contains("assignment");
 
         Approvals.verify(
