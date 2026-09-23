@@ -58,7 +58,7 @@ public class JdtExtractSuperclass {
             String classSource, String unitName,
             String superclassName, List<String> methodNames) {
 
-        CompilationUnit cu = parse(classSource, unitName);
+        CompilationUnit cu = JdtProjectSources.parseUnitWithBindings(classSource, unitName);
         TypeDeclaration typeDecl = findPrimaryType(cu);
 
         if (typeDecl.getSuperclassType() != null) {
@@ -233,16 +233,5 @@ public class JdtExtractSuperclass {
                 .map(o -> (TypeDeclaration) o)
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("No type declaration found."));
-    }
-
-    private static CompilationUnit parse(String source, String unitName) {
-        ASTParser parser = ASTParser.newParser(AST.JLS21);
-        parser.setKind(ASTParser.K_COMPILATION_UNIT);
-        parser.setSource(source.toCharArray());
-        parser.setUnitName(unitName);
-        parser.setEnvironment(new String[0], new String[0], null, true);
-        parser.setResolveBindings(true);
-        parser.setBindingsRecovery(true);
-        return (CompilationUnit) parser.createAST(null);
     }
 }

@@ -9,7 +9,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -88,7 +87,7 @@ public class JdtMoveClass {
         Path absSource = sourceFile.toAbsolutePath().normalize();
         String source  = Files.readString(absSource);
 
-        CompilationUnit cu = parse(source, absSource.getFileName().toString());
+        CompilationUnit cu = JdtProjectSources.parseUnit(source, absSource.getFileName().toString());
 
         // Determine class name and old package
         TypeDeclaration primaryType = findPrimaryType(cu);
@@ -158,7 +157,7 @@ public class JdtMoveClass {
                         ::iterator) {
                     if (file.equals(absSource)) continue; // skip the moved file itself
                     String fileSource = Files.readString(file);
-                    CompilationUnit fileCu = parse(fileSource, file.getFileName().toString());
+                    CompilationUnit fileCu = JdtProjectSources.parseUnit(fileSource, file.getFileName().toString());
                     List<Edit> edits = new ArrayList<>();
 
                     // Update explicit single-class import
@@ -224,15 +223,5 @@ public class JdtMoveClass {
                 .map(o -> (TypeDeclaration) o)
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("No type declaration found in the source."));
-    }
-
-    private static CompilationUnit parse(String source, String unitName) {
-        ASTParser parser = ASTParser.newParser(AST.JLS21);
-        parser.setKind(ASTParser.K_COMPILATION_UNIT);
-        parser.setSource(source.toCharArray());
-        parser.setUnitName(unitName);
-        parser.setEnvironment(new String[0], new String[0], null, true);
-        parser.setResolveBindings(false); // not needed for move
-        return (CompilationUnit) parser.createAST(null);
     }
 }

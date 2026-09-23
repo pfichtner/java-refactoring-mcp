@@ -63,7 +63,7 @@ public class JdtExtractConstant {
             String constName, boolean replaceAll) {
 
         String source = unit.source();
-        CompilationUnit cu = parse(source, unit.unitName());
+        CompilationUnit cu = JdtProjectSources.parseUnitWithBindings(source, unit.unitName());
 
         ASTNode node = NodeFinder.perform(cu, selectionStart, selectionLength);
         if (node == null) {
@@ -226,16 +226,4 @@ public class JdtExtractConstant {
 
     // -------------------------------------------------------------------------
     // Parsing
-    // -------------------------------------------------------------------------
-
-    private static CompilationUnit parse(String source, String unitName) {
-        ASTParser parser = ASTParser.newParser(AST.JLS21);
-        parser.setKind(ASTParser.K_COMPILATION_UNIT);
-        parser.setSource(source.toCharArray());
-        parser.setUnitName(unitName);
-        parser.setEnvironment(new String[0], new String[0], null, true);
-        parser.setResolveBindings(true);
-        parser.setBindingsRecovery(true);
-        return (CompilationUnit) parser.createAST(null);
-    }
 }

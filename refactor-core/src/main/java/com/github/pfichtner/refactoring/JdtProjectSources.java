@@ -9,9 +9,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FileASTRequestor;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
 
 import com.github.pfichtner.refactoring.project.JavaProject;
 
@@ -54,5 +56,39 @@ public final class JdtProjectSources {
             }
         }, null);
         return result;
+    }
+
+    public static CompilationUnit parseUnit(String source, String unitName) {
+        ASTParser parser = ASTParser.newParser(AST.JLS21);
+        parser.setKind(ASTParser.K_COMPILATION_UNIT);
+        parser.setSource(source.toCharArray());
+        parser.setUnitName(unitName);
+        parser.setEnvironment(new String[0], new String[0], null, true);
+        parser.setResolveBindings(false);
+        return (CompilationUnit) parser.createAST(null);
+    }
+
+    public static CompilationUnit parseUnitWithBindings(String source, String unitName) {
+        ASTParser parser = ASTParser.newParser(AST.JLS21);
+        parser.setKind(ASTParser.K_COMPILATION_UNIT);
+        parser.setSource(source.toCharArray());
+        parser.setUnitName(unitName);
+        parser.setEnvironment(new String[0], new String[0], null, true);
+        parser.setResolveBindings(true);
+        parser.setBindingsRecovery(true);
+        return (CompilationUnit) parser.createAST(null);
+    }
+
+    public static String detectIndent(String source, TypeDeclaration type) {
+        if (type == null) return "    ";
+        for (Object bd : type.bodyDeclarations()) {
+            if (bd instanceof ASTNode n) {
+                int start = n.getStartPosition();
+                int lineStart = source.lastIndexOf('\n', start - 1) + 1;
+                String prefix = source.substring(lineStart, start);
+                if (!prefix.isBlank()) return prefix;
+            }
+        }
+        return "    ";
     }
 }

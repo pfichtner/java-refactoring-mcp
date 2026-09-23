@@ -58,7 +58,7 @@ public class JdtDecomposeConditional {
      * @return modified source with the condition extracted into {@code methodName}
      */
     public static String decomposeConditional(String source, String unitName, int offset, String methodName) {
-        CompilationUnit cu = parse(source, unitName);
+        CompilationUnit cu = JdtProjectSources.parseUnit(source, unitName);
 
         // Locate the conditional statement
         ASTNode node = NodeFinder.perform(cu, offset, 1);
@@ -105,7 +105,7 @@ public class JdtDecomposeConditional {
         }
 
         // Determine indentation of the enclosing type's body declarations
-        String indent = detectIndent(source, enclosingType);
+        String indent = JdtProjectSources.detectIndent(source, enclosingType);
 
         // Build the new method text
         String newMethod = "\n\n" + indent + "private boolean " + methodName + "() {"
@@ -169,27 +169,5 @@ public class JdtDecomposeConditional {
             current = current.getParent();
         }
         return null;
-    }
-
-    private static String detectIndent(String source, TypeDeclaration enclosingType) {
-        if (enclosingType == null) return "    ";
-        // Find the first method/field declaration and measure its indentation
-        for (Object bd : enclosingType.bodyDeclarations()) {
-            if (bd instanceof ASTNode n) {
-                int start = n.getStartPosition();
-                int lineStart = source.lastIndexOf('\n', start - 1) + 1;
-                String prefix = source.substring(lineStart, start);
-                if (!prefix.isBlank()) return prefix;
-            }
-        }
-        return "    ";
-    }
-
-    private static CompilationUnit parse(String source, String unitName) {
-        ASTParser parser = ASTParser.newParser(AST.JLS21);
-        parser.setSource(source.toCharArray());
-        parser.setUnitName(unitName);
-        parser.setKind(ASTParser.K_COMPILATION_UNIT);
-        return (CompilationUnit) parser.createAST(null);
     }
 }

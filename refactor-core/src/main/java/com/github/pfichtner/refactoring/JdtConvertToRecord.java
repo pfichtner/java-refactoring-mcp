@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
@@ -415,7 +414,7 @@ public class JdtConvertToRecord {
     /** Name-based rename: replaces every MethodInvocation whose name is in the map. */
     private static String renameByName(String source, String unitName,
             Map<String, String> nameToNewName) {
-        CompilationUnit cu = parseSimple(source, unitName);
+        CompilationUnit cu = JdtProjectSources.parseUnit(source, unitName);
         List<int[]> edits = new ArrayList<>();
         cu.accept(new ASTVisitor() {
             @Override
@@ -467,15 +466,5 @@ public class JdtConvertToRecord {
                 .map(o -> (TypeDeclaration) o)
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("No class declaration found in source."));
-    }
-
-    private static CompilationUnit parseSimple(String source, String unitName) {
-        ASTParser parser = ASTParser.newParser(AST.JLS21);
-        parser.setKind(ASTParser.K_COMPILATION_UNIT);
-        parser.setSource(source.toCharArray());
-        parser.setUnitName(unitName);
-        parser.setEnvironment(new String[0], new String[0], null, true);
-        parser.setResolveBindings(false);
-        return (CompilationUnit) parser.createAST(null);
     }
 }

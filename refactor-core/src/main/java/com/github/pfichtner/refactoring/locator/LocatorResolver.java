@@ -21,6 +21,7 @@ import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
+import com.github.pfichtner.refactoring.JdtProjectSources;
 import com.github.pfichtner.refactoring.JdtRenamer;
 
 /**
@@ -71,7 +72,7 @@ public final class LocatorResolver {
     private static int resolveMethod(String nameSpec, String className,
                                      String source, String unitName) {
         ParsedName parsed = ParsedName.parse(nameSpec);
-        CompilationUnit cu = parse(source, unitName);
+        CompilationUnit cu = JdtProjectSources.parseUnit(source, unitName);
         List<MethodDeclaration> matches = new ArrayList<>();
 
         cu.accept(new ASTVisitor() {
@@ -90,7 +91,7 @@ public final class LocatorResolver {
 
     private static int resolveField(String name, String className,
                                     String source, String unitName) {
-        CompilationUnit cu = parse(source, unitName);
+        CompilationUnit cu = JdtProjectSources.parseUnit(source, unitName);
         List<VariableDeclarationFragment> matches = new ArrayList<>();
         cu.accept(new ASTVisitor() {
             @Override
@@ -110,7 +111,7 @@ public final class LocatorResolver {
     }
 
     private static int resolveType(String name, String source, String unitName) {
-        CompilationUnit cu = parse(source, unitName);
+        CompilationUnit cu = JdtProjectSources.parseUnit(source, unitName);
         List<AbstractTypeDeclaration> matches = new ArrayList<>();
         cu.accept(new ASTVisitor() {
             private void checkType(AbstractTypeDeclaration node) {
@@ -128,7 +129,7 @@ public final class LocatorResolver {
 
     private static int resolveParameter(String methodSpec, String paramName,
                                         String source, String unitName) {
-        MethodDeclaration enclosing = findMethodBySpec(methodSpec, parse(source, unitName), unitName);
+        MethodDeclaration enclosing = findMethodBySpec(methodSpec, JdtProjectSources.parseUnit(source, unitName), unitName);
         List<SingleVariableDeclaration> matches = new ArrayList<>();
         @SuppressWarnings("unchecked")
         List<SingleVariableDeclaration> params = enclosing.parameters();
@@ -145,7 +146,7 @@ public final class LocatorResolver {
     }
 
     private static int resolveVariable(String name, String methodSpec, String source, String unitName) {
-        MethodDeclaration enclosing = findMethodBySpec(methodSpec, parse(source, unitName), unitName);
+        MethodDeclaration enclosing = findMethodBySpec(methodSpec, JdtProjectSources.parseUnit(source, unitName), unitName);
         return findLocalVariable(enclosing, name, methodSpec, unitName).getName().getStartPosition();
     }
 
@@ -184,14 +185,6 @@ public final class LocatorResolver {
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
-
-    private static CompilationUnit parse(String source, String unitName) {
-        ASTParser parser = ASTParser.newParser(AST.JLS21);
-        parser.setSource(source.toCharArray());
-        parser.setUnitName(unitName);
-        parser.setKind(ASTParser.K_COMPILATION_UNIT);
-        return (CompilationUnit) parser.createAST(null);
-    }
 
     private static String enclosingTypeName(ASTNode node) {
         ASTNode current = node.getParent();
@@ -235,7 +228,7 @@ public final class LocatorResolver {
     }
 
     private static int resolveLineOnly(int line, String source, String unitName) {
-        CompilationUnit cu = parse(source, unitName);
+        CompilationUnit cu = JdtProjectSources.parseUnit(source, unitName);
         List<SimpleName> matches = new ArrayList<>();
         cu.accept(new ASTVisitor() {
             @Override
