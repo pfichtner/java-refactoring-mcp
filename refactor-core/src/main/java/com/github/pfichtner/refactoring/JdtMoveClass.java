@@ -14,6 +14,7 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.PackageDeclaration;
 import org.eclipse.jdt.core.dom.QualifiedName;
@@ -62,14 +63,26 @@ public class JdtMoveClass {
 
     /**
      * Moves {@code sourceFile} to {@code newPackage} within the project.
-     *
-     * @param project     Maven project providing source roots and classpath
-     * @param sourceFile  absolute path to the {@code .java} file to move
-     * @param newPackage  fully-qualified target package, e.g. {@code "com.example.util"}
-     * @return {@link Result} describing all required file changes
+     * Equivalent to {@link #moveClass(JavaProject, Path, String, boolean)} with {@code widenVisibility=true}.
      */
     public static Result moveClass(
             JavaProject project, Path sourceFile, String newPackage)
+            throws IOException, InterruptedException {
+        return moveClass(project, sourceFile, newPackage, true);
+    }
+
+    /**
+     * Moves {@code sourceFile} to {@code newPackage} within the project.
+     *
+     * @param project         Maven project providing source roots and classpath
+     * @param sourceFile      absolute path to the {@code .java} file to move
+     * @param newPackage      fully-qualified target package, e.g. {@code "com.example.util"}
+     * @param widenVisibility if {@code true} and the class has no access modifier (package-private),
+     *                        {@code public} is added to the class declaration
+     * @return {@link Result} describing all required file changes
+     */
+    public static Result moveClass(
+            JavaProject project, Path sourceFile, String newPackage, boolean widenVisibility)
             throws IOException, InterruptedException {
 
         Path absSource = sourceFile.toAbsolutePath().normalize();
@@ -96,14 +109,29 @@ public class JdtMoveClass {
         // 1. Update package declaration in class source
         // -------------------------------------------------------------------------
         String newClassSource;
+        int typeInsertionPoint; // where "public " should be inserted in newClassSource if needed
         if (pkgDecl != null) {
             int pkgStart = pkgDecl.getStartPosition();
-            int pkgEnd   = pkgStart + pkgDecl.getLength();
+            int pkgEnd   = pkgDecl.getLength() + pkgStart;
             if (pkgEnd < source.length() && source.charAt(pkgEnd) == '\n') pkgEnd++;
             String replacement = newPackage.isEmpty() ? "" : "package " + newPackage + ";\n";
             newClassSource = source.substring(0, pkgStart) + replacement + source.substring(pkgEnd);
+            // Adjust the type declaration position by the package text delta
+            int delta = replacement.length() - (pkgEnd - pkgStart);
+            typeInsertionPoint = primaryType.getStartPosition() + delta;
         } else {
-            newClassSource = "package " + newPackage + ";\n\n" + source;
+            String prefix = "package " + newPackage + ";\n\n";
+            newClassSource = prefix + source;
+            typeInsertionPoint = primaryType.getStartPosition() + prefix.length();
+        }
+
+        // -------------------------------------------------------------------------
+        // 1a. Widen class visibility to public if package-private and requested
+        // -------------------------------------------------------------------------
+        if (widenVisibility && !hasAccessModifier(primaryType)) {
+            newClassSource = newClassSource.substring(0, typeInsertionPoint)
+                    + "public "
+                    + newClassSource.substring(typeInsertionPoint);
         }
 
         // -------------------------------------------------------------------------
@@ -195,6 +223,15 @@ public class JdtMoveClass {
                 .map(o -> (TypeDeclaration) o)
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("No type declaration found in the source."));
+    }
+
+    private static boolean hasAccessModifier(TypeDeclaration typeDecl) {
+        for (Object mod : typeDecl.modifiers()) {
+            if (mod instanceof Modifier m && (m.isPublic() || m.isProtected() || m.isPrivate())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static CompilationUnit parse(String source, String unitName) {

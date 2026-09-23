@@ -88,6 +88,46 @@ class MoveClassTest {
     }
 
     @Test
+    void widen_visibility_makes_package_private_class_public() throws Exception {
+        Path projectRoot = fixtures.projectPath("projects/move-class-pkg-private");
+        MavenProject project = new MavenProject(projectRoot);
+        Path utilFile = project.sourceRoots().get(0).resolve("com/example/Utils.java");
+        String utilSource = Files.readString(utilFile);
+
+        JdtMoveClass.Result result = JdtMoveClass.moveClass(project, utilFile, "com.util", true);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Move class with widen_visibility: package-private → public")
+                .javaSection("Input: Utils.java (package-private)", utilSource)
+                .refactoring("move class",
+                    "`com.example.Utils` → `com.util.Utils` (widen_visibility=true)",
+                    "new path: " + result.newFilePath().getFileName())
+                .javaSection("Output: Utils.java (new location)", result.newClassSource())
+                .build()
+        );
+    }
+
+    @Test
+    void no_widen_visibility_keeps_package_private() throws Exception {
+        Path projectRoot = fixtures.projectPath("projects/move-class-pkg-private");
+        MavenProject project = new MavenProject(projectRoot);
+        Path utilFile = project.sourceRoots().get(0).resolve("com/example/Utils.java");
+        String utilSource = Files.readString(utilFile);
+
+        JdtMoveClass.Result result = JdtMoveClass.moveClass(project, utilFile, "com.util", false);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Move class without widen_visibility: package-private preserved")
+                .javaSection("Input: Utils.java (package-private)", utilSource)
+                .refactoring("move class",
+                    "`com.example.Utils` → `com.util.Utils` (widen_visibility=false)",
+                    "new path: " + result.newFilePath().getFileName())
+                .javaSection("Output: Utils.java (new location)", result.newClassSource())
+                .build()
+        );
+    }
+
+    @Test
     void move_class_rejected_when_already_in_target_package() throws Exception {
         Path projectRoot = fixtures.projectPath("projects/move-class");
         MavenProject project = new MavenProject(projectRoot);

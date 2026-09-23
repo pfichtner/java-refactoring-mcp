@@ -113,6 +113,60 @@ class MoveMethodTest {
     }
 
     @Test
+    void widen_visibility_changes_private_to_package_private_same_package() throws Exception {
+        Path projectRoot = fixtures.projectPath("projects/move-method-private");
+        MavenProject project = new MavenProject(projectRoot);
+        Path srcRoot     = project.sourceRoots().get(0);
+        Path printerFile = srcRoot.resolve("com/example/Printer.java");
+        Path reportFile  = srcRoot.resolve("com/example/Report.java");
+
+        String printerSource = Files.readString(printerFile);
+        String reportSource  = Files.readString(reportFile);
+
+        int offset = Fixtures.offsetOf(printerSource, "format");
+        Map<Path, String> changed = JdtMoveMethod.moveMethod(project, printerFile, offset, "com.example.Report", true);
+
+        assertThat(changed).hasSize(2);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Move method with widen_visibility (same package): private → package-private")
+                .inputProject(Map.of("Printer.java", printerSource, "Report.java", reportSource))
+                .refactoring("move method",
+                    "`Printer.format(Report)` → `com.example.Report` (widen_visibility=true, same package → package-private)",
+                    Fixtures.lineCol(printerSource, offset))
+                .outputProject(changed)
+                .build()
+        );
+    }
+
+    @Test
+    void no_widen_visibility_keeps_private_modifier() throws Exception {
+        Path projectRoot = fixtures.projectPath("projects/move-method-private");
+        MavenProject project = new MavenProject(projectRoot);
+        Path srcRoot     = project.sourceRoots().get(0);
+        Path printerFile = srcRoot.resolve("com/example/Printer.java");
+        Path reportFile  = srcRoot.resolve("com/example/Report.java");
+
+        String printerSource = Files.readString(printerFile);
+        String reportSource  = Files.readString(reportFile);
+
+        int offset = Fixtures.offsetOf(printerSource, "format");
+        Map<Path, String> changed = JdtMoveMethod.moveMethod(project, printerFile, offset, "com.example.Report", false);
+
+        assertThat(changed).hasSize(2);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Move method without widen_visibility: private modifier preserved")
+                .inputProject(Map.of("Printer.java", printerSource, "Report.java", reportSource))
+                .refactoring("move method",
+                    "`Printer.format(Report)` → `com.example.Report` (widen_visibility=false)",
+                    Fixtures.lineCol(printerSource, offset))
+                .outputProject(changed)
+                .build()
+        );
+    }
+
+    @Test
     void reject_when_target_in_other_package_already_has_same_method() throws Exception {
         // com.other.Report already declares format() — moving Printer.format to it must be rejected.
         Path projectRoot = fixtures.projectPath("projects/move-method");

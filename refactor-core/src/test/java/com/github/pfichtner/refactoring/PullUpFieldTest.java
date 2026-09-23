@@ -72,6 +72,60 @@ class PullUpFieldTest {
     }
 
     @Test
+    void widen_visibility_changes_private_to_protected() throws Exception {
+        Path projectRoot = fixtures.projectPath("projects/pull-up-field-private");
+        MavenProject project = new MavenProject(projectRoot);
+        Path srcRoot    = project.sourceRoots().get(0);
+        Path dogFile    = srcRoot.resolve("com/example/Dog.java");
+        Path animalFile = srcRoot.resolve("com/example/Animal.java");
+
+        String dogSource    = Files.readString(dogFile);
+        String animalSource = Files.readString(animalFile);
+
+        int offset = Fixtures.offsetOf(dogSource, "secret");
+        Map<Path, String> changed = JdtPullUpField.pullUp(project, dogFile, offset, true);
+
+        assertThat(changed).hasSize(2);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Pull up field with widen_visibility: private Dog.secret → protected Animal.secret")
+                .inputProject(Map.of("Animal.java", animalSource, "Dog.java", dogSource))
+                .refactoring("pull up field",
+                    "`Dog.secret` → `Animal` (widen_visibility=true)",
+                    Fixtures.lineCol(dogSource, offset))
+                .outputProject(changed)
+                .build()
+        );
+    }
+
+    @Test
+    void no_widen_visibility_keeps_private_modifier() throws Exception {
+        Path projectRoot = fixtures.projectPath("projects/pull-up-field-private");
+        MavenProject project = new MavenProject(projectRoot);
+        Path srcRoot    = project.sourceRoots().get(0);
+        Path dogFile    = srcRoot.resolve("com/example/Dog.java");
+        Path animalFile = srcRoot.resolve("com/example/Animal.java");
+
+        String dogSource    = Files.readString(dogFile);
+        String animalSource = Files.readString(animalFile);
+
+        int offset = Fixtures.offsetOf(dogSource, "secret");
+        Map<Path, String> changed = JdtPullUpField.pullUp(project, dogFile, offset, false);
+
+        assertThat(changed).hasSize(2);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Pull up field without widen_visibility: private modifier preserved")
+                .inputProject(Map.of("Animal.java", animalSource, "Dog.java", dogSource))
+                .refactoring("pull up field",
+                    "`Dog.secret` → `Animal` (widen_visibility=false)",
+                    Fixtures.lineCol(dogSource, offset))
+                .outputProject(changed)
+                .build()
+        );
+    }
+
+    @Test
     void reject_duplicate_field_in_superclass() throws Exception {
         Path projectRoot = fixtures.projectPath("projects/pull-up-field");
         MavenProject project = new MavenProject(projectRoot);
