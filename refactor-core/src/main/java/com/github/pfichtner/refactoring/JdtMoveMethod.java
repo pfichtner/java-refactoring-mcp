@@ -6,7 +6,6 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -66,7 +65,7 @@ public class JdtMoveMethod {
 
         Path absSource = sourceFile.toAbsolutePath().normalize();
         String source = Files.readString(absSource);
-        CompilationUnit cu = parse(source, absSource.getFileName().toString());
+        CompilationUnit cu = JdtProjectSources.parseUnit(source, absSource.getFileName().toString());
 
         MethodDeclaration method = findMethodAt(cu, offset);
         if (method == null) {
@@ -82,7 +81,7 @@ public class JdtMoveMethod {
         }
 
         String targetSource = Files.readString(targetFile);
-        CompilationUnit targetCu = parse(targetSource, targetFile.getFileName().toString());
+        CompilationUnit targetCu = JdtProjectSources.parseUnit(targetSource, targetFile.getFileName().toString());
         TypeDeclaration targetType = JdtPullUpMethod.findPrimaryType(targetCu);
 
         String methodName = method.getName().getIdentifier();
@@ -128,15 +127,5 @@ public class JdtMoveMethod {
             }
         });
         return found[0];
-    }
-
-    private static CompilationUnit parse(String source, String unitName) {
-        ASTParser parser = ASTParser.newParser(AST.JLS21);
-        parser.setKind(ASTParser.K_COMPILATION_UNIT);
-        parser.setSource(source.toCharArray());
-        parser.setUnitName(unitName);
-        parser.setEnvironment(new String[0], new String[0], null, true);
-        parser.setResolveBindings(false);
-        return (CompilationUnit) parser.createAST(null);
     }
 }

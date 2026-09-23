@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -69,7 +68,7 @@ public class JdtPullUpMethod {
 
         Path absSource = sourceFile.toAbsolutePath().normalize();
         String source = Files.readString(absSource);
-        CompilationUnit cu = parse(source, absSource.getFileName().toString());
+        CompilationUnit cu = JdtProjectSources.parseUnit(source, absSource.getFileName().toString());
 
         MethodDeclaration method = findMethodAt(cu, offset);
         if (method == null) {
@@ -101,7 +100,7 @@ public class JdtPullUpMethod {
         }
 
         String superSource = Files.readString(superFile);
-        CompilationUnit superCu = parse(superSource, superFile.getFileName().toString());
+        CompilationUnit superCu = JdtProjectSources.parseUnit(superSource, superFile.getFileName().toString());
         TypeDeclaration superTypeDecl = findPrimaryType(superCu);
 
         String methodName = method.getName().getIdentifier();
@@ -241,15 +240,5 @@ public class JdtPullUpMethod {
             if (i < lines.length - 1) out.append("\n");
         }
         return out.toString();
-    }
-
-    private static CompilationUnit parse(String source, String unitName) {
-        ASTParser parser = ASTParser.newParser(AST.JLS21);
-        parser.setKind(ASTParser.K_COMPILATION_UNIT);
-        parser.setSource(source.toCharArray());
-        parser.setUnitName(unitName);
-        parser.setEnvironment(new String[0], new String[0], null, true);
-        parser.setResolveBindings(false);
-        return (CompilationUnit) parser.createAST(null);
     }
 }

@@ -8,7 +8,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -55,7 +54,7 @@ public class JdtPushDownMethod {
 
         Path absSource = sourceFile.toAbsolutePath().normalize();
         String source = Files.readString(absSource);
-        CompilationUnit cu = parse(source, absSource.getFileName().toString());
+        CompilationUnit cu = JdtProjectSources.parseUnit(source, absSource.getFileName().toString());
 
         MethodDeclaration method = findMethodAt(cu, offset);
         if (method == null) {
@@ -81,7 +80,7 @@ public class JdtPushDownMethod {
         // Validate no subclass already has a conflicting method
         for (Path sub : subclassFiles) {
             String subSource = Files.readString(sub);
-            CompilationUnit subCu = parse(subSource, sub.getFileName().toString());
+            CompilationUnit subCu = JdtProjectSources.parseUnit(subSource, sub.getFileName().toString());
             TypeDeclaration subType = findPrimaryType(subCu);
             for (Object o : subType.bodyDeclarations()) {
                 if (o instanceof MethodDeclaration md
@@ -104,7 +103,7 @@ public class JdtPushDownMethod {
 
         for (Path sub : subclassFiles) {
             String subSource = Files.readString(sub);
-            CompilationUnit subCu = parse(subSource, sub.getFileName().toString());
+            CompilationUnit subCu = JdtProjectSources.parseUnit(subSource, sub.getFileName().toString());
             TypeDeclaration subType = findPrimaryType(subCu);
             result.put(sub, JdtPullUpMethod.insertMethod(subSource, subType, rawMethod));
         }
@@ -147,7 +146,7 @@ public class JdtPushDownMethod {
             for (Path file : javaFiles) {
                 if (file.equals(excludeFile)) continue;
                 String src = Files.readString(file);
-                CompilationUnit cu = parse(src, "Unknown.java");
+                CompilationUnit cu = JdtProjectSources.parseUnit(src, "Unknown.java");
                 if (JdtPullUpField.extendsClass(cu, superclassFqn)) {
                     result.add(file);
                 }
@@ -162,15 +161,5 @@ public class JdtPushDownMethod {
                 .map(o -> (TypeDeclaration) o)
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("No type declaration found in source."));
-    }
-
-    private static CompilationUnit parse(String source, String unitName) {
-        ASTParser parser = ASTParser.newParser(AST.JLS21);
-        parser.setKind(ASTParser.K_COMPILATION_UNIT);
-        parser.setSource(source.toCharArray());
-        parser.setUnitName(unitName);
-        parser.setEnvironment(new String[0], new String[0], null, true);
-        parser.setResolveBindings(false);
-        return (CompilationUnit) parser.createAST(null);
     }
 }

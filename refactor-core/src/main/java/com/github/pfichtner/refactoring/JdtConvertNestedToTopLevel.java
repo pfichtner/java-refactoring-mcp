@@ -62,7 +62,7 @@ public class JdtConvertNestedToTopLevel {
      * @throws IllegalArgumentException if preconditions are not met
      */
     public static Result convert(String source, String unitName, int offset) {
-        CompilationUnit cu = parse(source, unitName);
+        CompilationUnit cu = JdtProjectSources.parseUnit(source, unitName);
 
         ASTNode node = NodeFinder.perform(cu, offset, 1);
         if (node == null) {
@@ -222,15 +222,4 @@ public class JdtConvertNestedToTopLevel {
 
     // -------------------------------------------------------------------------
     // Parsing
-    // -------------------------------------------------------------------------
-
-    private static CompilationUnit parse(String source, String unitName) {
-        ASTParser parser = ASTParser.newParser(AST.JLS21);
-        parser.setKind(ASTParser.K_COMPILATION_UNIT);
-        parser.setSource(source.toCharArray());
-        parser.setUnitName(unitName);
-        parser.setEnvironment(new String[0], new String[0], null, true);
-        parser.setResolveBindings(false);
-        return (CompilationUnit) parser.createAST(null);
-    }
 }

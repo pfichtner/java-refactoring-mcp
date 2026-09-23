@@ -94,7 +94,7 @@ public class JdtInlineMethod {
                     + "cannot remove declaration when only one call site is inlined.");
         }
 
-        CompilationUnit cu = parseSingle(source, unitName);
+        CompilationUnit cu = JdtProjectSources.parseUnitWithBindings(source, unitName);
 
         MethodInvocation call = findMethodInvocation(cu, offset);
         IMethodBinding binding = call.resolveMethodBinding();
@@ -449,16 +449,4 @@ public class JdtInlineMethod {
 
     // =========================================================================
     // Multi-file infrastructure
-    // =========================================================================
-
-    private static CompilationUnit parseSingle(String source, String unitName) {
-        ASTParser parser = ASTParser.newParser(AST.JLS21);
-        parser.setKind(ASTParser.K_COMPILATION_UNIT);
-        parser.setSource(source.toCharArray());
-        parser.setUnitName(unitName);
-        parser.setEnvironment(new String[0], new String[0], null, true);
-        parser.setResolveBindings(true);
-        parser.setBindingsRecovery(true);
-        return (CompilationUnit) parser.createAST(null);
-    }
 }

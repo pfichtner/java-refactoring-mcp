@@ -72,7 +72,7 @@ public class JdtIntroduceIndirection {
     public static String introduceIndirection(
             String source, String unitName, int offset, String indirectionMethodName) {
 
-        CompilationUnit cu = parse(source, unitName);
+        CompilationUnit cu = JdtProjectSources.parseUnit(source, unitName);
 
         ASTNode node = NodeFinder.perform(cu, offset, 1);
         if (node == null) {
@@ -111,7 +111,7 @@ public class JdtIntroduceIndirection {
         List<SingleVariableDeclaration> params = method.parameters();
 
         // Build the indirection method text
-        String indent = detectIndent(source, enclosingType);
+        String indent = JdtProjectSources.detectIndent(source, enclosingType);
         String newMethod = buildIndirectionMethod(
                 indirectionMethodName, originalMethodName,
                 returnTypeName, className, params, source, isStatic, indent);
@@ -207,29 +207,6 @@ public class JdtIntroduceIndirection {
         return false;
     }
 
-    private static String detectIndent(String source, TypeDeclaration type) {
-        for (Object bd : type.bodyDeclarations()) {
-            if (bd instanceof ASTNode n) {
-                int start     = n.getStartPosition();
-                int lineStart = source.lastIndexOf('\n', start - 1) + 1;
-                String prefix = source.substring(lineStart, start);
-                if (!prefix.isBlank()) return prefix;
-            }
-        }
-        return "    ";
-    }
-
     // -------------------------------------------------------------------------
     // Parsing
-    // -------------------------------------------------------------------------
-
-    private static CompilationUnit parse(String source, String unitName) {
-        ASTParser parser = ASTParser.newParser(AST.JLS21);
-        parser.setKind(ASTParser.K_COMPILATION_UNIT);
-        parser.setSource(source.toCharArray());
-        parser.setUnitName(unitName);
-        parser.setEnvironment(new String[0], new String[0], null, true);
-        parser.setResolveBindings(false);
-        return (CompilationUnit) parser.createAST(null);
-    }
 }

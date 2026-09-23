@@ -53,7 +53,7 @@ public class JdtPushDownField {
 
         Path absSource = sourceFile.toAbsolutePath().normalize();
         String source = Files.readString(absSource);
-        CompilationUnit cu = JdtPullUpField.parse(source, absSource.getFileName().toString());
+        CompilationUnit cu = JdtProjectSources.parseUnit(source, absSource.getFileName().toString());
 
         FieldDeclaration field = JdtPullUpField.findFieldAt(cu, offset);
         if (field == null) {
@@ -76,7 +76,7 @@ public class JdtPushDownField {
         Set<String> fieldNames = JdtPullUpField.fieldNames(field);
         for (Path sub : subclassFiles) {
             String subSource = Files.readString(sub);
-            CompilationUnit subCu = JdtPullUpField.parse(subSource, sub.getFileName().toString());
+            CompilationUnit subCu = JdtProjectSources.parseUnit(subSource, sub.getFileName().toString());
             TypeDeclaration subType = JdtPullUpField.findPrimaryType(subCu);
             for (Object o : subType.bodyDeclarations()) {
                 if (o instanceof FieldDeclaration fd) {
@@ -99,7 +99,7 @@ public class JdtPushDownField {
 
         for (Path sub : subclassFiles) {
             String subSource = Files.readString(sub);
-            CompilationUnit subCu = JdtPullUpField.parse(subSource, sub.getFileName().toString());
+            CompilationUnit subCu = JdtProjectSources.parseUnit(subSource, sub.getFileName().toString());
             TypeDeclaration subType = JdtPullUpField.findPrimaryType(subCu);
             result.put(sub, JdtPullUpField.insertField(subSource, subType, rawField));
         }
@@ -127,7 +127,7 @@ public class JdtPushDownField {
             for (Path file : javaFiles) {
                 if (file.equals(excludeFile)) continue;
                 String src = Files.readString(file);
-                CompilationUnit cu = JdtPullUpField.parse(src, "Unknown.java");
+                CompilationUnit cu = JdtProjectSources.parseUnit(src, "Unknown.java");
                 if (JdtPullUpField.extendsClass(cu, superclassFqn)) {
                     result.add(file);
                 }

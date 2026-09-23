@@ -69,7 +69,7 @@ public class JdtExtractor {
             String methodName) {
 
         String source = unit.source();
-        CompilationUnit cu = parse(source, unit.unitName());
+        CompilationUnit cu = JdtProjectSources.parseUnitWithBindings(source, unit.unitName());
 
         List<Statement> selected = findSelectedStatements(cu, selectionStart, selectionLength);
         if (selected.isEmpty()) {
@@ -371,16 +371,5 @@ public class JdtExtractor {
     private static String typeName(ITypeBinding type) {
         if (type == null) return "Object";
         return type.getName(); // simple name; works for primitives and non-generic classes
-    }
-
-    private static CompilationUnit parse(String source, String unitName) {
-        ASTParser parser = ASTParser.newParser(AST.JLS21);
-        parser.setKind(ASTParser.K_COMPILATION_UNIT);
-        parser.setSource(source.toCharArray());
-        parser.setUnitName(unitName);
-        parser.setEnvironment(new String[0], new String[0], null, true);
-        parser.setResolveBindings(true);
-        parser.setBindingsRecovery(true);
-        return (CompilationUnit) parser.createAST(null);
     }
 }

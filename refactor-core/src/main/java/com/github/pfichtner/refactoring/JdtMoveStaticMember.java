@@ -103,7 +103,7 @@ public class JdtMoveStaticMember {
 
         Path absSource = sourceFile.toAbsolutePath().normalize();
         String sourceText = Files.readString(absSource);
-        CompilationUnit sourceCu = parse(sourceText, absSource.getFileName().toString());
+        CompilationUnit sourceCu = JdtProjectSources.parseUnit(sourceText, absSource.getFileName().toString());
 
         // Locate the static member
         ASTNode node = NodeFinder.perform(sourceCu, offset, 1);
@@ -125,7 +125,7 @@ public class JdtMoveStaticMember {
         }
 
         String targetText = Files.readString(targetFile);
-        CompilationUnit targetCu = parse(targetText, targetFile.getFileName().toString());
+        CompilationUnit targetCu = JdtProjectSources.parseUnit(targetText, targetFile.getFileName().toString());
         TypeDeclaration targetType = JdtPullUpField.findPrimaryType(targetCu);
         String targetSimpleName = targetType.getName().getIdentifier();
 
@@ -151,7 +151,7 @@ public class JdtMoveStaticMember {
         String newSourceText = removeMember(sourceText, member);
 
         // Insert into target
-        String memberIndent = detectIndent(targetText, targetType);
+        String memberIndent = JdtProjectSources.detectIndent(targetText, targetType);
         String newTargetText = insertMember(targetText, targetType, rawMember, memberIndent);
 
         // Update call sites across all project files
@@ -259,29 +259,6 @@ public class JdtMoveStaticMember {
         return JdtPullUpField.findPrimaryType(cu).getName().getIdentifier();
     }
 
-    private static String detectIndent(String source, TypeDeclaration type) {
-        for (Object bd : type.bodyDeclarations()) {
-            if (bd instanceof ASTNode n) {
-                int start = n.getStartPosition();
-                int lineStart = source.lastIndexOf('\n', start - 1) + 1;
-                String prefix = source.substring(lineStart, start);
-                if (!prefix.isBlank()) return prefix;
-            }
-        }
-        return "    ";
-    }
-
     // -------------------------------------------------------------------------
     // Parsing
-    // -------------------------------------------------------------------------
-
-    private static CompilationUnit parse(String source, String unitName) {
-        ASTParser parser = ASTParser.newParser(AST.JLS21);
-        parser.setKind(ASTParser.K_COMPILATION_UNIT);
-        parser.setSource(source.toCharArray());
-        parser.setUnitName(unitName);
-        parser.setEnvironment(new String[0], new String[0], null, true);
-        parser.setResolveBindings(false);
-        return (CompilationUnit) parser.createAST(null);
-    }
 }

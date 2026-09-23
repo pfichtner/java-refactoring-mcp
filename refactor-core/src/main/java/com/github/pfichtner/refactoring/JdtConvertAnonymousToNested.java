@@ -64,7 +64,7 @@ public class JdtConvertAnonymousToNested {
      * @throws IllegalArgumentException if preconditions are not met
      */
     public static String convert(String source, String unitName, int offset, String nestedClassName) {
-        CompilationUnit cu = parse(source, unitName);
+        CompilationUnit cu = JdtProjectSources.parseUnitWithBindings(source, unitName);
 
         ASTNode node = NodeFinder.perform(cu, offset, 1);
         if (node == null) {
@@ -118,7 +118,7 @@ public class JdtConvertAnonymousToNested {
         String acdBodySource = source.substring(acdStart, acdEnd); // includes { and }
 
         // Indent to use for nested class members
-        String memberIndent = detectIndent(source, enclosingType);
+        String memberIndent = JdtProjectSources.detectIndent(source, enclosingType);
         String bodyIndent   = memberIndent + "    ";
 
         // Build the nested class text
@@ -207,30 +207,6 @@ public class JdtConvertAnonymousToNested {
         return null;
     }
 
-    private static String detectIndent(String source, TypeDeclaration enclosingType) {
-        for (Object bd : enclosingType.bodyDeclarations()) {
-            if (bd instanceof ASTNode n) {
-                int start     = n.getStartPosition();
-                int lineStart = source.lastIndexOf('\n', start - 1) + 1;
-                String prefix = source.substring(lineStart, start);
-                if (!prefix.isBlank()) return prefix;
-            }
-        }
-        return "    ";
-    }
-
     // -------------------------------------------------------------------------
     // Parsing
-    // -------------------------------------------------------------------------
-
-    private static CompilationUnit parse(String source, String unitName) {
-        ASTParser parser = ASTParser.newParser(AST.JLS21);
-        parser.setKind(ASTParser.K_COMPILATION_UNIT);
-        parser.setSource(source.toCharArray());
-        parser.setUnitName(unitName);
-        parser.setEnvironment(new String[0], new String[0], null, true);
-        parser.setResolveBindings(true);
-        parser.setBindingsRecovery(true);
-        return (CompilationUnit) parser.createAST(null);
-    }
 }

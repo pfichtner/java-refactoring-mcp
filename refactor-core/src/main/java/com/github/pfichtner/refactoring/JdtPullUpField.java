@@ -75,7 +75,7 @@ public class JdtPullUpField {
 
         Path absSource = sourceFile.toAbsolutePath().normalize();
         String source = Files.readString(absSource);
-        CompilationUnit cu = parse(source, absSource.getFileName().toString());
+        CompilationUnit cu = JdtProjectSources.parseUnit(source, absSource.getFileName().toString());
 
         FieldDeclaration field = findFieldAt(cu, offset);
         if (field == null) {
@@ -103,7 +103,7 @@ public class JdtPullUpField {
 
         // Check for duplicate field names in superclass
         String superSource = Files.readString(superFile);
-        CompilationUnit superCu = parse(superSource, superFile.getFileName().toString());
+        CompilationUnit superCu = JdtProjectSources.parseUnit(superSource, superFile.getFileName().toString());
         TypeDeclaration superTypeDecl = findPrimaryType(superCu);
 
         Set<String> fieldNames = fieldNames(field);
@@ -369,15 +369,5 @@ public class JdtPullUpField {
             if (i < lines.length - 1) out.append("\n");
         }
         return out.toString();
-    }
-
-    static CompilationUnit parse(String source, String unitName) {
-        ASTParser parser = ASTParser.newParser(AST.JLS21);
-        parser.setKind(ASTParser.K_COMPILATION_UNIT);
-        parser.setSource(source.toCharArray());
-        parser.setUnitName(unitName);
-        parser.setEnvironment(new String[0], new String[0], null, true);
-        parser.setResolveBindings(false);
-        return (CompilationUnit) parser.createAST(null);
     }
 }

@@ -60,7 +60,7 @@ public class JdtInliner {
      * @throws IllegalArgumentException if the inline cannot be performed safely
      */
     public static String inlineVariable(String source, String unitName, int offset) {
-        CompilationUnit cu = parse(source, unitName);
+        CompilationUnit cu = JdtProjectSources.parseUnitWithBindings(source, unitName);
 
         SimpleName target = findSimpleName(cu, offset);
         IBinding binding = target.resolveBinding();
@@ -151,7 +151,7 @@ public class JdtInliner {
                     + "cannot remove declaration when only one occurrence is inlined.");
         }
 
-        CompilationUnit cu = parse(source, unitName);
+        CompilationUnit cu = JdtProjectSources.parseUnitWithBindings(source, unitName);
         SimpleName target = findSimpleName(cu, offset);
 
         IBinding binding = target.resolveBinding();
@@ -323,16 +323,5 @@ public class JdtInliner {
             throw new IllegalArgumentException("No name found at offset " + offset);
         }
         return sn;
-    }
-
-    private static CompilationUnit parse(String source, String unitName) {
-        ASTParser parser = ASTParser.newParser(AST.JLS21);
-        parser.setKind(ASTParser.K_COMPILATION_UNIT);
-        parser.setSource(source.toCharArray());
-        parser.setUnitName(unitName);
-        parser.setEnvironment(new String[0], new String[0], null, true);
-        parser.setResolveBindings(true);
-        parser.setBindingsRecovery(true);
-        return (CompilationUnit) parser.createAST(null);
     }
 }

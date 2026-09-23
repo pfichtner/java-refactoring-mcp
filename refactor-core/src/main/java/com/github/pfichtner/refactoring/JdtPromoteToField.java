@@ -63,7 +63,7 @@ public class JdtPromoteToField {
      * @throws IllegalArgumentException if preconditions are not met
      */
     public static String promote(String source, String unitName, int offset) {
-        CompilationUnit cu = parse(source, unitName);
+        CompilationUnit cu = JdtProjectSources.parseUnit(source, unitName);
 
         ASTNode node = NodeFinder.perform(cu, offset, 1);
         if (node == null) {
@@ -129,7 +129,7 @@ public class JdtPromoteToField {
         }
 
         // Find insertion point for the field: before the first method/field or just inside opening brace
-        String memberIndent = detectIndent(source, enclosingType);
+        String memberIndent = JdtProjectSources.detectIndent(source, enclosingType);
 
         return insertFieldAndReplaceLocal(
                 source, enclosingType, vds, fieldDecl, assignmentReplacement, memberIndent);
@@ -180,7 +180,7 @@ public class JdtPromoteToField {
         String intermediate = sb.toString();
 
         // Now insert the field declaration before the first method, after any existing fields
-        CompilationUnit cu2 = parse(intermediate, "tmp");
+        CompilationUnit cu2 = JdtProjectSources.parseUnit(intermediate, "tmp");
         TypeDeclaration type2 = findPrimaryType(cu2);
 
         String newField = memberIndent + fieldDecl + "\n";
@@ -241,29 +241,6 @@ public class JdtPromoteToField {
                 .orElseThrow(() -> new IllegalArgumentException("No type declaration found."));
     }
 
-    private static String detectIndent(String source, TypeDeclaration type) {
-        for (Object bd : type.bodyDeclarations()) {
-            if (bd instanceof ASTNode n) {
-                int start     = n.getStartPosition();
-                int lineStart = source.lastIndexOf('\n', start - 1) + 1;
-                String prefix = source.substring(lineStart, start);
-                if (!prefix.isBlank()) return prefix;
-            }
-        }
-        return "    ";
-    }
-
     // -------------------------------------------------------------------------
     // Parsing
-    // -------------------------------------------------------------------------
-
-    private static CompilationUnit parse(String source, String unitName) {
-        ASTParser parser = ASTParser.newParser(AST.JLS21);
-        parser.setKind(ASTParser.K_COMPILATION_UNIT);
-        parser.setSource(source.toCharArray());
-        parser.setUnitName(unitName);
-        parser.setEnvironment(new String[0], new String[0], null, true);
-        parser.setResolveBindings(false);
-        return (CompilationUnit) parser.createAST(null);
-    }
 }
