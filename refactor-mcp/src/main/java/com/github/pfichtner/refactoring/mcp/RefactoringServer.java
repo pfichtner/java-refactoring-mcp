@@ -46,9 +46,11 @@ import static com.github.pfichtner.refactoring.mcp.Property.WIDEN_VISIBILITY;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.github.pfichtner.refactoring.FileChange;
@@ -112,6 +114,49 @@ public class RefactoringServer {
         return version != null ? version : "unknown";
     }
 
+    /**
+     * Single registry of every tool spec. Used both to build the server and to
+     * render {@code list_refactorings}, so the two can never drift apart.
+     */
+    static final List<SyncToolSpecification> TOOLS = List.of(
+            listRefactorings(),
+            analyzeRefactoring(),
+            applyRefactoring(),
+            extractMethod(),
+            inlineVariable(),
+            inlineConstant(),
+            extractVariable(),
+            inlineMethod(),
+            extractConstant(),
+            introduceParam(),
+            removeParam(),
+            removeMethod(),
+            extractInterface(),
+            extractSuperclass(),
+            moveClass(),
+            renamePackage(),
+            pullUpMethod(),
+            pushDownMethod(),
+            moveMethod(),
+            pullUpField(),
+            pushDownField(),
+            introduceStaticFactory(),
+            introduceParameterObject(),
+            convertToRecord(),
+            changeMethodSignature(),
+            encapsulateField(),
+            decomposeConditional(),
+            convertAnonymousToNested(),
+            convertNestedToTopLevel(),
+            promoteToField(),
+            moveStaticMember(),
+            introduceIndirection()
+    );
+
+    /** Workflow tools that are not themselves refactorings; omitted from the listing. */
+    static final Set<String> META_TOOLS = Set.of(
+            "list_refactorings", "analyze_refactoring", "apply_refactoring");
+
     /** Builds and returns the configured server (transport already attached). */
     public static McpSyncServer build() {
         var transport = new StdioServerTransportProvider(McpJsonDefaults.getMapper());
@@ -119,40 +164,7 @@ public class RefactoringServer {
         return McpServer.sync(transport)
                 .serverInfo(SERVER_NAME, SERVER_VERSION)
                 .capabilities(ServerCapabilities.builder().tools(true).build())
-                .tools(
-                        listRefactorings(),
-                        analyzeRefactoring(),
-                        applyRefactoring(),
-                        extractMethod(),
-                        inlineVariable(),
-                        inlineConstant(),
-                        extractVariable(),
-                        inlineMethod(),
-                        extractConstant(),
-                        introduceParam(),
-                        removeParam(),
-                        removeMethod(),
-                        extractInterface(),
-                        extractSuperclass(),
-                        moveClass(),
-                        renamePackage(),
-                        pullUpMethod(),
-                        pushDownMethod(),
-                        moveMethod(),
-                        pullUpField(),
-                        pushDownField(),
-                        introduceStaticFactory(),
-                        introduceParameterObject(),
-                        convertToRecord(),
-                        changeMethodSignature(),
-                        encapsulateField(),
-                        decomposeConditional(),
-                        convertAnonymousToNested(),
-                        convertNestedToTopLevel(),
-                        promoteToField(),
-                        moveStaticMember(),
-                        introduceIndirection()
-                )
+                .tools(TOOLS)
                 .build();
     }
 
@@ -166,39 +178,38 @@ public class RefactoringServer {
                         Map.of("type", "object", "properties", Map.of()))
                         .description("List all available refactoring operations.")
                         .build())
-                .callHandler((exchange, request) ->
-                        ok("""
-                        Available refactorings:
-
-                        rename
-                          Rename a local variable, parameter, field, method, or type.
-                          Required arguments: project_root, file, line, column, new_name
-                          Use analyze_refactoring to preview, apply_refactoring to write.
-
-                        extract_method
-                          Extract selected statements into a new private method.
-                          Required arguments: file, start_line, start_column, end_line, end_column, method_name
-                          Returns the rewritten source; does not write to disk.
-
-                        inline_variable
-                          Inline a local variable: replace all uses with its initializer, remove the declaration.
-                          Required arguments: file, line, column
-                          Returns the rewritten source; does not write to disk.
-
-                        extract_variable
-                          Extract an expression into a new local variable.
-                          Required arguments: file, start_line, start_column, end_line, end_column, var_name
-                          Optional: replace_all (replace all identical occurrences in the block)
-                          Returns the rewritten source; does not write to disk.
-
-                        introduce_static_factory
-                          Introduce a public static factory method for a constructor and rewrite
-                          every new ClassName(...) call site in the project to use it.
-                          Required arguments: project_root, file, line, column, factory_method_name
-                          Optional: make_constructor_private (default false)
-                          Returns a preview of all changed files.
-                        """))
+                .callHandler((exchange, request) -> ok(describeRefactorings()))
                 .build();
+    }
+
+    /**
+     * Renders the listing from the shared {@link #TOOLS} registry, so it always
+     * matches what the server actually exposes.
+     */
+    private static String describeRefactorings() {
+        List<SyncToolSpecification> refactorings = TOOLS.stream()
+                .filter(spec -> !META_TOOLS.contains(spec.tool().name()))
+                .toList();
+
+        StringBuilder sb = new StringBuilder("Available refactorings (" + refactorings.size() + "):\n");
+        for (SyncToolSpecification spec : refactorings) {
+            Tool tool = spec.tool();
+            sb.append("\n").append(tool.name()).append('\n');
+            Arrays.stream(tool.description().split("\n"))
+                    .map(String::stripTrailing)
+                    .filter(line -> !line.isBlank())
+                    .forEach(line -> sb.append("  ").append(line).append('\n'));
+            sb.append("  Required: ").append(requiredArgs(tool)).append('\n');
+        }
+        return sb.toString().stripTrailing();
+    }
+
+    private static String requiredArgs(Tool tool) {
+        Object required = tool.inputSchema().get("required");
+        if (required instanceof List<?> list) {
+            return list.stream().map(String::valueOf).collect(Collectors.joining(", "));
+        }
+        return "";
     }
 
     // -------------------------------------------------------------------------
@@ -968,7 +979,9 @@ public class RefactoringServer {
     static SyncToolSpecification pushDownField() {
         Options opts = Options.builder().add(LINE, COLUMN, FIELD, CLASS).addRequired(PROJECT_ROOT, FILE).build();
         return SyncToolSpecification.builder()
-                .tool(Tool.builder("push_down_field", opts.toSchema()).build())
+                .tool(Tool.builder("push_down_field", opts.toSchema())
+                        .description("Push a field down from a class to all its direct subclasses in the project. The field is removed from the superclass and added to every subclass found. Returns new source for the superclass and all modified subclasses. Does not write to disk.")
+                        .build())
                 .callHandler((exchange, request) -> {
                     try {
                         var args  = opts.reader(request.arguments());
@@ -995,7 +1008,9 @@ public class RefactoringServer {
     static SyncToolSpecification introduceStaticFactory() {
         Options opts = Options.builder().add(LINE, COLUMN, METHOD, MAKE_CONSTRUCTOR_PRIVATE).addRequired(PROJECT_ROOT, FILE, FACTORY_METHOD_NAME).build();
         return SyncToolSpecification.builder()
-                .tool(Tool.builder("introduce_static_factory", opts.toSchema()).build())
+                .tool(Tool.builder("introduce_static_factory", opts.toSchema())
+                        .description("Introduce a public static factory method for a constructor and rewrite every new ClassName(...) call site in the project to use it. make_constructor_private (default false): change the constructor visibility to private. Returns a preview of all changed files; does not write to disk.")
+                        .build())
                 .callHandler((exchange, request) -> {
                     try {
                         var args    = opts.reader(request.arguments());
@@ -1026,7 +1041,9 @@ public class RefactoringServer {
     static SyncToolSpecification introduceParameterObject() {
         Options opts = Options.builder().add(LINE, COLUMN, METHOD, CLASS, PARAM_OBJECT_NAME, AS_RECORD).addRequired(PROJECT_ROOT, FILE, PARAM_NAMES, CLASS_NAME).build();
         return SyncToolSpecification.builder()
-                .tool(Tool.builder("introduce_parameter_object", opts.toSchema()).build())
+                .tool(Tool.builder("introduce_parameter_object", opts.toSchema())
+                        .description("Group selected method parameters into a new class (record if as_record=true). Updates the method signature and every call site in the project. Returns new source for each changed file; does not write to disk.")
+                        .build())
                 .callHandler((exchange, request) -> {
                     try {
                         var args  = opts.reader(request.arguments());
@@ -1060,7 +1077,9 @@ public class RefactoringServer {
     static SyncToolSpecification convertToRecord() {
         Options opts = Options.of(PROJECT_ROOT, FILE);
         return SyncToolSpecification.builder()
-                .tool(Tool.builder("convert_to_record", opts.toSchema()).build())
+                .tool(Tool.builder("convert_to_record", opts.toSchema())
+                        .description("Convert a class to a Java record and rewrite accessor call sites across the project. Returns new source for each changed file; does not write to disk.")
+                        .build())
                 .callHandler((exchange, request) -> {
                     try {
                         var args  = opts.reader(request.arguments());

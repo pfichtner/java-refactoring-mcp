@@ -5,7 +5,10 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
@@ -39,15 +42,38 @@ class RefactoringServerTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void list_refactorings_returns_available_operations() {
+    void list_refactorings_covers_every_registered_refactoring() {
         var result = RefactoringServer.listRefactorings()
                 .callHandler()
                 .apply(null, fakeRequest(Map.of()));
 
         assertThat(result.isError()).isFalse();
         String text = textOf(result);
-        assertThat(text).as("Should mention 'rename'").contains("rename");
-        assertThat(text).as("Should describe required args").contains("project_root");
+
+        Set<String> registered = RefactoringServer.TOOLS.stream()
+                .map(spec -> spec.tool().name())
+                .filter(name -> !RefactoringServer.META_TOOLS.contains(name))
+                .collect(Collectors.toSet());
+
+        assertThat(topLevelNames(text)).isEqualTo(registered);
+    }
+
+    @Test
+    void list_refactorings_golden_master() {
+        var result = RefactoringServer.listRefactorings()
+                .callHandler()
+                .apply(null, fakeRequest(Map.of()));
+
+        Approvals.verify(textOf(result));
+    }
+
+    /** Lines that start a tool block: non-empty, un-indented, and not the heading. */
+    private static Set<String> topLevelNames(String text) {
+        return Arrays.stream(text.split("\n"))
+                .filter(line -> !line.isBlank() && !line.startsWith(" "))
+                .filter(line -> !line.startsWith("Available refactorings"))
+                .map(String::strip)
+                .collect(Collectors.toSet());
     }
 
     // -------------------------------------------------------------------------

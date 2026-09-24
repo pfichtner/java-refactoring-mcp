@@ -232,6 +232,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 |-----------|----------|
 | Analyze refactoring rename method preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerTest.analyze_refactoring_rename_method_preview.approved.txt) |
 | Apply refactoring writes files and returns summary | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerTest.apply_refactoring_writes_files_and_returns_summary.approved.txt) |
+| List refactorings golden master | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerTest.list_refactorings_golden_master.approved.txt) |
 
 ---
 
