@@ -7,9 +7,7 @@ import static com.github.pfichtner.refactoring.mcp.Property.METHOD_NAME;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
-
 import com.github.pfichtner.refactoring.JdtDecomposeConditional;
-import com.github.pfichtner.refactoring.locator.LocatorResolver;
 
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
@@ -34,7 +32,7 @@ public final class DecomposeConditionalTool {
                         var args      = opts.reader(request.arguments());
                         SourceFile source = args.getContent(FILE);
                         String methodName = args.getString(METHOD_NAME);
-                        int offset    = LocatorResolver.resolve(args.getLocator(), source.content(), source.path().getFileName().toString());
+                        int offset    = source.resolve(args.getLocator());
                         String result = JdtDecomposeConditional.decomposeConditional(
                                 source.content(), source.path().getFileName().toString(), offset, methodName);
                         return ok(result);

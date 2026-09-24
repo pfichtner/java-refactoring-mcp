@@ -13,7 +13,6 @@ import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 import java.nio.file.Path;
 
 import com.github.pfichtner.refactoring.JdtPushDownField;
-import com.github.pfichtner.refactoring.locator.LocatorResolver;
 import com.github.pfichtner.refactoring.project.ProjectDetector;
 
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
@@ -36,7 +35,7 @@ public final class PushDownFieldTool {
                         Path root = args.getPath(PROJECT_ROOT);
                         SourceFile source = args.getContent(FILE, root);
 
-                        int offset    = LocatorResolver.resolve(args.getLocator(), source.content(), source.path().getFileName().toString());
+                        int offset    = source.resolve(args.getLocator());
 
                         var changed = JdtPushDownField.pushDown(
                                 ProjectDetector.detect(root), source.path(), offset);

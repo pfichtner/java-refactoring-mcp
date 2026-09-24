@@ -10,9 +10,7 @@ import static com.github.pfichtner.refactoring.mcp.Property.REPLACE_ALL;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
-
 import com.github.pfichtner.refactoring.JdtInliner;
-import com.github.pfichtner.refactoring.locator.LocatorResolver;
 
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
@@ -39,7 +37,7 @@ public final class InlineConstantTool {
                         boolean allOcc = args.getBoolean(REPLACE_ALL);
                         boolean removeDecl = args.getBoolean(REMOVE_DECLARATION);
 
-                        int offset    = LocatorResolver.resolve(args.getLocator(), source.content(), source.path().getFileName().toString());
+                        int offset    = source.resolve(args.getLocator());
                         String result = JdtInliner.inlineConstant(
                                 source.content(), source.path().getFileName().toString(), offset, allOcc, removeDecl);
                         return ok(result);

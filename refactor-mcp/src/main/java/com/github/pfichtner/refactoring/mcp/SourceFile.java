@@ -6,6 +6,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 
+import com.github.pfichtner.refactoring.locator.Locator;
+import com.github.pfichtner.refactoring.locator.LocatorResolver;
+
 /**
  * A source file to be refactored: its {@link Path} plus its contents, which
  * are read lazily from disk on first access to {@link #content()} and cached
@@ -42,6 +45,11 @@ public final class SourceFile {
         return cached;
     }
 
+    
+    public int resolve(Locator locator) {
+    	return LocatorResolver.resolve(locator, content(), path().getFileName().toString());
+    }
+
     @Override
     public boolean equals(Object other) {
         return other instanceof SourceFile that && path.equals(that.path);
@@ -56,4 +64,5 @@ public final class SourceFile {
     public String toString() {
         return "SourceFile[" + path + "]";
     }
+
 }

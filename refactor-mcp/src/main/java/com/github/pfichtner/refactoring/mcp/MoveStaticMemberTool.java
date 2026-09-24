@@ -12,7 +12,7 @@ import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 import java.nio.file.Path;
 
 import com.github.pfichtner.refactoring.JdtMoveStaticMember;
-import com.github.pfichtner.refactoring.locator.LocatorResolver;
+import com.github.pfichtner.refactoring.project.MavenProject;
 
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
@@ -33,12 +33,11 @@ public final class MoveStaticMemberTool {
                         var args          = opts.reader(request.arguments());
                         Path projectRoot  = args.getPath(PROJECT_ROOT);
                         SourceFile source = args.getContent(FILE);
-                        int offset        = LocatorResolver.resolve(args.getLocator(), source.content(), source.path().getFileName().toString());
+                        int offset        = source.resolve(args.getLocator());
                         String target     = args.getString(TARGET_CLASS);
                         boolean widen     = args.getBoolean(WIDEN_VISIBILITY, true);
-                        var project = new com.github.pfichtner.refactoring.project.MavenProject(projectRoot);
-                        java.util.Map<java.nio.file.Path, String> changed =
-                                JdtMoveStaticMember.moveStaticMember(project, source.path(), offset, target, widen);
+                        var project = new MavenProject(projectRoot);
+						var changed = JdtMoveStaticMember.moveStaticMember(project, source.path(), offset, target, widen);
                         StringBuilder sb = new StringBuilder();
                         changed.forEach((p, src) ->
                                 sb.append("=== ").append(p.getFileName()).append(" ===\n").append(src).append("\n"));

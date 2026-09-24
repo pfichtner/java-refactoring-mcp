@@ -10,7 +10,6 @@ import static com.github.pfichtner.refactoring.mcp.Property.VAR_NAME;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
-
 import com.github.pfichtner.refactoring.JdtExtractVariable;
 import com.github.pfichtner.refactoring.JdtRenamer;
 import com.github.pfichtner.refactoring.SourceUnit;

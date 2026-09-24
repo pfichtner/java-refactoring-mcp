@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.github.pfichtner.refactoring.JdtRemoveMethod;
-import com.github.pfichtner.refactoring.locator.LocatorResolver;
 import com.github.pfichtner.refactoring.project.ProjectDetector;
 
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
@@ -40,7 +39,7 @@ public final class RemoveMethodTool {
                     try {
                         var args    = opts.reader(request.arguments());
                         SourceFile source = args.getContent(FILE);
-                        int offset    = LocatorResolver.resolve(args.getLocator(), source.content(), source.path().getFileName().toString());
+                        int offset    = source.resolve(args.getLocator());
                         boolean cascade = args.getBoolean(CASCADE, true);
                         var changed = JdtRemoveMethod.removeMethod(
                                 ProjectDetector.detect(args.getPath(PROJECT_ROOT)),

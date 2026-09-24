@@ -6,9 +6,7 @@ import static com.github.pfichtner.refactoring.mcp.Property.LINE;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
-
 import com.github.pfichtner.refactoring.JdtConvertNestedToTopLevel;
-import com.github.pfichtner.refactoring.locator.LocatorResolver;
 
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
@@ -28,7 +26,7 @@ public final class ConvertNestedToTopLevelTool {
                     try {
                         var args   = opts.reader(request.arguments());
                         SourceFile source = args.getContent(FILE);
-                        int offset = LocatorResolver.resolve(args.getLocator(), source.content(), source.path().getFileName().toString());
+                        int offset = source.resolve(args.getLocator());
                         JdtConvertNestedToTopLevel.Result result =
                                 JdtConvertNestedToTopLevel.convert(
                                         source.content(), source.path().getFileName().toString(), offset);

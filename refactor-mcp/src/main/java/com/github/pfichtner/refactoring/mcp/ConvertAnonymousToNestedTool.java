@@ -7,9 +7,7 @@ import static com.github.pfichtner.refactoring.mcp.Property.NESTED_CLASS_NAME;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
-
 import com.github.pfichtner.refactoring.JdtConvertAnonymousToNested;
-import com.github.pfichtner.refactoring.locator.LocatorResolver;
 
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
@@ -29,7 +27,7 @@ public final class ConvertAnonymousToNestedTool {
                     try {
                         var args          = opts.reader(request.arguments());
                         SourceFile source = args.getContent(FILE);
-                        int offset        = LocatorResolver.resolve(args.getLocator(), source.content(), source.path().getFileName().toString());
+                        int offset        = source.resolve(args.getLocator());
                         String nestedName = args.getString(NESTED_CLASS_NAME);
                         String result     = JdtConvertAnonymousToNested.convert(
                                 source.content(), source.path().getFileName().toString(), offset, nestedName);

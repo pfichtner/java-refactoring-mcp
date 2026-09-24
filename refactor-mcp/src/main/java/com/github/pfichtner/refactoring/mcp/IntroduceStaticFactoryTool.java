@@ -14,7 +14,6 @@ import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 import java.nio.file.Path;
 
 import com.github.pfichtner.refactoring.JdtIntroduceStaticFactory;
-import com.github.pfichtner.refactoring.locator.LocatorResolver;
 import com.github.pfichtner.refactoring.project.ProjectDetector;
 
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
@@ -39,7 +38,7 @@ public final class IntroduceStaticFactoryTool {
                         String name = args.getString(FACTORY_METHOD_NAME);
                         boolean makePrivate = args.getBoolean(MAKE_CONSTRUCTOR_PRIVATE);
 
-                        int offset    = LocatorResolver.resolve(args.getLocator(), source.content(), source.path().getFileName().toString());
+                        int offset    = source.resolve(args.getLocator());
 
                         var changed = JdtIntroduceStaticFactory.introduceStaticFactory(
                                 ProjectDetector.detect(root),

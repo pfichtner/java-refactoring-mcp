@@ -10,7 +10,6 @@ import static com.github.pfichtner.refactoring.mcp.Property.START_LINE;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
-
 import com.github.pfichtner.refactoring.JdtExtractConstant;
 import com.github.pfichtner.refactoring.JdtRenamer;
 import com.github.pfichtner.refactoring.SourceUnit;

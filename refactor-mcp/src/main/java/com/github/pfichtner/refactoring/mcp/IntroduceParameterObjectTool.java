@@ -18,7 +18,6 @@ import java.nio.file.Path;
 import java.util.List;
 
 import com.github.pfichtner.refactoring.JdtIntroduceParameterObject;
-import com.github.pfichtner.refactoring.locator.LocatorResolver;
 import com.github.pfichtner.refactoring.project.ProjectDetector;
 
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
@@ -46,7 +45,7 @@ public final class IntroduceParameterObjectTool {
                                 ? args.getString(PARAM_OBJECT_NAME)
                                 : Character.toLowerCase(className.charAt(0)) + className.substring(1);
 
-                        int offset    = LocatorResolver.resolve(args.getLocator(), source.content(), source.path().getFileName().toString());
+                        int offset    = source.resolve(args.getLocator());
 
                         boolean asRecord = args.getBoolean(AS_RECORD);
                         var changed = JdtIntroduceParameterObject.introduce(

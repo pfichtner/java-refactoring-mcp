@@ -16,7 +16,6 @@ import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 import java.nio.file.Path;
 
 import com.github.pfichtner.refactoring.JdtChangeMethodSignature;
-import com.github.pfichtner.refactoring.locator.LocatorResolver;
 import com.github.pfichtner.refactoring.project.ProjectDetector;
 
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
@@ -46,7 +45,7 @@ public final class ChangeMethodSignatureTool {
                         var args  = opts.reader(request.arguments());
                         Path root = args.getPath(PROJECT_ROOT);
                         SourceFile source = args.getContent(FILE, root);
-                        int offset = LocatorResolver.resolve(args.getLocator(), source.content(), source.path().getFileName().toString());
+                        int offset = source.resolve(args.getLocator());
                         String newReturnType = args.getString(NEW_RETURN_TYPE);
                         int[]    paramOrder = args.getIntArray(PARAM_ORDER);
                         String[] paramTypes = args.getStringArray(PARAM_TYPES);

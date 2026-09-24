@@ -19,7 +19,6 @@ import java.util.stream.Collectors;
 
 import com.github.pfichtner.refactoring.FileChange;
 import com.github.pfichtner.refactoring.JdtRenamer;
-import com.github.pfichtner.refactoring.locator.LocatorResolver;
 import com.github.pfichtner.refactoring.project.ProjectDetector;
 
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -64,7 +63,7 @@ final class ToolSupport {
         SourceFile source = new SourceFile(
                 filePath.isAbsolute() ? filePath : root.resolve(filePath));
 
-        int offset = LocatorResolver.resolve(args.getLocator(), source.content(), source.path().getFileName().toString());
+        int offset = source.resolve(args.getLocator());
 
         return JdtRenamer.rename(ProjectDetector.detect(root), source.path(), offset, newName);
     }
