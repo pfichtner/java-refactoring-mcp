@@ -10,8 +10,6 @@ import static com.github.pfichtner.refactoring.mcp.Property.REMOVE_DECLARATION;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -40,14 +38,13 @@ public final class InlineMethodTool {
                 .callHandler((exchange, request) -> {
                     try {
                         var args      = opts.reader(request.arguments());
-                        Path file     = args.getPath(FILE);
+                        SourceFile source = args.getContent(FILE);
                         boolean removeDel = args.getBoolean(REMOVE_DECLARATION);
-                        String source = Files.readString(file);
-                        int offset    = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
+                        int offset    = LocatorResolver.resolve(args.getLocator(), source.content(), source.path().getFileName().toString());
                         var changed = JdtInlineMethod.inlineMethod(
                                 ProjectDetector.detect(
                                         args.getPath(PROJECT_ROOT)),
-                                file, offset, removeDel);
+                                source.path(), offset, removeDel);
                         return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
                                 .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
                                         + e.getValue().stripTrailing() + "\n\n")

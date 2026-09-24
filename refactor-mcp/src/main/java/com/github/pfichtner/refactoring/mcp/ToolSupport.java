@@ -11,7 +11,6 @@ import static com.github.pfichtner.refactoring.mcp.Property.PROJECT_ROOT;
 import static com.github.pfichtner.refactoring.mcp.Property.REFACTORING;
 import static com.github.pfichtner.refactoring.mcp.Property.TYPE;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
@@ -62,14 +61,12 @@ final class ToolSupport {
         }
 
         Path root = args.getPath(PROJECT_ROOT);
-        Path sourceFile = filePath.isAbsolute()
-                ? filePath
-                : root.resolve(filePath);
+        SourceFile source = new SourceFile(
+                filePath.isAbsolute() ? filePath : root.resolve(filePath));
 
-        String source = Files.readString(sourceFile);
-        int offset = LocatorResolver.resolve(args.getLocator(), source, sourceFile.getFileName().toString());
+        int offset = LocatorResolver.resolve(args.getLocator(), source.content(), source.path().getFileName().toString());
 
-        return JdtRenamer.rename(ProjectDetector.detect(root), sourceFile, offset, newName);
+        return JdtRenamer.rename(ProjectDetector.detect(root), source.path(), offset, newName);
     }
 
     static Options renameOptions() {

@@ -6,8 +6,6 @@ import static com.github.pfichtner.refactoring.mcp.Property.SUPERCLASS_NAME;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 
 import com.github.pfichtner.refactoring.JdtExtractSuperclass;
@@ -33,13 +31,12 @@ public final class ExtractSuperclassTool {
                 .callHandler((exchange, request) -> {
                     try {
                         var args = opts.reader(request.arguments());
-                        Path file            = args.getPath(FILE);
+                        SourceFile source = args.getContent(FILE);
                         String superName     = args.getString(SUPERCLASS_NAME);
                         List<String> methods = args.getStringList(METHOD_NAMES);
-                        String source = Files.readString(file);
                         var result = JdtExtractSuperclass.extractSuperclass(
-                                source, file.getFileName().toString(), superName, methods);
-                        String out = "=== " + file.getFileName() + " (modified) ===\n"
+                                source.content(), source.path().getFileName().toString(), superName, methods);
+                        String out = "=== " + source.path().getFileName() + " (modified) ===\n"
                                 + result.modifiedClassSource().stripTrailing() + "\n\n"
                                 + "=== " + superName + ".java (new) ===\n"
                                 + result.superclassSource().stripTrailing();

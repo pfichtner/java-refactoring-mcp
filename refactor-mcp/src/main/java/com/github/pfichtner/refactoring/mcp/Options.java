@@ -123,6 +123,16 @@ public final class Options {
             return v == null ? null : Path.of(v);
         }
 
+        /** Returns the value as a {@link SourceFile}; content is read lazily and cached. */
+        public SourceFile getContent(Property p) {
+            return new SourceFile(getPath(p));
+        }
+
+        /** Returns a {@link SourceFile} for the value resolved against {@code base}; content is read lazily and cached. */
+        public SourceFile getContent(Property p, Path base) {
+            return new SourceFile(base.resolve(getPath(p)));
+        }
+
         /** Returns the value as an int. Throws if absent. */
         public int getInt(Property p) { return ((Number) args.get(p.key())).intValue(); }
 

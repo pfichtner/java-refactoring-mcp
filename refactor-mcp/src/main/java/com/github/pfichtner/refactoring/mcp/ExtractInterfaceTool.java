@@ -6,8 +6,6 @@ import static com.github.pfichtner.refactoring.mcp.Property.METHOD_NAMES;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 
 import com.github.pfichtner.refactoring.JdtExtractInterface;
@@ -33,16 +31,14 @@ public final class ExtractInterfaceTool {
                 .callHandler((exchange, request) -> {
                     try {
                         var args = opts.reader(request.arguments());
-                        Path file             = args.getPath(FILE);
+                        SourceFile source = args.getContent(FILE);
                         String interfaceName  = args.getString(INTERFACE_NAME);
                         List<String> methods  = args.getStringList(METHOD_NAMES);
-
-                        String source = Files.readString(file);
                         var result = JdtExtractInterface.extractInterface(
-                                source, file.getFileName().toString(),
+                                source.content(), source.path().getFileName().toString(),
                                 interfaceName, methods);
 
-                        String out = "=== " + file.getFileName() + " (modified) ===\n"
+                        String out = "=== " + source.path().getFileName() + " (modified) ===\n"
                                 + result.modifiedClassSource().stripTrailing() + "\n\n"
                                 + "=== " + interfaceName + ".java (new) ===\n"
                                 + result.interfaceSource().stripTrailing();

@@ -11,7 +11,6 @@ import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.formatPreview;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import com.github.pfichtner.refactoring.JdtPullUpField;
@@ -36,14 +35,13 @@ public final class PullUpFieldTool {
                     try {
                         var args  = opts.reader(request.arguments());
                         Path root = args.getPath(PROJECT_ROOT);
-                        Path file = root.resolve(args.getPath(FILE));
+                        SourceFile source = args.getContent(FILE, root);
 
-                        String source = Files.readString(file);
-                        int offset    = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
+                        int offset    = LocatorResolver.resolve(args.getLocator(), source.content(), source.path().getFileName().toString());
                         boolean widen = args.getBoolean(WIDEN_VISIBILITY, true);
 
                         var changed = JdtPullUpField.pullUp(
-                                ProjectDetector.detect(root), file, offset, widen);
+                                ProjectDetector.detect(root), source.path(), offset, widen);
                         return ok(formatPreview(changed));
                     } catch (IllegalArgumentException e) {
                         return error(e.getMessage());

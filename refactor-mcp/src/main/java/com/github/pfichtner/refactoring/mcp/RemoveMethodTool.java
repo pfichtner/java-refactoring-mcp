@@ -10,8 +10,6 @@ import static com.github.pfichtner.refactoring.mcp.Property.PROJECT_ROOT;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -41,13 +39,12 @@ public final class RemoveMethodTool {
                 .callHandler((exchange, request) -> {
                     try {
                         var args    = opts.reader(request.arguments());
-                        Path file    = args.getPath(FILE);
-                        String source = Files.readString(file);
-                        int offset    = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
+                        SourceFile source = args.getContent(FILE);
+                        int offset    = LocatorResolver.resolve(args.getLocator(), source.content(), source.path().getFileName().toString());
                         boolean cascade = args.getBoolean(CASCADE, true);
                         var changed = JdtRemoveMethod.removeMethod(
                                 ProjectDetector.detect(args.getPath(PROJECT_ROOT)),
-                                file, offset, cascade);
+                                source.path(), offset, cascade);
                         return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
                                 .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
                                         + e.getValue().stripTrailing() + "\n\n")

@@ -6,8 +6,6 @@ import static com.github.pfichtner.refactoring.mcp.Property.LINE;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 import com.github.pfichtner.refactoring.JdtPromoteToField;
 import com.github.pfichtner.refactoring.locator.LocatorResolver;
@@ -29,11 +27,10 @@ public final class PromoteToFieldTool {
                 .callHandler((exchange, request) -> {
                     try {
                         var args    = opts.reader(request.arguments());
-                        Path file   = args.getPath(FILE);
-                        String source = Files.readString(file);
-                        int offset  = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
+                        SourceFile source = args.getContent(FILE);
+                        int offset  = LocatorResolver.resolve(args.getLocator(), source.content(), source.path().getFileName().toString());
                         String result = JdtPromoteToField.promote(
-                                source, file.getFileName().toString(), offset);
+                                source.content(), source.path().getFileName().toString(), offset);
                         return ok(result);
                     } catch (Exception e) {
                         return error(e.getMessage());

@@ -14,7 +14,6 @@ import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.formatPreview;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -40,20 +39,19 @@ public final class IntroduceParameterObjectTool {
                     try {
                         var args  = opts.reader(request.arguments());
                         Path root = args.getPath(PROJECT_ROOT);
-                        Path file = root.resolve(args.getPath(FILE));
+                        SourceFile source = args.getContent(FILE, root);
                         List<String> paramNames = args.getStringList(PARAM_NAMES);
                         String className = args.getString(CLASS_NAME);
                         String paramObjName = args.has(PARAM_OBJECT_NAME)
                                 ? args.getString(PARAM_OBJECT_NAME)
                                 : Character.toLowerCase(className.charAt(0)) + className.substring(1);
 
-                        String source = Files.readString(file);
-                        int offset    = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
+                        int offset    = LocatorResolver.resolve(args.getLocator(), source.content(), source.path().getFileName().toString());
 
                         boolean asRecord = args.getBoolean(AS_RECORD);
                         var changed = JdtIntroduceParameterObject.introduce(
                                 ProjectDetector.detect(root),
-                                file, offset, paramNames, className, paramObjName, asRecord);
+                                source.path(), offset, paramNames, className, paramObjName, asRecord);
                         return ok(formatPreview(changed));
                     } catch (IllegalArgumentException e) {
                         return error(e.getMessage());

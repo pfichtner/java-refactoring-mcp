@@ -7,8 +7,6 @@ import static com.github.pfichtner.refactoring.mcp.Property.NESTED_CLASS_NAME;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 import com.github.pfichtner.refactoring.JdtConvertAnonymousToNested;
 import com.github.pfichtner.refactoring.locator.LocatorResolver;
@@ -30,12 +28,11 @@ public final class ConvertAnonymousToNestedTool {
                 .callHandler((exchange, request) -> {
                     try {
                         var args          = opts.reader(request.arguments());
-                        Path file         = args.getPath(FILE);
-                        String source     = Files.readString(file);
-                        int offset        = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
+                        SourceFile source = args.getContent(FILE);
+                        int offset        = LocatorResolver.resolve(args.getLocator(), source.content(), source.path().getFileName().toString());
                         String nestedName = args.getString(NESTED_CLASS_NAME);
                         String result     = JdtConvertAnonymousToNested.convert(
-                                source, file.getFileName().toString(), offset, nestedName);
+                                source.content(), source.path().getFileName().toString(), offset, nestedName);
                         return ok(result);
                     } catch (Exception e) {
                         return error(e.getMessage());

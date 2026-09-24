@@ -10,8 +10,6 @@ import static com.github.pfichtner.refactoring.mcp.Property.VAR_NAME;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 import com.github.pfichtner.refactoring.JdtExtractVariable;
 import com.github.pfichtner.refactoring.JdtRenamer;
@@ -37,7 +35,7 @@ public final class ExtractVariableTool {
                 .callHandler((exchange, request) -> {
                     try {
                         var args      = opts.reader(request.arguments());
-                        Path file     = args.getPath(FILE);
+                        SourceFile source = args.getContent(FILE);
                         int startLine = args.getInt(START_LINE);
                         int startCol  = args.getInt(START_COLUMN);
                         int endLine   = args.getInt(END_LINE);
@@ -45,11 +43,10 @@ public final class ExtractVariableTool {
                         String varName    = args.getString(VAR_NAME);
                         boolean replaceAll = args.getBoolean(REPLACE_ALL);
 
-                        String source  = Files.readString(file);
-                        int selStart   = JdtRenamer.toOffset(source, startLine, startCol);
-                        int selEnd     = JdtRenamer.toOffset(source, endLine, endCol);
+                        int selStart   = JdtRenamer.toOffset(source.content(), startLine, startCol);
+                        int selEnd     = JdtRenamer.toOffset(source.content(), endLine, endCol);
                         String result  = JdtExtractVariable.extractVariable(
-                                new SourceUnit(source, file.getFileName().toString()),
+                                new SourceUnit(source.content(), source.path().getFileName().toString()),
                                 selStart, selEnd - selStart, varName, replaceAll);
                         return ok(result);
                     } catch (Exception e) {

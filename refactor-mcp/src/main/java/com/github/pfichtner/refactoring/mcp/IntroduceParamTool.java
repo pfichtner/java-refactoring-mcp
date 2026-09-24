@@ -11,8 +11,6 @@ import static com.github.pfichtner.refactoring.mcp.Property.START_LINE;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -41,7 +39,7 @@ public final class IntroduceParamTool {
                 .callHandler((exchange, request) -> {
                     try {
                         var args      = opts.reader(request.arguments());
-                        Path file     = args.getPath(FILE);
+                        SourceFile source = args.getContent(FILE);
                         int startLine = args.getInt(START_LINE);
                         int startCol  = args.getInt(START_COLUMN);
                         int endLine   = args.getInt(END_LINE);
@@ -49,13 +47,12 @@ public final class IntroduceParamTool {
                         String paramName = args.getString(PARAM_NAME);
                         String paramType = args.getString(PARAM_TYPE); // nullable
 
-                        String source  = Files.readString(file);
-                        int selStart   = JdtRenamer.toOffset(source, startLine, startCol);
-                        int selEnd     = JdtRenamer.toOffset(source, endLine, endCol);
+                        int selStart   = JdtRenamer.toOffset(source.content(), startLine, startCol);
+                        int selEnd     = JdtRenamer.toOffset(source.content(), endLine, endCol);
 
                         var changed = JdtIntroduceParam.introduceParam(
                                 ProjectDetector.detect(args.getPath(PROJECT_ROOT)),
-                                file, selStart, selEnd - selStart, paramName, paramType);
+                                source.path(), selStart, selEnd - selStart, paramName, paramType);
 
                         return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
                                 .map(e -> "=== " + e.getKey().getFileName() + " ===\n"

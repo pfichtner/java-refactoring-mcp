@@ -9,7 +9,6 @@ import static com.github.pfichtner.refactoring.mcp.Property.WIDEN_VISIBILITY;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import com.github.pfichtner.refactoring.JdtMoveStaticMember;
@@ -33,14 +32,13 @@ public final class MoveStaticMemberTool {
                     try {
                         var args          = opts.reader(request.arguments());
                         Path projectRoot  = args.getPath(PROJECT_ROOT);
-                        Path file         = args.getPath(FILE);
-                        String source     = Files.readString(file);
-                        int offset        = LocatorResolver.resolve(args.getLocator(), source, file.getFileName().toString());
+                        SourceFile source = args.getContent(FILE);
+                        int offset        = LocatorResolver.resolve(args.getLocator(), source.content(), source.path().getFileName().toString());
                         String target     = args.getString(TARGET_CLASS);
                         boolean widen     = args.getBoolean(WIDEN_VISIBILITY, true);
                         var project = new com.github.pfichtner.refactoring.project.MavenProject(projectRoot);
                         java.util.Map<java.nio.file.Path, String> changed =
-                                JdtMoveStaticMember.moveStaticMember(project, file, offset, target, widen);
+                                JdtMoveStaticMember.moveStaticMember(project, source.path(), offset, target, widen);
                         StringBuilder sb = new StringBuilder();
                         changed.forEach((p, src) ->
                                 sb.append("=== ").append(p.getFileName()).append(" ===\n").append(src).append("\n"));
