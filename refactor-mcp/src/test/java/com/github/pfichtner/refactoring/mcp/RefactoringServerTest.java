@@ -53,7 +53,7 @@ class RefactoringServerTest {
 
         Set<String> registered = RefactoringServer.TOOLS.stream()
                 .map(spec -> spec.tool().name())
-                .filter(name -> !RefactoringServer.META_TOOLS.contains(name))
+                .filter(name -> !ListRefactoringsTool.META_TOOLS.contains(name))
                 .collect(Collectors.toSet());
 
         assertThat(topLevelNames(text)).isEqualTo(registered);

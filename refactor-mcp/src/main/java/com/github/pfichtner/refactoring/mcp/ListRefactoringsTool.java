@@ -1,12 +1,12 @@
 package com.github.pfichtner.refactoring.mcp;
 
-import static com.github.pfichtner.refactoring.mcp.RefactoringServer.META_TOOLS;
 import static com.github.pfichtner.refactoring.mcp.RefactoringServer.TOOLS;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -59,4 +59,8 @@ public final class ListRefactoringsTool {
         Object required = tool.inputSchema().get("required");
         return required instanceof List<?> list ? list.stream().map(String::valueOf).collect(Collectors.joining(", ")) : "";
     }
+
+    /** Workflow tools that are not themselves refactorings; omitted from the listing. */
+    static final Set<String> META_TOOLS = Set.of(
+            "list_refactorings", "analyze_refactoring", "apply_refactoring");
 }

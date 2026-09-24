@@ -1,7 +1,6 @@
 package com.github.pfichtner.refactoring.mcp;
 
 import java.util.List;
-import java.util.Set;
 
 import com.github.pfichtner.refactoring.JdtRenamer;
 import com.github.pfichtner.refactoring.project.ProjectDetector;
@@ -68,10 +67,6 @@ public class RefactoringServer {
             MoveStaticMemberTool.moveStaticMember(),
             IntroduceIndirectionTool.introduceIndirection()
     );
-
-    /** Workflow tools that are not themselves refactorings; omitted from the listing. */
-    static final Set<String> META_TOOLS = Set.of(
-            "list_refactorings", "analyze_refactoring", "apply_refactoring");
 
     /** Builds and returns the configured server (transport already attached). */
     public static McpSyncServer build() {
