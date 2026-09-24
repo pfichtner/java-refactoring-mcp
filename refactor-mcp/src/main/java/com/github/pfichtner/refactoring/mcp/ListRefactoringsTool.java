@@ -2,6 +2,7 @@ package com.github.pfichtner.refactoring.mcp;
 
 import static com.github.pfichtner.refactoring.mcp.RefactoringServer.TOOLS;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
+import static java.util.function.Predicate.not;
 
 import java.util.Arrays;
 import java.util.List;
@@ -17,6 +18,10 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
  * Thin MCP tool wrapper for {@code ListRefactoringsTool}.
  */
 public final class ListRefactoringsTool {
+
+    /** Workflow tools that are not themselves refactorings; omitted from the listing. */
+    static final Set<String> META_TOOLS = Set.of(
+            "list_refactorings", "analyze_refactoring", "apply_refactoring");
 
     static SyncToolSpecification listRefactorings() {
         return SyncToolSpecification.builder()
@@ -34,20 +39,28 @@ public final class ListRefactoringsTool {
      */
     static String describeRefactorings() {
         List<SyncToolSpecification> refactorings = TOOLS.stream()
-                .filter(spec -> !META_TOOLS.contains(spec.tool().name()))
+                .filter(not(ListRefactoringsTool::isMetaTool))
                 .toList();
 
         return Stream.concat(
                         Stream.of("Available refactorings (" + refactorings.size() + "):\n"),
-                        refactorings.stream().map(spec -> describeTool(spec.tool())))
+                        refactorings.stream().map(ListRefactoringsTool::describeTool))
                 .collect(Collectors.joining())
                 .stripTrailing();
     }
 
+	private static boolean isMetaTool(SyncToolSpecification spec) {
+		return META_TOOLS.contains(spec.tool().name());
+	}
+
+	private static String describeTool(SyncToolSpecification spec) {
+		return describeTool(spec.tool());
+	}
+	
     private static String describeTool(Tool tool) {
         String description = Arrays.stream(tool.description().split("\n"))
                 .map(String::stripTrailing)
-                .filter(line -> !line.isBlank())
+                .filter(not(String::isBlank))
                 .map(line -> "  " + line + "\n")
                 .collect(Collectors.joining());
 
@@ -60,7 +73,4 @@ public final class ListRefactoringsTool {
         return required instanceof List<?> list ? list.stream().map(String::valueOf).collect(Collectors.joining(", ")) : "";
     }
 
-    /** Workflow tools that are not themselves refactorings; omitted from the listing. */
-    static final Set<String> META_TOOLS = Set.of(
-            "list_refactorings", "analyze_refactoring", "apply_refactoring");
 }
