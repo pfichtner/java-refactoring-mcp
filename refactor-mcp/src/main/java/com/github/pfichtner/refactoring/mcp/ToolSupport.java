@@ -10,12 +10,12 @@ import static com.github.pfichtner.refactoring.mcp.Property.NEW_NAME;
 import static com.github.pfichtner.refactoring.mcp.Property.PROJECT_ROOT;
 import static com.github.pfichtner.refactoring.mcp.Property.REFACTORING;
 import static com.github.pfichtner.refactoring.mcp.Property.TYPE;
+import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.joining;
 
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import com.github.pfichtner.refactoring.FileChange;
 import com.github.pfichtner.refactoring.JdtRenamer;
@@ -78,14 +78,15 @@ final class ToolSupport {
     static String formatPreview(Map<Path, String> changed) {
         if (changed.isEmpty()) return "No changes.";
         String names = changed.keySet().stream()
-                .map(p -> p.getFileName().toString())
+                .map(Path::getFileName)
+                .map(Path::toString)
                 .sorted()
-                .collect(Collectors.joining(", "));
+                .collect(joining(", "));
         String content = changed.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
                 .map(e -> "\n=== " + e.getKey().getFileName() + " ===\n"
                         + e.getValue().stripTrailing() + "\n")
-                .collect(Collectors.joining());
+                .collect(joining());
         return "Dry run — no files written.\n"
                 + "Would change (" + changed.size() + "): " + names + "\n"
                 + content;
@@ -94,14 +95,16 @@ final class ToolSupport {
     static String formatPreview(List<FileChange> changed) {
         if (changed.isEmpty()) return "No changes.";
         String names = changed.stream()
-                .map(fc -> fc.newPath().getFileName().toString())
+                .map(FileChange::newPath)
+                .map(Path::getFileName)
+                .map(Path::toString)
                 .sorted()
-                .collect(Collectors.joining(", "));
+                .collect(joining(", "));
         String content = changed.stream()
-                .sorted(Comparator.comparing(fc -> fc.newPath().toString()))
+                .sorted(comparing(fc -> fc.newPath().toString()))
                 .map(fc -> "\n=== " + fc.newPath().getFileName() + " ===\n"
                         + fc.newSource().stripTrailing() + "\n")
-                .collect(Collectors.joining());
+                .collect(joining());
         return "Dry run — no files written.\n"
                 + "Would change (" + changed.size() + "): " + names + "\n"
                 + content;
@@ -110,11 +113,15 @@ final class ToolSupport {
     static String formatSummary(List<FileChange> changed) {
         if (changed.isEmpty()) return "No changes.";
         String content = changed.stream()
-                .sorted(Comparator.comparing(fc -> fc.newPath().toString()))
-                .map(fc -> fc.pathChanged()
-                        ? "  " + fc.oldPath().getFileName() + " → " + fc.newPath().getFileName() + "\n"
-                        : "  " + fc.newPath().getFileName() + "\n")
-                .collect(Collectors.joining());
+                .sorted(comparing(fc -> fc.newPath().toString()))
+                .map(ToolSupport::changeString)
+                .collect(joining());
         return "Renamed in " + changed.size() + " file(s):\n" + content;
     }
+
+	private static String changeString(FileChange fc) {
+		return fc.pathChanged()
+		        ? "  " + fc.oldPath().getFileName() + " → " + fc.newPath().getFileName() + "\n"
+		        : "  " + fc.newPath().getFileName() + "\n";
+	}
 }
