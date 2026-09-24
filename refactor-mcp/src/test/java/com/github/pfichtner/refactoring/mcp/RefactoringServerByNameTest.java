@@ -52,8 +52,8 @@ class RefactoringServerByNameTest {
         Map<String, Object> byName = new HashMap<>(common);
         byName.put("method", "add");
 
-        var resultByPosition = RefactoringServer.executeRename(new Options.Reader(byPosition));
-        var resultByName     = RefactoringServer.executeRename(new Options.Reader(byName));
+        var resultByPosition = ToolSupport.executeRename(new Options.Reader(byPosition));
+        var resultByName     = ToolSupport.executeRename(new Options.Reader(byName));
 
         // Both approaches should produce identical output for every changed file
         assertThat(resultByName.size()).as("Same number of changed files expected").isEqualTo(resultByPosition.size());
@@ -75,8 +75,8 @@ class RefactoringServerByNameTest {
                 "new_name",     "plus"
         );
 
-        var changed = RefactoringServer.executeRename(new Options.Reader(args));
-        String preview = RefactoringServer.formatPreview(changed);
+        var changed = ToolSupport.executeRename(new Options.Reader(args));
+        String preview = ToolSupport.formatPreview(changed);
 
         Approvals.verify(preview);
     }

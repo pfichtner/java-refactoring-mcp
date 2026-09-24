@@ -1,3 +1,4 @@
+
 package com.github.pfichtner.refactoring.mcp;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,7 +44,7 @@ class RefactoringServerTest {
 
     @Test
     void list_refactorings_covers_every_registered_refactoring() {
-        var result = RefactoringServer.listRefactorings()
+        var result = ListRefactoringsTool.listRefactorings()
                 .callHandler()
                 .apply(null, fakeRequest(Map.of()));
 
@@ -60,7 +61,7 @@ class RefactoringServerTest {
 
     @Test
     void list_refactorings_golden_master() {
-        var result = RefactoringServer.listRefactorings()
+        var result = ListRefactoringsTool.listRefactorings()
                 .callHandler()
                 .apply(null, fakeRequest(Map.of()));
 
@@ -84,8 +85,8 @@ class RefactoringServerTest {
     void analyze_refactoring_rename_method_preview() throws Exception {
         Map<String, Object> args = renameMethodArgs();
 
-        var changed = RefactoringServer.executeRename(new Options.Reader(args));
-        String preview = RefactoringServer.formatPreview(changed);
+        var changed = ToolSupport.executeRename(new Options.Reader(args));
+        String preview = ToolSupport.formatPreview(changed);
 
         Approvals.verify(preview);
     }
@@ -108,13 +109,13 @@ class RefactoringServerTest {
                 "new_name",     "plus"
         );
 
-        var changed = RefactoringServer.executeRename(new Options.Reader(args));
+        var changed = ToolSupport.executeRename(new Options.Reader(args));
         for (var fc : changed) {
             Files.createDirectories(fc.newPath().getParent());
             Files.writeString(fc.newPath(), fc.newSource());
             if (fc.pathChanged()) Files.deleteIfExists(fc.oldPath());
         }
-        String summary = RefactoringServer.formatSummary(changed);
+        String summary = ToolSupport.formatSummary(changed);
 
         Approvals.verify(summary);
 
@@ -141,7 +142,7 @@ class RefactoringServerTest {
                 "new_name", "helper"
         );
 
-        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> RefactoringServer.executeRename(new Options.Reader(args))).actual();
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> ToolSupport.executeRename(new Options.Reader(args))).actual();
         assertThat(ex.getMessage()).contains("extract_method");
     }
 

@@ -1,3 +1,30 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 package com.github.pfichtner.refactoring.mcp;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,7 +58,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_extract_method_returns_preview() {
-        String text = call(RefactoringServer.extractMethod(), Map.of(
+        String text = call(ExtractMethodTool.extractMethod(), Map.of(
                 "file", fixture("extract/simple/input/Greeter.java"),
                 "start_line", 3, "start_column", 9,
                 "end_line", 5, "end_column", 9,
@@ -41,7 +68,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_extract_variable_returns_preview() {
-        String text = call(RefactoringServer.extractVariable(), Map.of(
+        String text = call(ExtractVariableTool.extractVariable(), Map.of(
                 "file", fixture("extract-var/simple/input/Foo.java"),
                 "start_line", 3, "start_column", 16,
                 "end_line", 3, "end_column", 21,
@@ -51,7 +78,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_extract_constant_returns_preview() {
-        String text = call(RefactoringServer.extractConstant(), Map.of(
+        String text = call(ExtractConstantTool.extractConstant(), Map.of(
                 "file", fixture("extract-const/simple/input/Foo.java"),
                 "start_line", 3, "start_column", 16,
                 "end_line", 3, "end_column", 23,
@@ -61,7 +88,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_extract_constant_replace_all_returns_preview() {
-        String text = call(RefactoringServer.extractConstant(), Map.of(
+        String text = call(ExtractConstantTool.extractConstant(), Map.of(
                 "file", fixture("extract-const/replaces-all/input/Foo.java"),
                 "start_line", 3, "start_column", 28,
                 "end_line", 3, "end_column", 35,
@@ -71,7 +98,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_extract_constant_without_replace_all_returns_preview() {
-        String text = call(RefactoringServer.extractConstant(), Map.of(
+        String text = call(ExtractConstantTool.extractConstant(), Map.of(
                 "file", fixture("extract-const/replaces-all/input/Foo.java"),
                 "start_line", 3, "start_column", 28,
                 "end_line", 3, "end_column", 35,
@@ -81,7 +108,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_inline_variable_returns_preview() {
-        String text = call(RefactoringServer.inlineVariable(), Map.of(
+        String text = call(InlineVariableTool.inlineVariable(), Map.of(
                 "file", fixture("inline-var/multiple-uses/input/Foo.java"),
                 "line", 3, "column", 16));
         Approvals.verify(text);
@@ -89,7 +116,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_inline_constant_returns_preview() {
-        String text = call(RefactoringServer.inlineConstant(), Map.of(
+        String text = call(InlineConstantTool.inlineConstant(), Map.of(
                 "file", fixture("inline-constant/int-constant/input/Foo.java"),
                 "line", 5, "column", 21,
                 "replace_all", true, "remove_declaration", true));
@@ -98,7 +125,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_extract_superclass_returns_preview() {
-        String text = call(RefactoringServer.extractSuperclass(), Map.of(
+        String text = call(ExtractSuperclassTool.extractSuperclass(), Map.of(
                 "file", fixture("extract-superclass/simple/input/Animal.java"),
                 "superclass_name", "BaseAnimal"));
         Approvals.verify(text);
@@ -106,7 +133,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_extract_interface_returns_preview() {
-        String text = call(RefactoringServer.extractInterface(), Map.of(
+        String text = call(ExtractInterfaceTool.extractInterface(), Map.of(
                 "file", fixture("extract-interface/simple/input/Calculator.java"),
                 "interface_name", "Arithmetic"));
         Approvals.verify(text);
@@ -114,7 +141,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_decompose_conditional_returns_preview() {
-        String text = call(RefactoringServer.decomposeConditional(), Map.of(
+        String text = call(DecomposeConditionalTool.decomposeConditional(), Map.of(
                 "file", fixture("decompose-conditional/basic/input/Foo.java"),
                 "line", 6, "column", 9,
                 "method_name", "isAdultPremium"));
@@ -123,7 +150,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_convert_anonymous_to_nested_returns_preview() {
-        String text = call(RefactoringServer.convertAnonymousToNested(), Map.of(
+        String text = call(ConvertAnonymousToNestedTool.convertAnonymousToNested(), Map.of(
                 "file", fixture("convert-anonymous/simple/input/Outer.java"),
                 "line", 4, "column", 22,
                 "nested_class_name", "Worker"));
@@ -132,7 +159,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_convert_nested_to_top_level_returns_preview() {
-        String text = call(RefactoringServer.convertNestedToTopLevel(), Map.of(
+        String text = call(ConvertNestedToTopLevelTool.convertNestedToTopLevel(), Map.of(
                 "file", fixture("convert-nested/static-class/input/Outer.java"),
                 "line", 15, "column", 25));
         Approvals.verify(text);
@@ -140,7 +167,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_promote_to_field_returns_preview() {
-        String text = call(RefactoringServer.promoteToField(), Map.of(
+        String text = call(PromoteToFieldTool.promoteToField(), Map.of(
                 "file", fixture("promote-to-field/without-initializer/input/Counter.java"),
                 "line", 4, "column", 15));
         Approvals.verify(text);
@@ -148,7 +175,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_introduce_indirection_returns_preview() {
-        String text = call(RefactoringServer.introduceIndirection(), Map.of(
+        String text = call(IntroduceIndirectionTool.introduceIndirection(), Map.of(
                 "file", fixture("introduce-indirection/static-method/input/MathUtils.java"),
                 "line", 3, "column", 26,
                 "indirection_method_name", "computeSquare"));
@@ -161,7 +188,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_pull_up_method_returns_preview() {
-        String text = call(RefactoringServer.pullUpMethod(), Map.of(
+        String text = call(PullUpMethodTool.pullUpMethod(), Map.of(
                 "project_root", project("pull-up-method"),
                 "file", project("pull-up-method") + "/src/main/java/com/example/Dog.java",
                 "method", "speak"));
@@ -170,7 +197,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_push_down_method_returns_preview() {
-        String text = call(RefactoringServer.pushDownMethod(), Map.of(
+        String text = call(PushDownMethodTool.pushDownMethod(), Map.of(
                 "project_root", project("push-down-method"),
                 "file", project("push-down-method") + "/src/main/java/com/example/Shape.java",
                 "method", "area"));
@@ -179,7 +206,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_move_method_returns_preview() {
-        String text = call(RefactoringServer.moveMethod(), Map.of(
+        String text = call(MoveMethodTool.moveMethod(), Map.of(
                 "project_root", project("move-method"),
                 "file", project("move-method") + "/src/main/java/com/example/Printer.java",
                 "method", "format",
@@ -189,7 +216,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_remove_param_returns_preview() {
-        String text = call(RefactoringServer.removeParam(), Map.of(
+        String text = call(RemoveParamTool.removeParam(), Map.of(
                 "project_root", project("remove-param"),
                 "file", project("remove-param") + "/src/main/java/com/example/Computation.java",
                 "method", "add", "parameter", "c"));
@@ -198,7 +225,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_introduce_param_returns_preview() {
-        String text = call(RefactoringServer.introduceParam(), Map.of(
+        String text = call(IntroduceParamTool.introduceParam(), Map.of(
                 "project_root", project("introduce-param"),
                 "file", project("introduce-param") + "/src/main/java/com/example/Greeter.java",
                 "start_line", 5, "start_column", 40,
@@ -209,7 +236,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_inline_method_returns_preview() {
-        String text = call(RefactoringServer.inlineMethod(), Map.of(
+        String text = call(InlineMethodTool.inlineMethod(), Map.of(
                 "project_root", project("rename-method"),
                 "file", project("rename-method") + "/src/main/java/com/example/App.java",
                 "line", 6, "column", 27,
@@ -219,7 +246,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_pull_up_field_returns_preview() {
-        String text = call(RefactoringServer.pullUpField(), Map.of(
+        String text = call(PullUpFieldTool.pullUpField(), Map.of(
                 "project_root", project("pull-up-field"),
                 "file", "src/main/java/com/example/Dog.java",
                 "field", "breed"));
@@ -228,7 +255,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_push_down_field_returns_preview() {
-        String text = call(RefactoringServer.pushDownField(), Map.of(
+        String text = call(PushDownFieldTool.pushDownField(), Map.of(
                 "project_root", project("push-down-field"),
                 "file", "src/main/java/com/example/Vehicle.java",
                 "field", "maxSpeed"));
@@ -237,7 +264,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_introduce_static_factory_returns_preview() {
-        String text = call(RefactoringServer.introduceStaticFactory(), Map.of(
+        String text = call(IntroduceStaticFactoryTool.introduceStaticFactory(), Map.of(
                 "project_root", project("static-factory"),
                 "file", "src/main/java/com/example/Counter.java",
                 "line", 7, "column", 5,
@@ -248,7 +275,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_introduce_parameter_object_returns_preview() {
-        String text = call(RefactoringServer.introduceParameterObject(), Map.of(
+        String text = call(IntroduceParameterObjectTool.introduceParameterObject(), Map.of(
                 "project_root", project("introduce-param-object"),
                 "file", "src/main/java/com/example/Printer.java",
                 "method", "print",
@@ -259,7 +286,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_change_method_signature_returns_preview() {
-        String text = call(RefactoringServer.changeMethodSignature(), Map.of(
+        String text = call(ChangeMethodSignatureTool.changeMethodSignature(), Map.of(
                 "project_root", project("change-method-signature"),
                 "file", "src/main/java/com/example/Converter.java",
                 "method", "convert",
@@ -270,7 +297,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_encapsulate_field_returns_preview() {
-        String text = call(RefactoringServer.encapsulateField(), Map.of(
+        String text = call(EncapsulateFieldTool.encapsulateField(), Map.of(
                 "project_root", project("encapsulate-field"),
                 "file", "src/main/java/com/example/Person.java",
                 "field", "name",
@@ -280,7 +307,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_move_static_member_returns_preview() {
-        String text = call(RefactoringServer.moveStaticMember(), Map.of(
+        String text = call(MoveStaticMemberTool.moveStaticMember(), Map.of(
                 "project_root", project("move-static"),
                 "file", project("move-static") + "/src/main/java/com/example/MathUtils.java",
                 "line", 5, "column", 5,
@@ -290,7 +317,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_rename_package_returns_preview() {
-        String text = call(RefactoringServer.renamePackage(), Map.of(
+        String text = call(RenamePackageTool.renamePackage(), Map.of(
                 "project_root", project("rename-package"),
                 "old_package", "com.example.service",
                 "new_package", "com.example.util"));
@@ -299,7 +326,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_move_class_returns_preview() {
-        String text = call(RefactoringServer.moveClass(), Map.of(
+        String text = call(MoveClassTool.moveClass(), Map.of(
                 "project_root", project("move-class"),
                 "file", project("move-class") + "/src/main/java/com/example/service/Calculator.java",
                 "new_package", "com.example.util"));
@@ -308,7 +335,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_convert_to_record_returns_preview() {
-        String text = call(RefactoringServer.convertToRecord(), Map.of(
+        String text = call(ConvertToRecordTool.convertToRecord(), Map.of(
                 "project_root", project("convert-to-record"),
                 "file", "src/main/java/com/example/Point.java"));
         Approvals.verify(text);
@@ -316,7 +343,7 @@ class RefactoringServerToolTest {
 
     @Test
     void tool_convert_to_record_rejects_class_with_extends() {
-        String text = callRaw(RefactoringServer.convertToRecord(), Map.of(
+        String text = callRaw(ConvertToRecordTool.convertToRecord(), Map.of(
                 "project_root", project("convert-to-record"),
                 "file", "src/main/java/com/example/Derived.java"));
         Approvals.verify(text);
