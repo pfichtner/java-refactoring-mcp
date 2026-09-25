@@ -383,4 +383,13 @@ class CliApplyStoryBook {
                 "--file", calculatorFile.toString(),
                 "--package", "com.example.util"));
     }
+
+    @Test
+    @CliFixture(root = "fixtures/convert-to-static-import/simple/input/Foo.java")
+    void convert_to_static_import(CliTestBed bed) throws Exception {
+        Approvals.verify(bed.apply(
+                "convert-to-static-import",
+                "--file", bed.root().toString(),
+                "--line", "6", "--column", "50"));
+    }
 }

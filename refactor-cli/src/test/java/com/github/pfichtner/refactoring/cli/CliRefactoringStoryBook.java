@@ -428,4 +428,14 @@ class CliRefactoringStoryBook {
                 "--package", "com.example.util",
                 "--dry-run"));
     }
+
+    @Test
+    @CliFixture(root = "fixtures/convert-to-static-import/simple/input/Foo.java")
+    void convert_to_static_import(CliTestBed bed) throws Exception {
+        Approvals.verify(bed.preview(
+                "convert-to-static-import",
+                "--file", bed.root().toString(),
+                "--line", "6", "--column", "50",
+                "--dry-run"));
+    }
 }

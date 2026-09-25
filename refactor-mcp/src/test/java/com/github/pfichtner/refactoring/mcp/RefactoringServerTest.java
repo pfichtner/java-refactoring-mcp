@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 import org.approvaltests.Approvals;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import io.modelcontextprotocol.spec.McpSchema;
 
@@ -116,8 +117,55 @@ class RefactoringServerTest {
     }
 
     // -------------------------------------------------------------------------
+    // convert_to_static_import tool (preview + apply)
+    // -------------------------------------------------------------------------
+
+    @Test
+    void convert_to_static_import_returns_preview() throws Exception {
+        Path fixture = fixtureFile(
+                "fixtures/convert-to-static-import/simple/input/Foo.java");
+
+        var result = ConvertToStaticImportTool.convertToStaticImport().callHandler()
+                .apply(null, fakeRequest(Map.of(
+                        "file",    fixture.toString(),
+                        "line",    6, "column", 50,
+                        "dryrun",  true
+                )));
+
+        assertThat(result.isError()).isFalse();
+        Approvals.verify(textOf(result));
+    }
+
+    @Test
+    void convert_to_static_import_with_apply_writes_file(@TempDir Path tmp) throws Exception {
+        Path src = fixtureFile(
+                "fixtures/convert-to-static-import/simple/input/Foo.java");
+        Path dest = tmp.resolve("Foo.java");
+        Files.copy(src, dest);
+
+        var result = ConvertToStaticImportTool.convertToStaticImport().callHandler()
+                .apply(null, fakeRequest(Map.of(
+                        "file",   dest.toString(),
+                        "line",   6, "column", 50
+                )));
+
+        assertThat(result.isError()).isFalse();
+        Approvals.verify(textOf(result));
+        assertThat(dest).exists();
+        assertThat(Files.readString(dest))
+                .contains("import static java.util.stream.Collectors.joining")
+                .doesNotContain("Collectors.joining(");
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    private static Path fixtureFile(String resourcePath) throws Exception {
+        var url = RefactoringServerTest.class.getClassLoader().getResource(resourcePath);
+        if (url == null) throw new IllegalStateException("Fixture not found: " + resourcePath);
+        return java.nio.file.Path.of(url.toURI());
+    }
 
     private static Map<String, Object> renameMethodArgs() {
         return Map.of(
