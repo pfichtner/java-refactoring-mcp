@@ -1,5 +1,6 @@
 package com.github.pfichtner.refactoring.mcp;
 
+import static com.github.pfichtner.refactoring.mcp.Property.DRY_RUN;
 import static com.github.pfichtner.refactoring.mcp.Property.CLASS;
 import static com.github.pfichtner.refactoring.mcp.Property.COLUMN;
 import static com.github.pfichtner.refactoring.mcp.Property.FILE;
@@ -9,8 +10,10 @@ import static com.github.pfichtner.refactoring.mcp.Property.NEW_RETURN_TYPE;
 import static com.github.pfichtner.refactoring.mcp.Property.PARAM_ORDER;
 import static com.github.pfichtner.refactoring.mcp.Property.PARAM_TYPES;
 import static com.github.pfichtner.refactoring.mcp.Property.PROJECT_ROOT;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.changedMap;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
-import static com.github.pfichtner.refactoring.mcp.ToolSupport.formatPreview;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.formatDryrun;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
 import java.nio.file.Path;
@@ -27,7 +30,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class ChangeMethodSignatureTool {
 
     static SyncToolSpecification changeMethodSignature() {
-        Options opts = Options.builder().add(LINE, COLUMN, METHOD, CLASS, NEW_RETURN_TYPE, PARAM_ORDER, PARAM_TYPES).addRequired(PROJECT_ROOT, FILE).build();
+        Options opts = Options.builder().add(DRY_RUN, LINE, COLUMN, METHOD, CLASS, NEW_RETURN_TYPE, PARAM_ORDER, PARAM_TYPES).addRequired(PROJECT_ROOT, FILE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("change_method_signature", opts.toSchema())
                         .description("""
@@ -37,7 +40,7 @@ public final class ChangeMethodSignatureTool {
                           param_order: integer array where param_order[i] is the original index of the parameter that should appear at position i — call sites updated.
                           param_types: parallel string array where param_types[i] is the new type for parameter i (null/empty = leave unchanged) — declaration only.
                         Does NOT add or remove parameters; use introduce_param to add and remove_param to drop one.
-                        Returns changed file contents; does not write to disk.
+                        Returns changed file contents. Applies by default; pass dryrun=true to preview instead.
                         """)
                         .build())
                 .callHandler((exchange, request) -> {
@@ -51,7 +54,10 @@ public final class ChangeMethodSignatureTool {
                         String[] paramTypes = args.getStringArray(PARAM_TYPES);
                         var changed = JdtChangeMethodSignature.changeSignature(
                                 ProjectDetector.detect(root), source.path(), offset, newReturnType, paramOrder, paramTypes);
-                        return ok(formatPreview(changed));
+                        if (args.getBoolean(DRY_RUN)) {
+                            return ok(formatDryrun(changed));
+                        }
+                        return ok(commit(changedMap(changed)));
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }

@@ -1,5 +1,6 @@
 package com.github.pfichtner.refactoring.mcp;
 
+import static com.github.pfichtner.refactoring.mcp.Property.DRY_RUN;
 import static com.github.pfichtner.refactoring.mcp.Property.CLASS;
 import static com.github.pfichtner.refactoring.mcp.Property.COLUMN;
 import static com.github.pfichtner.refactoring.mcp.Property.FIELD;
@@ -7,8 +8,10 @@ import static com.github.pfichtner.refactoring.mcp.Property.FILE;
 import static com.github.pfichtner.refactoring.mcp.Property.GENERATE_SETTER;
 import static com.github.pfichtner.refactoring.mcp.Property.LINE;
 import static com.github.pfichtner.refactoring.mcp.Property.PROJECT_ROOT;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.changedMap;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
-import static com.github.pfichtner.refactoring.mcp.ToolSupport.formatPreview;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.formatDryrun;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
 import java.nio.file.Path;
@@ -25,13 +28,13 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class EncapsulateFieldTool {
 
     static SyncToolSpecification encapsulateField() {
-        Options opts = Options.builder().add(LINE, COLUMN, FIELD, CLASS, GENERATE_SETTER).addRequired(PROJECT_ROOT, FILE).build();
+        Options opts = Options.builder().add(DRY_RUN, LINE, COLUMN, FIELD, CLASS, GENERATE_SETTER).addRequired(PROJECT_ROOT, FILE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("encapsulate_field", opts.toSchema())
                         .description("""
                         Make a public field private, generate a getter (and optional setter),
                         and rewrite all read access sites (and write sites if generate_setter=true)
-                        across the project. Returns changed file contents; does not write to disk.
+                        across the project. Returns changed file contents. Applies by default; pass dryrun=true to preview instead.
                         """)
                         .build())
                 .callHandler((exchange, request) -> {
@@ -43,7 +46,10 @@ public final class EncapsulateFieldTool {
                         boolean generateSetter = args.getBoolean(GENERATE_SETTER);
                         var changed = JdtEncapsulateField.encapsulateField(
                                 ProjectDetector.detect(root), source.path(), offset, generateSetter);
-                        return ok(formatPreview(changed));
+                        if (args.getBoolean(DRY_RUN)) {
+                            return ok(formatDryrun(changed));
+                        }
+                        return ok(commit(changedMap(changed)));
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }

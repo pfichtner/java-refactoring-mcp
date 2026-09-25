@@ -138,7 +138,7 @@ case $C in
       opencode run --format json \
         -m "opencode/$(cat model.txt)" \
         --mcp java-refactoring \
-        "In $PROJ, $(jq -r .prompt task.json). Use the java-refactoring MCP tool (list_refactorings -> analyze_refactoring dry-run -> apply_refactoring). Do NOT hand-edit files." \
+        "In $PROJ, $(jq -r .prompt task.json). Use the java-refactoring MCP tool (list_refactorings -> call a refactoring tool without apply for a dry-run preview -> re-run it with apply=true to commit). Do NOT hand-edit files." \
       | tee -a runB_${TASK}_${RUN}.jsonl ;;
 esac
 ```
@@ -160,8 +160,10 @@ opencode is configured (project + global) with:
 ```
 
 The server talks stdio JSON-RPC (verified: `initialize` → `tools/list` returns
-`analyze_refactoring`, `apply_refactoring`, `list_refactorings`,
-`rename_*`, `extract_*`, `move_class`, `rename_package`, …).
+`list_refactorings`, `rename`, `extract_*`, `move_class`, `rename_package`, …).
+Every tool takes an optional `apply` boolean (default `false`): without it the
+call returns the new source for every changed file (dry-run, nothing written);
+with `apply: true` it writes the changes to disk and returns a summary.
 
 ---
 
@@ -187,8 +189,8 @@ The server talks stdio JSON-RPC (verified: `initialize` → `tools/list` returns
 ### 5.2 Dry-run vs commit
 
 Both arms get the same **`--dry-run`-equivalent first**, then the commit step.
-A's dry-run is its natural "show me the loop"; B's dry-run is
-`analyze_refactoring` with no write. This isolates the interesting question
+A's dry-run is its natural "show me the loop"; B's dry-run is calling the tool
+without `apply` (no write). This isolates the interesting question
 "does preview reduce hallucination" without changing the model.
 
 ### 5.3 Semantic equivalence on textually-different-but-correct A results

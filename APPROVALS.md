@@ -18,6 +18,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Rename local variable: x → answer | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenameTest.rename_local_variable_from_declaration_site.approved.md) |
 | Rename local variable: x → answer | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenameTest.rename_local_variable_from_reference_site.approved.md) |
 | Rename method: add → plus (multi-file) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenameTest.rename_method_across_files.approved.md) |
+| Rename method: formatPreview → formatDryrun (updates static import) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenameTest.rename_method_updates_static_import.approved.md) |
 | Rename type name — expect rejection | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenameTest.rename_non_variable_is_rejected.approved.md) |
 | Rename parameter: n → count | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenameTest.rename_parameter_n_to_count.approved.md) |
 | Rename type: Rectangle → Rect (multi-file) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/RenameTest.rename_type_across_files.approved.md) |
@@ -230,9 +231,9 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 
 | Test case | Approval |
 |-----------|----------|
-| Analyze refactoring rename method preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerTest.analyze_refactoring_rename_method_preview.approved.txt) |
-| Apply refactoring writes files and returns summary | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerTest.apply_refactoring_writes_files_and_returns_summary.approved.txt) |
 | List refactorings golden master | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerTest.list_refactorings_golden_master.approved.txt) |
+| Rename returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerTest.rename_returns_preview.approved.txt) |
+| Rename with apply writes files and returns summary | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerTest.rename_with_apply_writes_files_and_returns_summary.approved.txt) |
 
 ---
 

@@ -1,5 +1,6 @@
 package com.github.pfichtner.refactoring.mcp;
 
+import static com.github.pfichtner.refactoring.mcp.Property.DRY_RUN;
 import static com.github.pfichtner.refactoring.mcp.Property.END_COLUMN;
 import static com.github.pfichtner.refactoring.mcp.Property.END_LINE;
 import static com.github.pfichtner.refactoring.mcp.Property.FILE;
@@ -8,6 +9,8 @@ import static com.github.pfichtner.refactoring.mcp.Property.PARAM_TYPE;
 import static com.github.pfichtner.refactoring.mcp.Property.PROJECT_ROOT;
 import static com.github.pfichtner.refactoring.mcp.Property.START_COLUMN;
 import static com.github.pfichtner.refactoring.mcp.Property.START_LINE;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.changedMap;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
@@ -27,13 +30,13 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class IntroduceParamTool {
 
     static SyncToolSpecification introduceParam() {
-        Options opts = Options.builder().add(PARAM_TYPE).addRequired(PROJECT_ROOT, FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, PARAM_NAME).build();
+        Options opts = Options.builder().add(DRY_RUN, PARAM_TYPE).addRequired(PROJECT_ROOT, FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, PARAM_NAME).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("introduce_param", opts.toSchema())
                         .description("""
                         Promote an expression to a parameter.
                         Updates the method signature and all call sites in the project.
-                        Returns a map of filename → new source for each changed file.
+                        Returns a map of filename → new source for each changed file. Applies by default; pass dryrun=true to preview instead.
                         """)
                         .build())
                 .callHandler((exchange, request) -> {
@@ -54,10 +57,13 @@ public final class IntroduceParamTool {
                                 ProjectDetector.detect(args.getPath(PROJECT_ROOT)),
                                 source.path(), selStart, selEnd - selStart, paramName, paramType);
 
-                        return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
-                                .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
-                                        + e.getValue().stripTrailing() + "\n\n")
-                                .collect(Collectors.joining()).stripTrailing());
+                        if (args.getBoolean(DRY_RUN)) {
+                            return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                                    .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
+                                            + e.getValue().stripTrailing() + "\n\n")
+                                    .collect(Collectors.joining()).stripTrailing());
+                        }
+                        return ok(commit(changedMap(changed)));
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }

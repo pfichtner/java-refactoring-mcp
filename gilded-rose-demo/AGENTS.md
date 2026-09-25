@@ -12,18 +12,20 @@ sink moved into the strategy pattern first.
 
 ## Tools
 
-The MCP server exposes tools named like `move_method`, `rename`
-(=`analyze_refactoring`/`apply_refactoring` with `refactoring: "rename"`),
-`extract_method`, `list_refactorings`, etc. All of them:
+The MCP server exposes one tool per refactoring (`move_method`, `rename`,
+`extract_method`, `remove_method`) plus `list_refactorings` to enumerate them.
+All refactoring tools:
 
-- are **preview-only**: they return the new source and never write to disk,
 - take `project_root` = `/workspace/gilded-rose-demo`,
 - take `file` = absolute path of the touched source file,
-- return `=== FileName.java ===\n<new source>` blocks you must write back
-  to disk verbatim (this is how the agent persists the JDT diff).
+- run as a **dry-run by default**: they return `=== FileName.java ===\n<new source>`
+  blocks and write nothing to disk,
+- write the changes themselves when you pass **`apply: true`**, and answer with a
+  short summary instead of the full source.
 
-`apply_refactoring` is the only tool that writes files itself (rename only).
-For every other tool you copy the previewed source into the file.
+The `rename` tool is first-class (no more `refactoring: "rename"`): it takes a
+`method`/`field`/`type` locator plus `new_name`, and updates every reference
+across the project.
 
 ## Milestone 0 — ground truth
 
@@ -85,30 +87,33 @@ rule class name is the helper's name with the target class from the list.
 For each pair:
 
 1. **`move_method`** — tell the audience you are physically moving the
-   behaviour into its own class:
+   behaviour into its own class. Show them the dry-run output first, then
+   re-run with `apply=true`:
    ```
    move_method
      project_root=/workspace/gilded-rose-demo
      file=/workspace/gilded-rose-demo/src/main/java/gildedrose/GildedRose.java
      method=<helper, e.g. updateAgedBrie>
      target_class=<rule, e.g. AgedBrieUpdater>
+     apply=true
    ```
-   Write the returned `GildedRose.java` and `<Rule>.java` blocks back to disk.
+   The server writes the new `GildedRose.java` and `<Rule>.java` to disk itself
+   and returns a summary.
 
-2. **`rename`** the just-moved method to the interface name via
-   `analyze_refactoring` + `refactoring: "rename"`:
+2. **`rename`** the just-moved method to the interface name. Preview, narrate,
+   then apply:
    ```
-   analyze_refactoring
+   rename
      project_root=/workspace/gilded-rose-demo
      file=/workspace/gilded-rose-demo/src/main/java/gildedrose/<Rule>.java
      method=<helper, e.g. updateAgedBrie>
-     refactoring=rename
      new_name=update
+     apply=true
    ```
-   Write the returned `<Rule>.java` back to disk. (The move landed a
-   `private void updateAgedBrie(Item)`. Finishing the interface contract is a
-   two-token edit the tool has no operation for: make the class `final` and the
-   method `public` with `@Override`.)
+   (The move landed a package-private or private `update…(Item)` method.
+   Finishing the interface contract is a two-token edit the tool has no
+   operation for: make the class `final` and the method `public` with
+   `@Override`.)
 
 3. **Add a delegation stub** back to `GildedRose.java` so the old if/else
    dispatch keeps compiling and the tests stay green:
@@ -184,7 +189,7 @@ public class GildedRose {
 ### Step 2 — remove the dead stubs with `remove_method`
 
 For each stub in turn, call `remove_method` (cascade=false — these are private,
-no subclasses involved):
+no subclasses involved) with `apply=true` so the server rewrites the file:
 
 ```
 remove_method
@@ -192,10 +197,10 @@ remove_method
   file=/workspace/gilded-rose-demo/src/main/java/gildedrose/GildedRose.java
   method=updateAgedBrie
   cascade=false
+  apply=true
 ```
 
-Write the returned `GildedRose.java` back to disk and repeat for
-`updateBackstagePass`, `updateSulfuras`, `updateNormal`.
+Repeat for `updateBackstagePass`, `updateSulfuras`, `updateNormal`.
 
 `mvn test` → all 13 green. `GildedRose.java` must end up as:
 

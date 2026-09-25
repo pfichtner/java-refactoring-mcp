@@ -22,7 +22,6 @@ Golden master: TexttestFixtureGoldensTest pins the full output so ANY behavior
 change (not just a compile) fails the suite.
 """
 import pathlib
-import re
 import subprocess
 import sys
 
@@ -66,14 +65,6 @@ def write(path, content):
     print(f"wrote {path.relative_to(DEMO)}")
 
 
-def parse_file_blocks(text):
-    """move_method returns '=== Name.java ===\n<source>\n\n(=== other ===\n...')"""
-    blocks = {}
-    for m in re.finditer(r"=== (.+?) ===\n(.*?)(?=\n=== |\Z)", text, re.S):
-        blocks[m.group(1)] = m.group(2).strip("\n")
-    return blocks
-
-
 def call(tool, **args):
     out = client.call(tool, args)
     if out["isError"]:
@@ -96,33 +87,32 @@ def migrate(path):
         banner(f"MIGRATE: move {helper} → {rule}")
         src = SRC / f"{rule}.java"
 
-        text = call("move_method",
-                    project_root=str(DEMO),
-                    file=str(GILDEDROSE),
-                    method=helper,
-                    target_class=f"{PACKAGE}.{rule}")
-        blocks = parse_file_blocks(text)
-        for name in (f"{rule}.java", "GildedRose.java"):
-            assert name in blocks, text
-        write(GILDEDROSE, blocks["GildedRose.java"])
-        write(src, blocks[f"{rule}.java"])
+        # MCP tools write to disk only when apply=true; the server returns a summary.
+        call("move_method",
+             project_root=str(DEMO),
+             file=str(GILDEDROSE),
+             method=helper,
+             target_class=f"{PACKAGE}.{rule}",
+             apply=True)
 
-        text = call("analyze_refactoring",
-                    project_root=str(DEMO),
-                    file=str(src),
-                    method=helper,
-                    refactoring="rename",
-                    new_name="update")
-        blocks = parse_file_blocks(text)
-        write(src, blocks[f"{rule}.java"])
+        call("rename",
+             project_root=str(DEMO),
+             file=str(src),
+             method=helper,
+             new_name="update",
+             apply=True)
 
         content = src.read_text()
         content = content.replace(
             f"public abstract class {rule} implements ItemUpdater {{",
             f"public final class {rule} implements ItemUpdater {{")
-        content = content.replace(
-            "    private void update(Item item) {",
-            "    @Override\n    public void update(Item item) {")
+        # move_method widens the moved method to package-private (void update…)
+        # or leaves it private; either way it must become public to implement
+        # the interface.
+        for method in (f"    private void update(Item item) {{",
+                       f"    void update(Item item) {{"):
+            content = content.replace(
+                method, "    @Override\n    public void update(Item item) {")
         write(src, content)
 
         # move_method removes the helper body from GildedRose but leaves the
@@ -146,13 +136,12 @@ def contract(path):
 
     banner("CONTRACT · step 2 — remove dead delegation stubs with remove_method")
     for helper in MOVE_TO.keys():
-        text = call("remove_method",
-                    project_root=str(DEMO),
-                    file=str(GILDEDROSE),
-                    method=helper,
-                    cascade=False)
-        blocks = parse_file_blocks(text)
-        write(GILDEDROSE, blocks["GildedRose.java"])
+        call("remove_method",
+             project_root=str(DEMO),
+             file=str(GILDEDROSE),
+             method=helper,
+             cascade=False,
+             apply=True)
 
     sh(["mvn", "-q", "test"], cwd=DEMO)
 

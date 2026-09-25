@@ -1,5 +1,6 @@
 package com.github.pfichtner.refactoring.mcp;
 
+import static com.github.pfichtner.refactoring.mcp.Property.DRY_RUN;
 import static com.github.pfichtner.refactoring.mcp.Property.END_COLUMN;
 import static com.github.pfichtner.refactoring.mcp.Property.END_LINE;
 import static com.github.pfichtner.refactoring.mcp.Property.FILE;
@@ -7,8 +8,12 @@ import static com.github.pfichtner.refactoring.mcp.Property.REPLACE_ALL;
 import static com.github.pfichtner.refactoring.mcp.Property.START_COLUMN;
 import static com.github.pfichtner.refactoring.mcp.Property.START_LINE;
 import static com.github.pfichtner.refactoring.mcp.Property.VAR_NAME;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.overwrite;
+
+import java.util.List;
 
 import com.github.pfichtner.refactoring.JdtExtractVariable;
 import com.github.pfichtner.refactoring.JdtRenamer;
@@ -23,12 +28,12 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class ExtractVariableTool {
 
     static SyncToolSpecification extractVariable() {
-        Options opts = Options.builder().add(REPLACE_ALL).addRequired(FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, VAR_NAME).build();
+        Options opts = Options.builder().add(DRY_RUN, REPLACE_ALL).addRequired(FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, VAR_NAME).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("extract_variable", opts.toSchema())
                         .description("""
                         Extract an expression into a new local variable.
-                        Returns the rewritten source; does not write to disk.
+                        Returns the rewritten source. Applies by default; pass dryrun=true to preview instead.
                         """)
                         .build())
                 .callHandler((exchange, request) -> {
@@ -47,7 +52,10 @@ public final class ExtractVariableTool {
                         String result  = JdtExtractVariable.extractVariable(
                                 new SourceUnit(source.content(), source.path().getFileName().toString()),
                                 selStart, selEnd - selStart, varName, replaceAll);
-                        return ok(result);
+                        if (args.getBoolean(DRY_RUN)) {
+                            return ok(result);
+                        }
+                        return ok(commit(List.of(overwrite(source.path(), result))));
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }

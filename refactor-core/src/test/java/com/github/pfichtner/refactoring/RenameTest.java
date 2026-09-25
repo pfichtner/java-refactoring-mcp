@@ -167,6 +167,30 @@ class RenameTest {
         );
     }
 
+    @Test
+    void rename_method_updates_static_import() throws Exception {
+        Path projectRoot = fixtures.projectPath("projects/rename-method-static-import");
+        MavenProject project = new MavenProject(projectRoot);
+
+        Path utilsFile = project.sourceRoots().get(0).resolve("com/example/Utils.java");
+        String source = Files.readString(utilsFile);
+        int offset = Fixtures.offsetOf(source, "String formatPreview(String value)") + "String ".length();
+
+        var changed = JdtRenamer.rename(project, utilsFile, offset, "formatDryrun");
+
+        Map<String, String> inputs = fixtures.loadProjectSources(
+                "projects/rename-method-static-import/src/main/java");
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Rename method: formatPreview → formatDryrun (updates static import)")
+                .inputProject(inputs)
+                .refactoring("rename method", "`Utils.formatPreview(String)` → `Utils.formatDryrun`",
+                        "target: " + Fixtures.lineCol(source, offset) + " in Utils.java")
+                .outputProject(changed)
+                .build()
+        );
+    }
+
     // --- type ---
 
     @Test

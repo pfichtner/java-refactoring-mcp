@@ -28,6 +28,7 @@ enum Property {
     // -------------------------------------------------------------------------
     // Boolean flags
     // -------------------------------------------------------------------------
+    DRY_RUN("dryrun", Boolean.class, "Preview only: return the new source for every changed file without writing to disk (default false — changes are applied)."),
     REPLACE_ALL("replace_all", Boolean.class, "Replace all identical occurrences."),
     REMOVE_DECLARATION("remove_declaration", Boolean.class, "Also remove the declaration."),
     CASCADE("cascade", Boolean.class, "Also remove overriding/implementing methods in subclasses (default true)."),
@@ -56,7 +57,6 @@ enum Property {
     OLD_PACKAGE("old_package", String.class, "Fully-qualified source package, e.g. com.example.service."),
     NEW_PACKAGE("new_package", String.class, "Fully-qualified target package, e.g. com.example.util."),
     NEW_RETURN_TYPE("new_return_type", String.class, "New return type source text (e.g. \"double\"). Omit to leave unchanged."),
-    REFACTORING("refactoring", String.class, "Refactoring type. Currently supported: \"rename\"."),
 
     // -------------------------------------------------------------------------
     // Array / list arguments

@@ -44,7 +44,6 @@ class RefactoringServerByNameTest {
         Map<String, Object> common = Map.of(
                 "project_root", FIXTURE_ROOT.toString(),
                 "file",         "src/main/java/com/example/Calculator.java",
-                "refactoring",  "rename",
                 "new_name",     "plus"
         );
         Map<String, Object> byPosition = new HashMap<>(common);
@@ -52,8 +51,8 @@ class RefactoringServerByNameTest {
         Map<String, Object> byName = new HashMap<>(common);
         byName.put("method", "add");
 
-        var resultByPosition = ToolSupport.executeRename(new Options.Reader(byPosition));
-        var resultByName     = ToolSupport.executeRename(new Options.Reader(byName));
+        var resultByPosition = RenameTool.rename(new Options.Reader(byPosition));
+        var resultByName     = RenameTool.rename(new Options.Reader(byName));
 
         // Both approaches should produce identical output for every changed file
         assertThat(resultByName.size()).as("Same number of changed files expected").isEqualTo(resultByPosition.size());
@@ -71,12 +70,11 @@ class RefactoringServerByNameTest {
                 "project_root", FIXTURE_ROOT.toString(),
                 "file",         "src/main/java/com/example/Calculator.java",
                 "method",       "add",
-                "refactoring",  "rename",
                 "new_name",     "plus"
         );
 
-        var changed = ToolSupport.executeRename(new Options.Reader(args));
-        String preview = ToolSupport.formatPreview(changed);
+        var changed = RenameTool.rename(new Options.Reader(args));
+        String preview = ToolSupport.formatDryrun(changed);
 
         Approvals.verify(preview);
     }

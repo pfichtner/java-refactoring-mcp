@@ -1,11 +1,14 @@
 package com.github.pfichtner.refactoring.mcp;
 
+import static com.github.pfichtner.refactoring.mcp.Property.DRY_RUN;
 import static com.github.pfichtner.refactoring.mcp.Property.CLASS;
 import static com.github.pfichtner.refactoring.mcp.Property.COLUMN;
 import static com.github.pfichtner.refactoring.mcp.Property.FILE;
 import static com.github.pfichtner.refactoring.mcp.Property.LINE;
 import static com.github.pfichtner.refactoring.mcp.Property.METHOD;
 import static com.github.pfichtner.refactoring.mcp.Property.PROJECT_ROOT;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.changedMap;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
@@ -24,7 +27,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class PushDownMethodTool {
 
     static SyncToolSpecification pushDownMethod() {
-        Options opts = Options.builder().add(LINE, COLUMN, METHOD, CLASS).addRequired(PROJECT_ROOT, FILE).build();
+        Options opts = Options.builder().add(DRY_RUN, LINE, COLUMN, METHOD, CLASS).addRequired(PROJECT_ROOT, FILE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("push_down_method", opts.toSchema())
                         .description("""
@@ -32,7 +35,7 @@ public final class PushDownMethodTool {
                         The method is removed from the superclass and added to every subclass found.
                         Subclasses are discovered by scanning for 'extends ClassName' in source files.
                         Returns new source for the superclass and all modified subclasses.
-                        Does not write to disk.
+                        Applies by default; pass dryrun=true to preview instead.
                         """)
                         .build())
                 .callHandler((exchange, request) -> {
@@ -44,10 +47,13 @@ public final class PushDownMethodTool {
                                 ProjectDetector.detect(
                                         args.getPath(PROJECT_ROOT)),
                                 source.path(), offset);
-                        return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
-                                .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
-                                        + e.getValue().stripTrailing() + "\n\n")
-                                .collect(Collectors.joining()).stripTrailing());
+                        if (args.getBoolean(DRY_RUN)) {
+                            return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                                    .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
+                                            + e.getValue().stripTrailing() + "\n\n")
+                                    .collect(Collectors.joining()).stripTrailing());
+                        }
+                        return ok(commit(changedMap(changed)));
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }

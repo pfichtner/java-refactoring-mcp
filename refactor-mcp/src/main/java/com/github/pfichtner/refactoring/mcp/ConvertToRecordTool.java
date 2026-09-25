@@ -1,9 +1,12 @@
 package com.github.pfichtner.refactoring.mcp;
 
+import static com.github.pfichtner.refactoring.mcp.Property.DRY_RUN;
 import static com.github.pfichtner.refactoring.mcp.Property.FILE;
 import static com.github.pfichtner.refactoring.mcp.Property.PROJECT_ROOT;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.changedMap;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
-import static com.github.pfichtner.refactoring.mcp.ToolSupport.formatPreview;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.formatDryrun;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
 import java.nio.file.Path;
@@ -20,10 +23,10 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class ConvertToRecordTool {
 
     static SyncToolSpecification convertToRecord() {
-        Options opts = Options.of(PROJECT_ROOT, FILE);
+        Options opts = Options.builder().add(DRY_RUN).addRequired(PROJECT_ROOT, FILE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("convert_to_record", opts.toSchema())
-                        .description("Convert a class to a Java record and rewrite accessor call sites across the project. Returns new source for each changed file; does not write to disk.")
+                        .description("Convert a class to a Java record and rewrite accessor call sites across the project. Returns new source for each changed file. Applies by default; pass dryrun=true to preview instead.")
                         .build())
                 .callHandler((exchange, request) -> {
                     try {
@@ -32,7 +35,10 @@ public final class ConvertToRecordTool {
                         Path file = root.resolve(args.getPath(FILE));
                         var changed = JdtConvertToRecord.convertToRecord(
                                 ProjectDetector.detect(root), file);
-                        return ok(formatPreview(changed));
+                        if (args.getBoolean(DRY_RUN)) {
+                            return ok(formatDryrun(changed));
+                        }
+                        return ok(commit(changedMap(changed)));
                     } catch (IllegalArgumentException e) {
                         return error(e.getMessage());
                     } catch (Exception e) {

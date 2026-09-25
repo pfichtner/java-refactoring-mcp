@@ -18,9 +18,12 @@ import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MemberRef;
 import org.eclipse.jdt.core.dom.MethodRef;
+import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.NodeFinder;
+import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jface.text.Document;
@@ -236,6 +239,40 @@ public class JdtRenamer {
                 if (node.getQualifier() instanceof SimpleName sn) addIfMatch(sn);
                 return false; // don't re-visit children via visit(SimpleName)
             }
+            @Override
+            public boolean visit(ImportDeclaration node) {
+                // Single static imports (import static X.member;) often resolve to
+                // null bindings for the imported name; rename them via the
+                // qualifying type + segment identifier so removing the old name
+                // does not leave a dangling import behind.
+                if (node.isStatic() && !node.isOnDemand()) {
+                    addIfImportMatches(node.getName());
+                }
+                return false; // handled here; skip nested SimpleName visits
+            }
+            void addIfImportMatches(Name name) {
+                SimpleName last = (name instanceof SimpleName sn) ? sn
+                        : ((QualifiedName) name).getName();
+                IBinding b = name.resolveBinding();
+                if (b != null && key.equals(normalizedKey(b))) {
+                    result.add(last);
+                    return;
+                }
+                // Fall back to the qualifying type + segment identifier. Needed
+                // when the imported name has no binding at all, or resolves to a
+                // sibling overload of the renamed method (a single-static import
+                // names the whole overload group).
+                ITypeBinding declaring = declaringTypeOf(target);
+                ITypeBinding imported = name instanceof QualifiedName qn
+                        && qn.getQualifier().resolveBinding() instanceof ITypeBinding tb
+                                ? tb : null;
+                if (declaring != null && imported != null
+                        && declaring.getTypeDeclaration().getKey()
+                                .equals(imported.getTypeDeclaration().getKey())
+                        && last.getIdentifier().equals(target.getName())) {
+                    result.add(last);
+                }
+            }
             void addIfMatch(SimpleName node) {
                 IBinding b = node.resolveBinding();
                 if (b == null) return;
@@ -321,6 +358,13 @@ public class JdtRenamer {
 
     private static boolean isLocal(IVariableBinding vb) {
         return !vb.isField() && !vb.isEnumConstant();
+    }
+
+    private static ITypeBinding declaringTypeOf(IBinding binding) {
+        if (binding instanceof IMethodBinding mb) return mb.getDeclaringClass();
+        if (binding instanceof IVariableBinding vb) return vb.getDeclaringClass();
+        if (binding instanceof ITypeBinding tb) return tb;
+        return null;
     }
 
     /**

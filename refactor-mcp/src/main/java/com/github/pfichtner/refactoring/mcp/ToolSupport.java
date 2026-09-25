@@ -3,31 +3,25 @@ package com.github.pfichtner.refactoring.mcp;
 import static com.github.pfichtner.refactoring.mcp.Property.CLASS;
 import static com.github.pfichtner.refactoring.mcp.Property.COLUMN;
 import static com.github.pfichtner.refactoring.mcp.Property.FIELD;
-import static com.github.pfichtner.refactoring.mcp.Property.FILE;
 import static com.github.pfichtner.refactoring.mcp.Property.LINE;
 import static com.github.pfichtner.refactoring.mcp.Property.METHOD;
-import static com.github.pfichtner.refactoring.mcp.Property.NEW_NAME;
-import static com.github.pfichtner.refactoring.mcp.Property.PROJECT_ROOT;
-import static com.github.pfichtner.refactoring.mcp.Property.REFACTORING;
 import static com.github.pfichtner.refactoring.mcp.Property.TYPE;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.joining;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
 import com.github.pfichtner.refactoring.FileChange;
-import com.github.pfichtner.refactoring.JdtRenamer;
-import com.github.pfichtner.refactoring.project.ProjectDetector;
 
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 
 /**
- * Shared helpers used by the MCP tool handlers: result formatting, the
- * rename engine call, and the schema for {@code analyze_refactoring} /
- * {@code apply_refactoring}.
+ * Shared helpers used by the MCP tool handlers: result formatting and the
+ * write-to-disk commit path. Refactoring logic lives in refactor-core.
  */
 final class ToolSupport {
 
@@ -47,35 +41,41 @@ final class ToolSupport {
                 .build();
     }
 
-    static List<FileChange> executeRename(Options.Reader args)
-            throws Exception {
-        Path filePath      = args.getPath(FILE);
-        String newName     = args.getString(NEW_NAME);
-        String refactoring = args.getString(REFACTORING, "rename");
+    // -------------------------------------------------------------------------
+    // Commit path (default, i.e. dryrun not set)
+    // -------------------------------------------------------------------------
 
-        if (!"rename".equals(refactoring)) {
-            throw new IllegalArgumentException(
-                    "Unsupported refactoring type: '" + refactoring
-                    + "'. Supported: rename");
+    /** Writes all changes, creating parent dirs and deleting moved-away originals. */
+    static void writeChanges(List<FileChange> changes) throws Exception {
+        for (FileChange fc : changes) {
+            Files.createDirectories(fc.newPath().getParent());
+            Files.writeString(fc.newPath(), fc.newSource());
+            if (fc.pathChanged()) {
+                Files.deleteIfExists(fc.oldPath());
+            }
         }
-
-        Path root = args.getPath(PROJECT_ROOT);
-        SourceFile source = new SourceFile(
-                filePath.isAbsolute() ? filePath : root.resolve(filePath));
-
-        int offset = source.resolve(args.getLocator());
-
-        return JdtRenamer.rename(ProjectDetector.detect(root), source.path(), offset, newName);
     }
 
-    static Options renameOptions() {
-        return Options.builder()
-                .add(LINE, COLUMN, METHOD, FIELD, TYPE, CLASS)
-                .addRequired(PROJECT_ROOT, FILE, REFACTORING, NEW_NAME)
-                .build();
+    /** Writes {@code changes} to disk and returns the apply summary (the default when dryrun is not set). */
+    static String commit(List<FileChange> changes) throws Exception {
+        writeChanges(changes);
+        return formatSummary(changes);
     }
 
-    static String formatPreview(Map<Path, String> changed) {
+    /** A non-moving change: {@code path} is overwritten with {@code source}. */
+    static FileChange overwrite(Path path, String source) {
+        Path abs = path.toAbsolutePath().normalize();
+        return new FileChange(abs, abs, source);
+    }
+
+    /** Converts a {@code Map<Path,String>} engine result into {@link FileChange}s. */
+    static List<FileChange> changedMap(Map<Path, String> changed) {
+        return changed.entrySet().stream()
+                .map(e -> overwrite(e.getKey(), e.getValue()))
+                .toList();
+    }
+
+    static String formatDryrun(Map<Path, String> changed) {
         if (changed.isEmpty()) return "No changes.";
         String names = changed.keySet().stream()
                 .map(Path::getFileName)
@@ -92,7 +92,7 @@ final class ToolSupport {
                 + content;
     }
 
-    static String formatPreview(List<FileChange> changed) {
+    static String formatDryrun(List<FileChange> changed) {
         if (changed.isEmpty()) return "No changes.";
         String names = changed.stream()
                 .map(FileChange::newPath)
@@ -116,7 +116,7 @@ final class ToolSupport {
                 .sorted(comparing(fc -> fc.newPath().toString()))
                 .map(ToolSupport::changeString)
                 .collect(joining());
-        return "Renamed in " + changed.size() + " file(s):\n" + content;
+        return "Changed " + changed.size() + " file(s):\n" + content;
     }
 
 	private static String changeString(FileChange fc) {

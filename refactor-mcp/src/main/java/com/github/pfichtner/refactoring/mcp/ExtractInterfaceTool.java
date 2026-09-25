@@ -1,13 +1,17 @@
 package com.github.pfichtner.refactoring.mcp;
 
+import static com.github.pfichtner.refactoring.mcp.Property.DRY_RUN;
 import static com.github.pfichtner.refactoring.mcp.Property.FILE;
 import static com.github.pfichtner.refactoring.mcp.Property.INTERFACE_NAME;
 import static com.github.pfichtner.refactoring.mcp.Property.METHOD_NAMES;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.overwrite;
 
 import java.util.List;
 
+import com.github.pfichtner.refactoring.FileChange;
 import com.github.pfichtner.refactoring.JdtExtractInterface;
 
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
@@ -19,13 +23,13 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class ExtractInterfaceTool {
 
     static SyncToolSpecification extractInterface() {
-        Options opts = Options.builder().add(METHOD_NAMES).addRequired(FILE, INTERFACE_NAME).build();
+        Options opts = Options.builder().add(DRY_RUN, METHOD_NAMES).addRequired(FILE, INTERFACE_NAME).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("extract_interface", opts.toSchema())
                         .description("""
                         Extract a new interface from the public methods of a class.
                         Returns the modified class source and the new interface source.
-                        Does not write to disk.
+                        Applies by default; pass dryrun=true to preview instead.
                         """)
                         .build())
                 .callHandler((exchange, request) -> {
@@ -38,11 +42,18 @@ public final class ExtractInterfaceTool {
                                 source.content(), source.path().getFileName().toString(),
                                 interfaceName, methods);
 
-                        String out = "=== " + source.path().getFileName() + " (modified) ===\n"
-                                + result.modifiedClassSource().stripTrailing() + "\n\n"
-                                + "=== " + interfaceName + ".java (new) ===\n"
-                                + result.interfaceSource().stripTrailing();
-                        return ok(out);
+                        if (args.getBoolean(DRY_RUN)) {
+                            String out = "=== " + source.path().getFileName() + " (modified) ===\n"
+                                    + result.modifiedClassSource().stripTrailing() + "\n\n"
+                                    + "=== " + interfaceName + ".java (new) ===\n"
+                                    + result.interfaceSource().stripTrailing();
+                            return ok(out);
+                        }
+                        List<FileChange> changes = List.of(
+                                overwrite(source.path(), result.modifiedClassSource()),
+                                overwrite(source.path().getParent()
+                                        .resolve(interfaceName + ".java"), result.interfaceSource()));
+                        return ok(commit(changes));
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }

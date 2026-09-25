@@ -1,75 +1,81 @@
-Available refactorings (29):
+Available refactorings (30):
+
+rename
+  Rename a symbol (method, field, type, parameter, or local variable)
+  and update every reference across the project.
+  Applies by default; pass dryrun=true to preview without writing.
+  Required: project_root, file, new_name
 
 extract_method
   Extract statements into a new method.
   Provide start/end line+column (1-based).
-  Returns the rewritten source; does not write to disk.
+  Returns the rewritten source. Applies by default; pass dryrun=true to preview instead.
   Required: file, start_line, start_column, end_line, end_column, method_name
 
 inline_variable
   Inline a local variable: replace every use with its initializer expression
-  and remove the declaration. Returns the rewritten source; does not write to disk.
+  and remove the declaration. Returns the rewritten source. Applies by default; pass dryrun=true to preview instead.
   Required: file
 
 inline_constant
   Inline a static final constant: replace one or all references with its
   initializer expression, and optionally remove the field declaration.
-  Returns the rewritten source; does not write to disk.
+  Returns the rewritten source. Applies by default; pass dryrun=true to preview instead.
   Required: file
 
 extract_variable
   Extract an expression into a new local variable.
-  Returns the rewritten source; does not write to disk.
+  Returns the rewritten source. Applies by default; pass dryrun=true to preview instead.
   Required: file, start_line, start_column, end_line, end_column, var_name
 
 inline_method
   Inline a method call at all call sites in the project.
   Optionally removes the method declaration.
-  Returns new source for every changed file; does not write to disk.
+  Returns new source for every changed file. Applies by default; pass dryrun=true to preview instead.
   Required: project_root, file
 
 extract_constant
   Extract an expression into a private static final constant at class level.
-  Returns the rewritten source; does not write to disk.
+  Returns the rewritten source. Applies by default; pass dryrun=true to preview instead.
   Required: file, start_line, start_column, end_line, end_column, const_name
 
 introduce_param
   Promote an expression to a parameter.
   Updates the method signature and all call sites in the project.
-  Returns a map of filename → new source for each changed file.
+  Returns a map of filename → new source for each changed file. Applies by default; pass dryrun=true to preview instead.
   Required: project_root, file, start_line, start_column, end_line, end_column, param_name
 
 remove_param
   Remove a parameter from a method and the corresponding argument from every call site in the project.
   The parameter must not be referenced inside the method body (the engine enforces this).
   To change a parameter's type without removing it, use change_method_signature with param_types instead.
-  Returns a map of filename → new source for each changed file.
+  Returns a map of filename → new source for each changed file. Applies by default; pass dryrun=true to preview instead.
   Required: project_root, file
 
 remove_method
   Remove a method from a class or interface.
   When cascade is true (the default), also removes every overriding method
   in subclasses and implementing method in implementing classes.
-  Returns a map of filename → new source for each changed file.
+  Returns a map of filename → new source for each changed file. Applies by default; pass dryrun=true to preview instead.
   Required: project_root, file
 
 extract_interface
   Extract a new interface from the public methods of a class.
   Returns the modified class source and the new interface source.
-  Does not write to disk.
+  Applies by default; pass dryrun=true to preview instead.
   Required: file, interface_name
 
 extract_superclass
   Extract an abstract superclass from selected methods of a class.
   Returns the modified class source and the new superclass source.
-  Does not write to disk.
+  Applies by default; pass dryrun=true to preview instead.
   Required: file, superclass_name
 
 move_class
   Move a Java class to a new package.
   Updates the package declaration and all explicit imports in the project.
   Returns: new class source, new canonical file path, updated import files.
-  Does not write to disk or delete the original file.
+  Applies by default: writes the class to the new path, deletes the original, and updates the imports; pass dryrun=true to preview instead.
   widen_visibility (default true): if the class is package-private, adds 'public'.
   Required: project_root, file, new_package
 
@@ -77,14 +83,14 @@ rename_package
   Rename a package across the project.
   Updates package declarations, single-class imports, and wildcard imports.
   Returns a list of changed files with new sources and new paths.
-  Does not write to disk.
+  Applies by default and moves the files; pass dryrun=true to preview instead.
   Required: project_root, old_package, new_package
 
 pull_up_method
   Pull a method up from a subclass to its direct superclass.
   The superclass must be in the project source roots.
   Returns new source for both the subclass and the superclass.
-  Does not write to disk.
+  Applies by default; pass dryrun=true to preview instead.
   widen_visibility (default true): if the method is private, changes it to protected in the superclass.
   Required: project_root, file
 
@@ -93,7 +99,7 @@ push_down_method
   The method is removed from the superclass and added to every subclass found.
   Subclasses are discovered by scanning for 'extends ClassName' in source files.
   Returns new source for the superclass and all modified subclasses.
-  Does not write to disk.
+  Applies by default; pass dryrun=true to preview instead.
   Required: project_root, file
 
 move_method
@@ -102,28 +108,28 @@ move_method
   Target class is identified by its fully-qualified name (e.g. com.example.Report).
   Call sites in other files are not updated.
   Returns new source for both the target file and the source file.
-  Does not write to disk.
+  Applies by default; pass dryrun=true to preview instead.
   widen_visibility (default true): if the method is private, widens to package-private (same package) or public (cross-package).
   Required: project_root, file, target_class
 
 pull_up_field
-  Pull a field up from a subclass to its direct superclass. widen_visibility (default true): if the field is private, changes it to protected in the superclass.
+  Pull a field up from a subclass to its direct superclass. widen_visibility (default true): if the field is private, changes it to protected in the superclass. Applies by default; pass dryrun=true to preview instead.
   Required: project_root, file
 
 push_down_field
-  Push a field down from a class to all its direct subclasses in the project. The field is removed from the superclass and added to every subclass found. Returns new source for the superclass and all modified subclasses. Does not write to disk.
+  Push a field down from a class to all its direct subclasses in the project. The field is removed from the superclass and added to every subclass found. Returns new source for the superclass and all modified subclasses. Applies by default; pass dryrun=true to preview instead.
   Required: project_root, file
 
 introduce_static_factory
-  Introduce a public static factory method for a constructor and rewrite every new ClassName(...) call site in the project to use it. make_constructor_private (default false): change the constructor visibility to private. Returns a preview of all changed files; does not write to disk.
+  Introduce a public static factory method for a constructor and rewrite every new ClassName(...) call site in the project to use it. make_constructor_private (default false): change the constructor visibility to private. Returns a preview of all changed files. Applies by default; pass dryrun=true to preview instead.
   Required: project_root, file, factory_method_name
 
 introduce_parameter_object
-  Group selected method parameters into a new class (record if as_record=true). Updates the method signature and every call site in the project. Returns new source for each changed file; does not write to disk.
+  Group selected method parameters into a new class (record if as_record=true). Updates the method signature and every call site in the project. Returns new source for each changed file. Applies by default; pass dryrun=true to preview instead.
   Required: project_root, file, param_names, class_name
 
 convert_to_record
-  Convert a class to a Java record and rewrite accessor call sites across the project. Returns new source for each changed file; does not write to disk.
+  Convert a class to a Java record and rewrite accessor call sites across the project. Returns new source for each changed file. Applies by default; pass dryrun=true to preview instead.
   Required: project_root, file
 
 change_method_signature
@@ -133,37 +139,37 @@ change_method_signature
     param_order: integer array where param_order[i] is the original index of the parameter that should appear at position i — call sites updated.
     param_types: parallel string array where param_types[i] is the new type for parameter i (null/empty = leave unchanged) — declaration only.
   Does NOT add or remove parameters; use introduce_param to add and remove_param to drop one.
-  Returns changed file contents; does not write to disk.
+  Returns changed file contents. Applies by default; pass dryrun=true to preview instead.
   Required: project_root, file
 
 encapsulate_field
   Make a public field private, generate a getter (and optional setter),
   and rewrite all read access sites (and write sites if generate_setter=true)
-  across the project. Returns changed file contents; does not write to disk.
+  across the project. Returns changed file contents. Applies by default; pass dryrun=true to preview instead.
   Required: project_root, file
 
 decompose_conditional
   Extract a compound boolean condition from an if/while/for statement
   into a private boolean method. Single-file operation.
-  Returns the modified source; does not write to disk.
+  Returns the modified source. Applies by default; pass dryrun=true to preview instead.
   Required: file, method_name
 
 convert_anonymous_to_nested
-  Convert an anonymous class at the given position to a private named nested class.
+  Convert an anonymous class at the given position to a private named nested class. Applies by default; pass dryrun=true to preview instead.
   Required: file, line, column, nested_class_name
 
 convert_nested_to_top_level
-  Convert a nested (member) type to a top-level type. Returns both the modified outer source and the new type's source.
-  Required: file, line, column
+  Convert a nested (member) type to a top-level type. Returns both the modified outer source and the new type's source. Applies by default; pass dryrun=true to preview instead.
+  Required: file
 
 promote_to_field
-  Promote a local variable declaration to a private instance field of the enclosing class.
+  Promote a local variable declaration to a private instance field of the enclosing class. Applies by default; pass dryrun=true to preview instead.
   Required: file, line, column
 
 move_static_member
-  Move a static method or static field to another class and update call sites. widen_visibility (default true): if the member is private, widens to package-private (same package) or public (cross-package).
+  Move a static method or static field to another class and update call sites. widen_visibility (default true): if the member is private, widens to package-private (same package) or public (cross-package). Applies by default; pass dryrun=true to preview instead.
   Required: project_root, file, line, column, target_class
 
 introduce_indirection
-  Add a public static indirection (wrapper) method that delegates to the method at the given position.
+  Add a public static indirection (wrapper) method that delegates to the method at the given position. Applies by default; pass dryrun=true to preview instead.
   Required: file, line, column, indirection_method_name

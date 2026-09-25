@@ -1,5 +1,6 @@
 package com.github.pfichtner.refactoring.mcp;
 
+import static com.github.pfichtner.refactoring.mcp.Property.DRY_RUN;
 import static com.github.pfichtner.refactoring.mcp.Property.CLASS;
 import static com.github.pfichtner.refactoring.mcp.Property.COLUMN;
 import static com.github.pfichtner.refactoring.mcp.Property.FIELD;
@@ -7,8 +8,12 @@ import static com.github.pfichtner.refactoring.mcp.Property.FILE;
 import static com.github.pfichtner.refactoring.mcp.Property.LINE;
 import static com.github.pfichtner.refactoring.mcp.Property.REMOVE_DECLARATION;
 import static com.github.pfichtner.refactoring.mcp.Property.REPLACE_ALL;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.overwrite;
+
+import java.util.List;
 
 import com.github.pfichtner.refactoring.JdtInliner;
 
@@ -21,13 +26,13 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class InlineConstantTool {
 
     static SyncToolSpecification inlineConstant() {
-        Options opts = Options.builder().add(LINE, COLUMN, FIELD, CLASS, REPLACE_ALL, REMOVE_DECLARATION).addRequired(FILE).build();
+        Options opts = Options.builder().add(DRY_RUN, LINE, COLUMN, FIELD, CLASS, REPLACE_ALL, REMOVE_DECLARATION).addRequired(FILE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("inline_constant", opts.toSchema())
                         .description("""
                         Inline a static final constant: replace one or all references with its
                         initializer expression, and optionally remove the field declaration.
-                        Returns the rewritten source; does not write to disk.
+                        Returns the rewritten source. Applies by default; pass dryrun=true to preview instead.
                         """)
                         .build())
                 .callHandler((exchange, request) -> {
@@ -40,7 +45,10 @@ public final class InlineConstantTool {
                         int offset    = source.resolve(args.getLocator());
                         String result = JdtInliner.inlineConstant(
                                 source.content(), source.path().getFileName().toString(), offset, allOcc, removeDecl);
-                        return ok(result);
+                        if (args.getBoolean(DRY_RUN)) {
+                            return ok(result);
+                        }
+                        return ok(commit(List.of(overwrite(source.path(), result))));
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }

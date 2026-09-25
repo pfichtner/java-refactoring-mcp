@@ -1,5 +1,6 @@
 package com.github.pfichtner.refactoring.mcp;
 
+import static com.github.pfichtner.refactoring.mcp.Property.DRY_RUN;
 import static com.github.pfichtner.refactoring.mcp.Property.CLASS;
 import static com.github.pfichtner.refactoring.mcp.Property.COLUMN;
 import static com.github.pfichtner.refactoring.mcp.Property.FIELD;
@@ -7,8 +8,10 @@ import static com.github.pfichtner.refactoring.mcp.Property.FILE;
 import static com.github.pfichtner.refactoring.mcp.Property.LINE;
 import static com.github.pfichtner.refactoring.mcp.Property.PROJECT_ROOT;
 import static com.github.pfichtner.refactoring.mcp.Property.WIDEN_VISIBILITY;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.changedMap;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
-import static com.github.pfichtner.refactoring.mcp.ToolSupport.formatPreview;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.formatDryrun;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
 import java.nio.file.Path;
@@ -25,10 +28,10 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class PullUpFieldTool {
 
     static SyncToolSpecification pullUpField() {
-        Options opts = Options.builder().add(LINE, COLUMN, FIELD, CLASS, WIDEN_VISIBILITY).addRequired(PROJECT_ROOT, FILE).build();
+        Options opts = Options.builder().add(DRY_RUN, LINE, COLUMN, FIELD, CLASS, WIDEN_VISIBILITY).addRequired(PROJECT_ROOT, FILE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("pull_up_field", opts.toSchema())
-                        .description("Pull a field up from a subclass to its direct superclass. widen_visibility (default true): if the field is private, changes it to protected in the superclass.")
+                        .description("Pull a field up from a subclass to its direct superclass. widen_visibility (default true): if the field is private, changes it to protected in the superclass. Applies by default; pass dryrun=true to preview instead.")
                         .build())
                 .callHandler((exchange, request) -> {
                     try {
@@ -41,7 +44,10 @@ public final class PullUpFieldTool {
 
                         var changed = JdtPullUpField.pullUp(
                                 ProjectDetector.detect(root), source.path(), offset, widen);
-                        return ok(formatPreview(changed));
+                        if (args.getBoolean(DRY_RUN)) {
+                            return ok(formatDryrun(changed));
+                        }
+                        return ok(commit(changedMap(changed)));
                     } catch (IllegalArgumentException e) {
                         return error(e.getMessage());
                     } catch (Exception e) {

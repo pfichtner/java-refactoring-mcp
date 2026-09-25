@@ -21,7 +21,7 @@ public final class ListRefactoringsTool {
 
     /** Workflow tools that are not themselves refactorings; omitted from the listing. */
     static final Set<String> META_TOOLS = Set.of(
-            "list_refactorings", "analyze_refactoring", "apply_refactoring");
+            "list_refactorings");
 
     static SyncToolSpecification listRefactorings() {
         return SyncToolSpecification.builder()

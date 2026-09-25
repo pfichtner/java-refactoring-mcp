@@ -1,18 +1,21 @@
 package com.github.pfichtner.refactoring.mcp;
 
+import static com.github.pfichtner.refactoring.mcp.Property.DRY_RUN;
 import static com.github.pfichtner.refactoring.mcp.Property.COLUMN;
 import static com.github.pfichtner.refactoring.mcp.Property.FILE;
 import static com.github.pfichtner.refactoring.mcp.Property.LINE;
 import static com.github.pfichtner.refactoring.mcp.Property.PROJECT_ROOT;
 import static com.github.pfichtner.refactoring.mcp.Property.TARGET_CLASS;
 import static com.github.pfichtner.refactoring.mcp.Property.WIDEN_VISIBILITY;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.changedMap;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
 import java.nio.file.Path;
 
 import com.github.pfichtner.refactoring.JdtMoveStaticMember;
-import com.github.pfichtner.refactoring.project.MavenProject;
+import com.github.pfichtner.refactoring.project.ProjectDetector;
 
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
@@ -23,10 +26,10 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class MoveStaticMemberTool {
 
     static SyncToolSpecification moveStaticMember() {
-        Options opts = Options.builder().add(WIDEN_VISIBILITY).addRequired(PROJECT_ROOT, FILE, LINE, COLUMN, TARGET_CLASS).build();
+        Options opts = Options.builder().add(DRY_RUN, WIDEN_VISIBILITY).addRequired(PROJECT_ROOT, FILE, LINE, COLUMN, TARGET_CLASS).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("move_static_member", opts.toSchema())
-                .description("Move a static method or static field to another class and update call sites. widen_visibility (default true): if the member is private, widens to package-private (same package) or public (cross-package).")
+                .description("Move a static method or static field to another class and update call sites. widen_visibility (default true): if the member is private, widens to package-private (same package) or public (cross-package). Applies by default; pass dryrun=true to preview instead.")
                 .build())
                 .callHandler((exchange, request) -> {
                     try {
@@ -36,12 +39,15 @@ public final class MoveStaticMemberTool {
                         int offset        = source.resolve(args.getLocator());
                         String target     = args.getString(TARGET_CLASS);
                         boolean widen     = args.getBoolean(WIDEN_VISIBILITY, true);
-                        var project = new MavenProject(projectRoot);
+                        var project = ProjectDetector.detect(projectRoot);
 						var changed = JdtMoveStaticMember.moveStaticMember(project, source.path(), offset, target, widen);
-                        StringBuilder sb = new StringBuilder();
-                        changed.forEach((p, src) ->
-                                sb.append("=== ").append(p.getFileName()).append(" ===\n").append(src).append("\n"));
-                        return ok(sb.toString());
+                        if (args.getBoolean(DRY_RUN)) {
+                            StringBuilder sb = new StringBuilder();
+                            changed.forEach((p, src) ->
+                                    sb.append("=== ").append(p.getFileName()).append(" ===\n").append(src).append("\n"));
+                            return ok(sb.toString());
+                        }
+                        return ok(commit(changedMap(changed)));
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }

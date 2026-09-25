@@ -8,7 +8,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
@@ -140,7 +139,8 @@ public class JdtPushDownMethod {
             try (var stream = Files.walk(root)) {
                 javaFiles = stream
                         .filter(p -> p.toString().endsWith(".java"))
-                        .map(p -> p.toAbsolutePath().normalize())
+                        .map(Path::toAbsolutePath)
+                        .map(Path::normalize)
                         .toList();
             }
             for (Path file : javaFiles) {

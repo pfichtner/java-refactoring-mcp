@@ -35,8 +35,7 @@ public class RefactoringServer {
      */
     static final List<SyncToolSpecification> TOOLS = List.of(
             ListRefactoringsTool.listRefactorings(),
-            AnalyzeRefactoringTool.analyzeRefactoring(),
-            ApplyRefactoringTool.applyRefactoring(),
+            RenameTool.rename(),
             ExtractMethodTool.extractMethod(),
             InlineVariableTool.inlineVariable(),
             InlineConstantTool.inlineConstant(),

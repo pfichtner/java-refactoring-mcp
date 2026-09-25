@@ -1,3 +1,0 @@
-Renamed in 2 file(s):
-  App.java
-  Calculator.java

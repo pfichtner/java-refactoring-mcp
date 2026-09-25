@@ -1,10 +1,15 @@
 package com.github.pfichtner.refactoring.mcp;
 
+import static com.github.pfichtner.refactoring.mcp.Property.DRY_RUN;
 import static com.github.pfichtner.refactoring.mcp.Property.COLUMN;
 import static com.github.pfichtner.refactoring.mcp.Property.FILE;
 import static com.github.pfichtner.refactoring.mcp.Property.LINE;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.overwrite;
+
+import java.util.List;
 
 import com.github.pfichtner.refactoring.JdtPromoteToField;
 
@@ -17,10 +22,10 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class PromoteToFieldTool {
 
     static SyncToolSpecification promoteToField() {
-        Options opts = Options.of(FILE, LINE, COLUMN);
+        Options opts = Options.builder().add(DRY_RUN).addRequired(FILE, LINE, COLUMN).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("promote_to_field", opts.toSchema())
-                .description("Promote a local variable declaration to a private instance field of the enclosing class.")
+                .description("Promote a local variable declaration to a private instance field of the enclosing class. Applies by default; pass dryrun=true to preview instead.")
                 .build())
                 .callHandler((exchange, request) -> {
                     try {
@@ -29,7 +34,10 @@ public final class PromoteToFieldTool {
                         int offset  = source.resolve(args.getLocator());
                         String result = JdtPromoteToField.promote(
                                 source.content(), source.path().getFileName().toString(), offset);
-                        return ok(result);
+                        if (args.getBoolean(DRY_RUN)) {
+                            return ok(result);
+                        }
+                        return ok(commit(List.of(overwrite(source.path(), result))));
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }

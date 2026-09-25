@@ -45,7 +45,7 @@ AI coding agents are great at reading and generating Java — but they edit sour
 | Decompose conditional | Single file (extracts condition into named boolean method) |
 | Introduce indirection | Single file (adds a static wrapper method that delegates to the wrapped method) |
 
-All operations follow **analyze → apply**: the agent can preview the exact diff before writing anything to disk.
+All operations follow **preview → apply**: every tool runs as a dry-run by default; pass `"apply": true` to write the exact diff to disk, after your confirmation.
 
 ---
 
@@ -129,15 +129,20 @@ Add to `~/.config/opencode.json`:
 
 ## How to use it — prompting your agent
 
-Once connected the agent sees three tools:
+Once connected the agent sees a set of refactoring tools plus a meta tool to enumerate them:
 
 | Tool | What it does |
 |------|--------------|
 | `list_refactorings` | Lists every available operation |
-| `analyze_refactoring` | Dry-run — returns the new source for every changed file, writes nothing |
-| `apply_refactoring` | Applies the changes and writes to disk |
+| `rename` | Rename a symbol project-wide (method, field, type, parameter, local variable) |
+| `<refactoring>_*` tools | One tool per refactoring (e.g. `extract_method`, `pull_up_method`, `move_class`, …) |
 
-A well-prompted agent will always call `analyze_refactoring` first, show you the diff, and only call `apply_refactoring` after your confirmation.
+Every refactoring tool — including `rename` — runs as a **dry-run by default**: it returns the new
+source for every changed file and writes nothing. Pass **`"apply": true`** to write the changes to
+disk and get a summary instead.
+
+A well-prompted agent will always call a tool without `apply` first, show you the diff, and only
+re-run it with `apply: true` after your confirmation.
 
 ### Giving your agent standing instructions (skill file)
 
@@ -148,7 +153,7 @@ A better approach is a **skill file**: a named instruction set the agent loads o
 
 ```markdown
 ---
-description: Use java-refactoring MCP for all Java changes. Enforces analyze → apply and blocks raw text edits on .java files.
+description: Use java-refactoring MCP for all Java changes. Enforces preview → apply and blocks raw text edits on .java files.
 ---
 
 # Java Refactoring
@@ -160,8 +165,8 @@ code as text and miss bindings, overloads, and cross-file references.
 ## Workflow
 
 1. **Discover** — call `list_refactorings` if unsure which operation fits
-2. **Preview** — call `analyze_refactoring` (dry-run) to verify the diff before writing anything
-3. **Apply** — call the operation tool; one refactoring at a time
+2. **Preview** — call the refactoring tool WITHOUT `apply` to verify the diff before writing anything
+3. **Apply** — re-call the same tool with `"apply": true`; one refactoring at a time
 
 ## Rules
 
@@ -177,7 +182,7 @@ Then invoke it at the start of a refactoring session:
 Rename the method `add` in Calculator.java to `plus`. Project root: /home/me/myproject.
 ```
 
-The agent loads the skill instructions, then proceeds with `analyze_refactoring` → confirm → `apply_refactoring` without needing further reminders.
+The agent loads the skill instructions, then proceeds with preview (no `apply`) → confirm → `apply: true` without needing further reminders.
 
 Other editors that support system-prompt injection (Cursor, Windsurf, OpenCode, etc.) can embed the same rules as a project-level system prompt in their config.
 

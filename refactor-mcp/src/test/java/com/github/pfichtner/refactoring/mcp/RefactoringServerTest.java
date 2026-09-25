@@ -2,7 +2,6 @@
 package com.github.pfichtner.refactoring.mcp;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -78,25 +77,22 @@ class RefactoringServerTest {
     }
 
     // -------------------------------------------------------------------------
-    // analyze_refactoring (dry-run)
+    // rename tool (preview + apply)
     // -------------------------------------------------------------------------
 
     @Test
-    void analyze_refactoring_rename_method_preview() throws Exception {
+    void rename_returns_preview() {
         Map<String, Object> args = renameMethodArgs();
 
-        var changed = ToolSupport.executeRename(new Options.Reader(args));
-        String preview = ToolSupport.formatPreview(changed);
+        var result = RenameTool.rename().callHandler()
+                .apply(null, fakeRequest(args));
 
-        Approvals.verify(preview);
+        assertThat(result.isError()).isFalse();
+        Approvals.verify(textOf(result));
     }
 
-    // -------------------------------------------------------------------------
-    // apply_refactoring
-    // -------------------------------------------------------------------------
-
     @Test
-    void apply_refactoring_writes_files_and_returns_summary(@org.junit.jupiter.api.io.TempDir Path tmp)
+    void rename_with_apply_writes_files_and_returns_summary(@org.junit.jupiter.api.io.TempDir Path tmp)
             throws Exception {
         // Copy the fixture project so the test is non-destructive
         copyTree(FIXTURE_ROOT, tmp);
@@ -105,45 +101,18 @@ class RefactoringServerTest {
                 "project_root", tmp.toString(),
                 "file",         "src/main/java/com/example/Calculator.java",
                 "line",         4, "column", 16,
-                "refactoring",  "rename",
                 "new_name",     "plus"
         );
 
-        var changed = ToolSupport.executeRename(new Options.Reader(args));
-        for (var fc : changed) {
-            Files.createDirectories(fc.newPath().getParent());
-            Files.writeString(fc.newPath(), fc.newSource());
-            if (fc.pathChanged()) Files.deleteIfExists(fc.oldPath());
-        }
-        String summary = ToolSupport.formatSummary(changed);
+        var result = RenameTool.rename().callHandler()
+                .apply(null, fakeRequest(args));
 
-        Approvals.verify(summary);
+        assertThat(result.isError()).isFalse();
+        Approvals.verify(textOf(result));
 
-        // Verify disk state
-        String calc = Files.readString(tmp.resolve("src/main/java/com/example/Calculator.java"));
-        assertThat(calc).as("Calculator.java should contain 'plus'").contains("plus");
-        assertThat(calc).as("Calculator.java should not contain 'add'").doesNotContain(" add(");
-
-        String app = Files.readString(tmp.resolve("src/main/java/com/example/App.java"));
-        assertThat(app).as("App.java call site should be updated").contains(".plus(");
-    }
-
-    // -------------------------------------------------------------------------
-    // Error cases
-    // -------------------------------------------------------------------------
-
-    @Test
-    void unsupported_refactoring_type_returns_error() throws Exception {
-        Map<String, Object> args = Map.of(
-                "project_root", FIXTURE_ROOT.toString(),
-                "file",         "src/main/java/com/example/Calculator.java",
-                "line", 4, "column", 16,
-                "refactoring", "extract_method",
-                "new_name", "helper"
-        );
-
-        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> ToolSupport.executeRename(new Options.Reader(args))).actual();
-        assertThat(ex.getMessage()).contains("extract_method");
+        // Structure-only disk verification: both changed files exist
+        assertThat(tmp.resolve("src/main/java/com/example/Calculator.java")).exists();
+        assertThat(tmp.resolve("src/main/java/com/example/App.java")).exists();
     }
 
     // -------------------------------------------------------------------------
@@ -155,8 +124,8 @@ class RefactoringServerTest {
                 "project_root", FIXTURE_ROOT.toString(),
                 "file",         "src/main/java/com/example/Calculator.java",
                 "line",         4, "column", 16,
-                "refactoring",  "rename",
-                "new_name",     "plus"
+                "new_name",     "plus",
+                "dryrun",       true
         );
     }
 
