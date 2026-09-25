@@ -231,6 +231,8 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 
 | Test case | Approval |
 |-----------|----------|
+| Convert to static import returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerTest.convert_to_static_import_returns_preview.approved.txt) |
+| Convert to static import with apply writes file | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerTest.convert_to_static_import_with_apply_writes_file.approved.txt) |
 | List refactorings golden master | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerTest.list_refactorings_golden_master.approved.txt) |
 | Rename returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerTest.rename_returns_preview.approved.txt) |
 | Rename with apply writes files and returns summary | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerTest.rename_with_apply_writes_files_and_returns_summary.approved.txt) |
@@ -256,6 +258,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | convert-anonymous | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.convert_anonymous_to_nested.approved.md) |
 | convert-nested | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.convert_nested_to_top_level.approved.md) |
 | convert-to-record | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.convert_to_record.approved.md) |
+| convert-to-static-import | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.convert_to_static_import.approved.md) |
 | decompose-conditional | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.decompose_conditional.approved.md) |
 | encapsulate-field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.encapsulate_field.approved.md) |
 | extract-const | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_constant.approved.md) |
@@ -294,6 +297,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | convert-anonymous | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.convert_anonymous_to_nested.approved.md) |
 | convert-nested | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.convert_nested_to_top_level.approved.md) |
 | convert-to-record | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.convert_to_record.approved.md) |
+| convert-to-static-import | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.convert_to_static_import.approved.md) |
 | decompose-conditional | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.decompose_conditional.approved.md) |
 | encapsulate-field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.encapsulate_field.approved.md) |
 | encapsulate-field | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.encapsulate_field_with_setter.approved.md) |
@@ -339,6 +343,18 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Convert nested interface Transformer → top-level Transformer.java | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ConvertNestedToTopLevelTest.convert_nested_interface_to_top_level.approved.md) |
 | Convert nested rejected: no nested type at offset | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ConvertNestedToTopLevelTest.convert_rejected_when_no_nested_type_at_offset.approved.md) |
 | Convert nested class Helper → top-level class Helper.java | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ConvertNestedToTopLevelTest.convert_static_nested_class_to_top_level.approved.md) |
+
+### Convert to static import
+| Test case | Approval |
+|-----------|----------|
+| Convert to static import — rejected: call already bare | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ConvertToStaticImportTest.convert_rejected_already_bare.approved.md) |
+| Convert to static import — rejected: instance method | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ConvertToStaticImportTest.convert_rejected_instance_method.approved.md) |
+| Convert to static import — rejected: name clash with existing static import | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ConvertToStaticImportTest.convert_rejected_name_clash_with_existing_static_import.approved.md) |
+| Convert to static import — rejected: offset not on a method call | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ConvertToStaticImportTest.convert_rejected_offset_not_on_method_call.approved.md) |
+| Convert to static import: Collectors.joining — all occurrences | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ConvertToStaticImportTest.convert_replace_all_removes_qualifier_from_every_call.approved.md) |
+| Convert to static import: import already present, replace all — no duplicate import | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ConvertToStaticImportTest.convert_replace_all_when_import_already_exists.approved.md) |
+| Convert to static import: Collectors.joining — single occurrence | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ConvertToStaticImportTest.convert_single_occurrence_adds_import_and_removes_qualifier.approved.md) |
+| Convert to static import: import already present — qualifier removed, no duplicate import | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/ConvertToStaticImportTest.convert_single_when_import_already_exists_does_not_duplicate.approved.md) |
 
 ### Decompose conditional
 | Test case | Approval |
