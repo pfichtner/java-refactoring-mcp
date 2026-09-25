@@ -13,9 +13,10 @@ import org.junit.jupiter.api.Test;
 class CliLocatorByNameTest {
 
     @Test
-    void position_and_method_together_causes_error(CliTestBed bed) throws Exception {
+    void position_and_method_agree_succeeds(CliTestBed bed) throws Exception {
         Path calcFile = bed.root().resolve("src/main/java/com/example/Calculator.java");
 
+        // line 4, col 16 points to "add" — same element as --method add → cross-check passes
         int exit = bed.cli().execute(
                 "rename",
                 "--file", calcFile.toString(),
@@ -24,7 +25,23 @@ class CliLocatorByNameTest {
                 "--name", "plus",
                 "--dry-run");
 
-        assertThat(exit).as("Expected non-zero exit when both locators given").isNotEqualTo(0);
+        assertThat(exit).as("Expected success when both locators agree").isEqualTo(0);
+    }
+
+    @Test
+    void position_and_method_disagree_causes_error(CliTestBed bed) throws Exception {
+        Path calcFile = bed.root().resolve("src/main/java/com/example/Calculator.java");
+
+        // line 1, col 1 points to class declaration — disagrees with --method add on line 4
+        int exit = bed.cli().execute(
+                "rename",
+                "--file", calcFile.toString(),
+                "--line", "1", "--column", "1",
+                "--method", "add",
+                "--name", "plus",
+                "--dry-run");
+
+        assertThat(exit).as("Expected non-zero exit when locators disagree").isNotEqualTo(0);
     }
 
     @Test
