@@ -92,11 +92,24 @@ class RefactoringServerByNameTest {
     }
 
     @Test
-    void position_and_name_together_throws() {
+    void position_and_name_agree_returns_identifier_offset() throws Exception {
+        // col 18 lands on 'f' of 'foo' — same element the name locator finds
+        Map<String, Object> args = Map.of("line", 1, "column", 18, "method", "foo");
+        String source = "class Foo { void foo() {} }";
+        int offset = LocatorResolver.resolve(new Options.Reader(args).getLocator(), source, "Foo.java");
+        assertThat(source.substring(offset, offset + 3)).isEqualTo("foo");
+    }
+
+    @Test
+    void position_and_name_disagree_throws_descriptive_mismatch() {
+        // col 1 lands on 'c' of 'class', but method="foo" points elsewhere
         Map<String, Object> args = Map.of("line", 1, "column", 1, "method", "foo");
         String source = "class Foo { void foo() {} }";
-        var ex = assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> LocatorResolver.resolve(new Options.Reader(args).getLocator(), source, "Foo.java")).actual();
-        assertThat(ex.getMessage()).contains("not both");
+        var ex = assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> LocatorResolver.resolve(new Options.Reader(args).getLocator(), source, "Foo.java"))
+                .actual();
+        assertThat(ex.getMessage()).contains("disagree");
+        assertThat(ex.getMessage()).contains("\"foo\"");
     }
 
     @Test

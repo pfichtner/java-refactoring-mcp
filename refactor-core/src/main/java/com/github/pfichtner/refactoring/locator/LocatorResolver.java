@@ -7,6 +7,7 @@ import java.util.stream.IntStream;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
+import org.eclipse.jdt.core.dom.NodeFinder;
 import org.eclipse.jdt.core.dom.AnnotationTypeDeclaration;
 import org.eclipse.jdt.core.dom.AnnotationTypeMemberDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -60,7 +61,34 @@ public final class LocatorResolver {
                     resolveParameter(pm.methodSpec(), pm.paramName(), source, unitName);
             case Locator.VariableName vn ->
                     resolveVariable(vn.name(), vn.methodSpec(), source, unitName);
+            case Locator.Verified(var posLocator, var nameLocator) ->
+                    resolveVerified(posLocator, nameLocator, source, unitName);
         };
+    }
+
+    private static int resolveVerified(Locator posLocator, Locator nameLocator,
+                                       String source, String unitName) {
+        int nameOff = resolve(nameLocator, source, unitName);
+        int posOff  = resolve(posLocator,  source, unitName);
+
+        CompilationUnit cu = JdtProjectSources.parseUnit(source, unitName);
+        ASTNode nameNode = NodeFinder.perform(cu, nameOff, 1);
+        int nodeStart = nameNode.getStartPosition();
+        int nodeLen   = nameNode.getLength();
+
+        if (posOff >= nodeStart && posOff < nodeStart + nodeLen)
+            return nameOff;
+
+        ASTNode posNode = NodeFinder.perform(cu, posOff, 1);
+        String atPos  = (posNode instanceof SimpleName sn)
+            ? " (at identifier \"" + sn.getIdentifier() + "\")" : "";
+        String atName = (nameNode instanceof SimpleName sn)
+            ? "\"" + sn.getIdentifier() + "\"" : "offset " + nameOff;
+        throw new IllegalArgumentException(
+            "Position and name locators disagree: position offset " + posOff + atPos +
+            " is not within the identifier " + atName +
+            " (span [" + nodeStart + ", " + (nodeStart + nodeLen) + "))." +
+            " Align the position with the identifier start, or pass only the name locator.");
     }
 
     // -------------------------------------------------------------------------

@@ -121,6 +121,11 @@ Every refactoring tool accepts locator parameters (`line`/`column` or name-based
 `type`/`class`) plus the tool-specific parameters from its own section below. The `dryrun` flag and
 the locator resolution are shared across all tools.
 
+Both a position and a name-based locator may be supplied together. The resolver verifies they
+identify the same identifier and throws a descriptive mismatch error if they don't, e.g.
+`Position and name locators disagree: position offset 0 (at identifier "class") is not within
+the identifier "foo" (span [17, 20))`. When they agree the name-based offset is used.
+
 ### M6 — Extract Method
 
 `JdtExtractor.extractMethod(source, unitName, selectionStart, selectionLength, methodName)`

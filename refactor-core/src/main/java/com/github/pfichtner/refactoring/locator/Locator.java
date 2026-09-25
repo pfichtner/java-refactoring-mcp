@@ -10,10 +10,15 @@ package com.github.pfichtner.refactoring.locator;
  * <p>Method name syntax: {@code "add"} or {@code "add(int, int)"} when the
  * method is overloaded. An optional {@code className} scopes the search to a
  * specific type declaration when the file contains multiple types.
+ *
+ * <p>Both a position locator and a name locator may be supplied together via
+ * {@link Verified}. The resolver will confirm they point to the same identifier
+ * and throw a descriptive mismatch error if they don't.
  */
 public sealed interface Locator
         permits Locator.Position, Locator.LineOnly, Locator.MethodName, Locator.FieldName,
-                Locator.TypeName, Locator.ParameterInMethod, Locator.VariableName {
+                Locator.TypeName, Locator.ParameterInMethod, Locator.VariableName,
+                Locator.Verified {
 
     /** 1-based line and column — the classic position-based locator. */
     record Position(int line, int col) implements Locator {}
@@ -60,8 +65,18 @@ public sealed interface Locator
     record VariableName(String name, String methodSpec) implements Locator {}
 
     /**
+     * Both a position locator and a name-based locator supplied together.
+     * The resolver verifies they point to the same identifier; if they disagree
+     * it throws a descriptive mismatch error rather than silently picking one.
+     * When they agree the name-based offset (always the identifier start) is used.
+     */
+    record Verified(Locator positionLocator, Locator nameLocator) implements Locator {}
+
+    /**
      * Builds a {@link Locator} from nullable inputs. {@code null} means "not specified".
      * Validates mutual-exclusion rules and throws {@link IllegalArgumentException} on conflict.
+     * When both a position and a name-based locator are given a {@link Verified} locator
+     * is returned; the resolver will cross-check them at resolution time.
      */
     static Locator from(Integer line, Integer column,
                         String method, String field, String type,
@@ -72,16 +87,25 @@ public sealed interface Locator
 
         if (column != null && line == null)
             throw new IllegalArgumentException("column requires line to also be specified.");
-        if (hasPosition && hasName)
-            throw new IllegalArgumentException(
-                    "Specify either a position (line / line+column) OR a name-based locator (method/field/type/variable/parameter), not both.");
         if (!hasPosition && !hasName)
             throw new IllegalArgumentException(
                     "Specify either a position (line, or line+column) or a name-based locator (method, field, type, variable, or parameter).");
 
-        if (hasPosition)
+        if (hasPosition && !hasName)
             return column == null ? new LineOnly(line) : new Position(line, column);
 
+        Locator nameLoc = buildNameLocator(method, field, type, parameter, variable, className);
+
+        if (!hasPosition)
+            return nameLoc;
+
+        // Both given — return Verified; resolver will cross-check at resolution time
+        Locator posLoc = column == null ? new LineOnly(line) : new Position(line, column);
+        return new Verified(posLoc, nameLoc);
+    }
+
+    private static Locator buildNameLocator(String method, String field, String type,
+                                            String parameter, String variable, String className) {
         if (parameter != null) {
             if (method == null)
                 throw new IllegalArgumentException("parameter requires 'method' to also be specified.");
@@ -94,15 +118,12 @@ public sealed interface Locator
                         "(local variables can share names across methods).");
             return new VariableName(variable, method);
         }
-
         int kindCount = (method != null ? 1 : 0) + (field != null ? 1 : 0) + (type != null ? 1 : 0);
         if (kindCount > 1)
             throw new IllegalArgumentException("Specify only one of: method, field, or type.");
-
         if (method != null) return new MethodName(method, className);
         if (field  != null) return new FieldName(field, className);
         if (type   != null) return new TypeName(type);
-
         throw new IllegalArgumentException("No valid locator provided.");
     }
 }
