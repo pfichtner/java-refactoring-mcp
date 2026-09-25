@@ -9,7 +9,7 @@ import static com.github.pfichtner.refactoring.mcp.Property.METHOD;
 import static com.github.pfichtner.refactoring.mcp.Property.PROJECT_ROOT;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.changedMap;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
-import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.execute;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
 import java.util.Map;
@@ -38,25 +38,21 @@ public final class PushDownMethodTool {
                         Applies by default; pass dryrun=true to preview instead.
                         """)
                         .build())
-                .callHandler((exchange, request) -> {
-                    try {
-                        var args   = opts.reader(request.arguments());
-                        SourceFile source = args.getContent(FILE);
-                        int offset    = source.resolve(args.getLocator());
-                        var changed   = JdtPushDownMethod.pushDown(
-                                ProjectDetector.detect(
-                                        args.getPath(PROJECT_ROOT)),
-                                source.path(), offset);
-                        return args.getBoolean(DRY_RUN)
-                                ? ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
-                                        .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
-                                                + e.getValue().stripTrailing() + "\n\n")
-                                        .collect(Collectors.joining()).stripTrailing())
-                                : ok(commit(changedMap(changed)));
-                    } catch (Exception e) {
-                        return error(e.getMessage());
-                    }
-                })
+                .callHandler((exchange, request) -> execute(() -> {
+                    var args   = opts.reader(request.arguments());
+                    SourceFile source = args.getContent(FILE);
+                    int offset    = source.resolve(args.getLocator());
+                    var changed   = JdtPushDownMethod.pushDown(
+                            ProjectDetector.detect(
+                                    args.getPath(PROJECT_ROOT)),
+                            source.path(), offset);
+                    return args.getBoolean(DRY_RUN)
+                            ? ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                                    .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
+                                            + e.getValue().stripTrailing() + "\n\n")
+                                    .collect(Collectors.joining()).stripTrailing())
+                            : ok(commit(changedMap(changed)));
+                }))
                 .build();
     }
 }

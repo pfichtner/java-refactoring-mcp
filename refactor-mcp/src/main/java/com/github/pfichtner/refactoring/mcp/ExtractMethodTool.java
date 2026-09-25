@@ -8,7 +8,7 @@ import static com.github.pfichtner.refactoring.mcp.Property.METHOD_NAME;
 import static com.github.pfichtner.refactoring.mcp.Property.START_COLUMN;
 import static com.github.pfichtner.refactoring.mcp.Property.START_LINE;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
-import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.execute;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.overwrite;
 
@@ -36,28 +36,24 @@ public final class ExtractMethodTool {
                         Returns the rewritten source. Applies by default; pass dryrun=true to preview instead.
                         """)
                         .build())
-                .callHandler((exchange, request) -> {
-                    try {
-                        var args      = opts.reader(request.arguments());
-                        SourceFile source = args.getContent(FILE);
-                        int startLine = args.getInt(START_LINE);
-                        int startCol  = args.getInt(START_COLUMN);
-                        int endLine   = args.getInt(END_LINE);
-                        int endCol    = args.getInt(END_COLUMN);
-                        String methodName = args.getString(METHOD_NAME);
+                .callHandler((exchange, request) -> execute(() -> {
+                    var args      = opts.reader(request.arguments());
+                    SourceFile source = args.getContent(FILE);
+                    int startLine = args.getInt(START_LINE);
+                    int startCol  = args.getInt(START_COLUMN);
+                    int endLine   = args.getInt(END_LINE);
+                    int endCol    = args.getInt(END_COLUMN);
+                    String methodName = args.getString(METHOD_NAME);
 
-                        int selStart   = JdtRenamer.toOffset(source.content(), startLine, startCol);
-                        int selEnd     = JdtRenamer.toOffset(source.content(), endLine, endCol);
-                        String result  = JdtExtractor.extractMethod(
-                                new SourceUnit(source.content(), source.path().getFileName().toString()),
-                                selStart, selEnd - selStart, methodName);
-                        return args.getBoolean(DRY_RUN)
-                                ? ok(result)
-                                : ok(commit(List.of(overwrite(source.path(), result))));
-                    } catch (Exception e) {
-                        return error(e.getMessage());
-                    }
-                })
+                    int selStart   = JdtRenamer.toOffset(source.content(), startLine, startCol);
+                    int selEnd     = JdtRenamer.toOffset(source.content(), endLine, endCol);
+                    String result  = JdtExtractor.extractMethod(
+                            new SourceUnit(source.content(), source.path().getFileName().toString()),
+                            selStart, selEnd - selStart, methodName);
+                    return args.getBoolean(DRY_RUN)
+                            ? ok(result)
+                            : ok(commit(List.of(overwrite(source.path(), result))));
+                }))
                 .build();
     }
 }

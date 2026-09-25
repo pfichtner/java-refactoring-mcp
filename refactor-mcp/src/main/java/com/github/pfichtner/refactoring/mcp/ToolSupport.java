@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import com.github.pfichtner.refactoring.FileChange;
 
@@ -32,6 +33,14 @@ final class ToolSupport {
                 .content(List.of(TextContent.builder(text).build()))
                 .isError(false)
                 .build();
+    }
+
+    static CallToolResult execute(Callable<CallToolResult> action) {
+        try {
+            return action.call();
+        } catch (Exception e) {
+            return error(e.getMessage());
+        }
     }
 
     static CallToolResult error(String message) {

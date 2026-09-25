@@ -9,7 +9,7 @@ import static com.github.pfichtner.refactoring.mcp.Property.LINE;
 import static com.github.pfichtner.refactoring.mcp.Property.PROJECT_ROOT;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.changedMap;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
-import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.execute;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.formatDryrun;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
@@ -32,25 +32,19 @@ public final class PushDownFieldTool {
                 .tool(Tool.builder("push_down_field", opts.toSchema())
                         .description("Push a field down from a class to all its direct subclasses in the project. The field is removed from the superclass and added to every subclass found. Returns new source for the superclass and all modified subclasses. Applies by default; pass dryrun=true to preview instead.")
                         .build())
-                .callHandler((exchange, request) -> {
-                    try {
-                        var args  = opts.reader(request.arguments());
-                        Path root = args.getPath(PROJECT_ROOT);
-                        SourceFile source = args.getContent(FILE, root);
+                .callHandler((exchange, request) -> execute(() -> {
+                    var args  = opts.reader(request.arguments());
+                    Path root = args.getPath(PROJECT_ROOT);
+                    SourceFile source = args.getContent(FILE, root);
 
-                        int offset    = source.resolve(args.getLocator());
+                    int offset    = source.resolve(args.getLocator());
 
-                        var changed = JdtPushDownField.pushDown(
-                                ProjectDetector.detect(root), source.path(), offset);
-                        return args.getBoolean(DRY_RUN)
-                                ? ok(formatDryrun(changed))
-                                : ok(commit(changedMap(changed)));
-                    } catch (IllegalArgumentException e) {
-                        return error(e.getMessage());
-                    } catch (Exception e) {
-                        return error(e.getMessage());
-                    }
-                })
+                    var changed = JdtPushDownField.pushDown(
+                            ProjectDetector.detect(root), source.path(), offset);
+                    return args.getBoolean(DRY_RUN)
+                            ? ok(formatDryrun(changed))
+                            : ok(commit(changedMap(changed)));
+                }))
                 .build();
     }
 }

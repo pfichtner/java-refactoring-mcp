@@ -10,7 +10,7 @@ import static com.github.pfichtner.refactoring.mcp.Property.PROJECT_ROOT;
 import static com.github.pfichtner.refactoring.mcp.Property.WIDEN_VISIBILITY;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.changedMap;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
-import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.execute;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.formatDryrun;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
@@ -33,26 +33,20 @@ public final class PullUpFieldTool {
                 .tool(Tool.builder("pull_up_field", opts.toSchema())
                         .description("Pull a field up from a subclass to its direct superclass. widen_visibility (default true): if the field is private, changes it to protected in the superclass. Applies by default; pass dryrun=true to preview instead.")
                         .build())
-                .callHandler((exchange, request) -> {
-                    try {
-                        var args  = opts.reader(request.arguments());
-                        Path root = args.getPath(PROJECT_ROOT);
-                        SourceFile source = args.getContent(FILE, root);
+                .callHandler((exchange, request) -> execute(() -> {
+                    var args  = opts.reader(request.arguments());
+                    Path root = args.getPath(PROJECT_ROOT);
+                    SourceFile source = args.getContent(FILE, root);
 
-                        int offset    = source.resolve(args.getLocator());
-                        boolean widen = args.getBoolean(WIDEN_VISIBILITY, true);
+                    int offset    = source.resolve(args.getLocator());
+                    boolean widen = args.getBoolean(WIDEN_VISIBILITY, true);
 
-                        var changed = JdtPullUpField.pullUp(
-                                ProjectDetector.detect(root), source.path(), offset, widen);
-                        return args.getBoolean(DRY_RUN)
-                                ? ok(formatDryrun(changed))
-                                : ok(commit(changedMap(changed)));
-                    } catch (IllegalArgumentException e) {
-                        return error(e.getMessage());
-                    } catch (Exception e) {
-                        return error(e.getMessage());
-                    }
-                })
+                    var changed = JdtPullUpField.pullUp(
+                            ProjectDetector.detect(root), source.path(), offset, widen);
+                    return args.getBoolean(DRY_RUN)
+                            ? ok(formatDryrun(changed))
+                            : ok(commit(changedMap(changed)));
+                }))
                 .build();
     }
 }

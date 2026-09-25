@@ -10,7 +10,7 @@ import static com.github.pfichtner.refactoring.mcp.Property.LINE;
 import static com.github.pfichtner.refactoring.mcp.Property.PROJECT_ROOT;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.changedMap;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
-import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.execute;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.formatDryrun;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
@@ -37,22 +37,18 @@ public final class EncapsulateFieldTool {
                         across the project. Returns changed file contents. Applies by default; pass dryrun=true to preview instead.
                         """)
                         .build())
-                .callHandler((exchange, request) -> {
-                    try {
-                        var args  = opts.reader(request.arguments());
-                        Path root = args.getPath(PROJECT_ROOT);
-                        SourceFile source = args.getContent(FILE, root);
-                        int offset = source.resolve(args.getLocator());
-                        boolean generateSetter = args.getBoolean(GENERATE_SETTER);
-                        var changed = JdtEncapsulateField.encapsulateField(
-                                ProjectDetector.detect(root), source.path(), offset, generateSetter);
-                        return args.getBoolean(DRY_RUN)
-                                ? ok(formatDryrun(changed))
-                                : ok(commit(changedMap(changed)));
-                    } catch (Exception e) {
-                        return error(e.getMessage());
-                    }
-                })
+                .callHandler((exchange, request) -> execute(() -> {
+                    var args  = opts.reader(request.arguments());
+                    Path root = args.getPath(PROJECT_ROOT);
+                    SourceFile source = args.getContent(FILE, root);
+                    int offset = source.resolve(args.getLocator());
+                    boolean generateSetter = args.getBoolean(GENERATE_SETTER);
+                    var changed = JdtEncapsulateField.encapsulateField(
+                            ProjectDetector.detect(root), source.path(), offset, generateSetter);
+                    return args.getBoolean(DRY_RUN)
+                            ? ok(formatDryrun(changed))
+                            : ok(commit(changedMap(changed)));
+                }))
                 .build();
     }
 }

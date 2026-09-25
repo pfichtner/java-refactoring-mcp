@@ -5,7 +5,7 @@ import static com.github.pfichtner.refactoring.mcp.Property.NEW_PACKAGE;
 import static com.github.pfichtner.refactoring.mcp.Property.OLD_PACKAGE;
 import static com.github.pfichtner.refactoring.mcp.Property.PROJECT_ROOT;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
-import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.execute;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
 import java.util.stream.Collectors;
@@ -32,26 +32,22 @@ public final class RenamePackageTool {
                         Applies by default and moves the files; pass dryrun=true to preview instead.
                         """)
                         .build())
-                .callHandler((exchange, request) -> {
-                    try {
-                        var args = opts.reader(request.arguments());
-                        var result = JdtRenamePackage.renamePackage(
-                                ProjectDetector.detect(
-                                        args.getPath(PROJECT_ROOT)),
-                                args.getString(OLD_PACKAGE),
-                                args.getString(NEW_PACKAGE));
+                .callHandler((exchange, request) -> execute(() -> {
+                    var args = opts.reader(request.arguments());
+                    var result = JdtRenamePackage.renamePackage(
+                            ProjectDetector.detect(
+                                    args.getPath(PROJECT_ROOT)),
+                            args.getString(OLD_PACKAGE),
+                            args.getString(NEW_PACKAGE));
 
-                        return args.getBoolean(DRY_RUN)
-                                ? ok(result.changedFiles().stream()
-                                        .map(fc -> "=== " + fc.newPath().getFileName()
-                                                + (fc.pathChanged() ? " (moved from " + fc.oldPath().getFileName() + ")" : "")
-                                                + " ===\n" + fc.newSource().stripTrailing() + "\n\n")
-                                        .collect(Collectors.joining()).stripTrailing())
-                                : ok(commit(result.changedFiles()));
-                    } catch (Exception e) {
-                        return error(e.getMessage());
-                    }
-                })
+                    return args.getBoolean(DRY_RUN)
+                            ? ok(result.changedFiles().stream()
+                                    .map(fc -> "=== " + fc.newPath().getFileName()
+                                            + (fc.pathChanged() ? " (moved from " + fc.oldPath().getFileName() + ")" : "")
+                                            + " ===\n" + fc.newSource().stripTrailing() + "\n\n")
+                                    .collect(Collectors.joining()).stripTrailing())
+                            : ok(commit(result.changedFiles()));
+                }))
                 .build();
     }
 }

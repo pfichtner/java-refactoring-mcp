@@ -12,7 +12,7 @@ import static com.github.pfichtner.refactoring.mcp.Property.PARAM_TYPES;
 import static com.github.pfichtner.refactoring.mcp.Property.PROJECT_ROOT;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.changedMap;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
-import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.execute;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.formatDryrun;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
@@ -43,24 +43,20 @@ public final class ChangeMethodSignatureTool {
                         Returns changed file contents. Applies by default; pass dryrun=true to preview instead.
                         """)
                         .build())
-                .callHandler((exchange, request) -> {
-                    try {
-                        var args  = opts.reader(request.arguments());
-                        Path root = args.getPath(PROJECT_ROOT);
-                        SourceFile source = args.getContent(FILE, root);
-                        int offset = source.resolve(args.getLocator());
-                        String newReturnType = args.getString(NEW_RETURN_TYPE);
-                        int[]    paramOrder = args.getIntArray(PARAM_ORDER);
-                        String[] paramTypes = args.getStringArray(PARAM_TYPES);
-                        var changed = JdtChangeMethodSignature.changeSignature(
-                                ProjectDetector.detect(root), source.path(), offset, newReturnType, paramOrder, paramTypes);
-                        return args.getBoolean(DRY_RUN)
-                                ? ok(formatDryrun(changed))
-                                : ok(commit(changedMap(changed)));
-                    } catch (Exception e) {
-                        return error(e.getMessage());
-                    }
-                })
+                .callHandler((exchange, request) -> execute(() -> {
+                    var args  = opts.reader(request.arguments());
+                    Path root = args.getPath(PROJECT_ROOT);
+                    SourceFile source = args.getContent(FILE, root);
+                    int offset = source.resolve(args.getLocator());
+                    String newReturnType = args.getString(NEW_RETURN_TYPE);
+                    int[]    paramOrder = args.getIntArray(PARAM_ORDER);
+                    String[] paramTypes = args.getStringArray(PARAM_TYPES);
+                    var changed = JdtChangeMethodSignature.changeSignature(
+                            ProjectDetector.detect(root), source.path(), offset, newReturnType, paramOrder, paramTypes);
+                    return args.getBoolean(DRY_RUN)
+                            ? ok(formatDryrun(changed))
+                            : ok(commit(changedMap(changed)));
+                }))
                 .build();
     }
 }

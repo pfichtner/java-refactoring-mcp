@@ -5,7 +5,7 @@ import static com.github.pfichtner.refactoring.mcp.Property.FILE;
 import static com.github.pfichtner.refactoring.mcp.Property.METHOD_NAMES;
 import static com.github.pfichtner.refactoring.mcp.Property.SUPERCLASS_NAME;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
-import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.execute;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.overwrite;
 
@@ -32,28 +32,24 @@ public final class ExtractSuperclassTool {
                         Applies by default; pass dryrun=true to preview instead.
                         """)
                         .build())
-                .callHandler((exchange, request) -> {
-                    try {
-                        var args = opts.reader(request.arguments());
-                        SourceFile source = args.getContent(FILE);
-                        String superName     = args.getString(SUPERCLASS_NAME);
-                        List<String> methods = args.getStringList(METHOD_NAMES);
-                        var result = JdtExtractSuperclass.extractSuperclass(
-                                source.content(), source.path().getFileName().toString(), superName, methods);
+                .callHandler((exchange, request) -> execute(() -> {
+                    var args = opts.reader(request.arguments());
+                    SourceFile source = args.getContent(FILE);
+                    String superName     = args.getString(SUPERCLASS_NAME);
+                    List<String> methods = args.getStringList(METHOD_NAMES);
+                    var result = JdtExtractSuperclass.extractSuperclass(
+                            source.content(), source.path().getFileName().toString(), superName, methods);
 
-                        return args.getBoolean(DRY_RUN)
-                                ? ok("=== " + source.path().getFileName() + " (modified) ===\n"
-                                        + result.modifiedClassSource().stripTrailing() + "\n\n"
-                                        + "=== " + superName + ".java (new) ===\n"
-                                        + result.superclassSource().stripTrailing())
-                                : ok(commit(List.of(
-                                        overwrite(source.path(), result.modifiedClassSource()),
-                                        overwrite(source.path().getParent()
-                                                .resolve(superName + ".java"), result.superclassSource()))));
-                    } catch (Exception e) {
-                        return error(e.getMessage());
-                    }
-                })
+                    return args.getBoolean(DRY_RUN)
+                            ? ok("=== " + source.path().getFileName() + " (modified) ===\n"
+                                    + result.modifiedClassSource().stripTrailing() + "\n\n"
+                                    + "=== " + superName + ".java (new) ===\n"
+                                    + result.superclassSource().stripTrailing())
+                            : ok(commit(List.of(
+                                    overwrite(source.path(), result.modifiedClassSource()),
+                                    overwrite(source.path().getParent()
+                                            .resolve(superName + ".java"), result.superclassSource()))));
+                }))
                 .build();
     }
 }

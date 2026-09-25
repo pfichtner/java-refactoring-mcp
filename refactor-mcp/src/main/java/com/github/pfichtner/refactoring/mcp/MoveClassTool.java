@@ -6,7 +6,7 @@ import static com.github.pfichtner.refactoring.mcp.Property.NEW_PACKAGE;
 import static com.github.pfichtner.refactoring.mcp.Property.PROJECT_ROOT;
 import static com.github.pfichtner.refactoring.mcp.Property.WIDEN_VISIBILITY;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
-import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.execute;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.overwrite;
 
@@ -39,35 +39,31 @@ public final class MoveClassTool {
                         widen_visibility (default true): if the class is package-private, adds 'public'.
                         """)
                         .build())
-                .callHandler((exchange, request) -> {
-                    try {
-                        var args       = opts.reader(request.arguments());
-                        Path file         = args.getPath(FILE);
-                        String newPackage = args.getString(NEW_PACKAGE);
-                        boolean widen     = args.getBoolean(WIDEN_VISIBILITY, true);
-                        var result = JdtMoveClass.moveClass(
-                                ProjectDetector.detect(
-                                        args.getPath(PROJECT_ROOT)),
-                                file, newPackage, widen);
+                .callHandler((exchange, request) -> execute(() -> {
+                    var args       = opts.reader(request.arguments());
+                    Path file         = args.getPath(FILE);
+                    String newPackage = args.getString(NEW_PACKAGE);
+                    boolean widen     = args.getBoolean(WIDEN_VISIBILITY, true);
+                    var result = JdtMoveClass.moveClass(
+                            ProjectDetector.detect(
+                                    args.getPath(PROJECT_ROOT)),
+                            file, newPackage, widen);
 
-                        return args.getBoolean(DRY_RUN)
-                                ? ok(("New path: " + result.newFilePath() + "\n\n"
-                                        + "=== " + result.newFilePath().getFileName() + " (new) ===\n"
-                                        + result.newClassSource().stripTrailing() + "\n"
-                                        + result.changedImports().entrySet().stream()
-                                                .sorted(Map.Entry.comparingByKey())
-                                                .map(e -> "\n=== " + e.getKey().getFileName() + " (updated import) ===\n"
-                                                        + e.getValue().stripTrailing() + "\n")
-                                                .collect(Collectors.joining())).stripTrailing())
-                                : ok(commit(Stream.concat(
-                                        Stream.of(new FileChange(file, result.newFilePath(), result.newClassSource())),
-                                        result.changedImports().entrySet().stream()
-                                                .map(e -> overwrite(e.getKey(), e.getValue())))
-                                        .toList()));
-                    } catch (Exception e) {
-                        return error(e.getMessage());
-                    }
-                })
+                    return args.getBoolean(DRY_RUN)
+                            ? ok(("New path: " + result.newFilePath() + "\n\n"
+                                    + "=== " + result.newFilePath().getFileName() + " (new) ===\n"
+                                    + result.newClassSource().stripTrailing() + "\n"
+                                    + result.changedImports().entrySet().stream()
+                                            .sorted(Map.Entry.comparingByKey())
+                                            .map(e -> "\n=== " + e.getKey().getFileName() + " (updated import) ===\n"
+                                                    + e.getValue().stripTrailing() + "\n")
+                                            .collect(Collectors.joining())).stripTrailing())
+                            : ok(commit(Stream.concat(
+                                    Stream.of(new FileChange(file, result.newFilePath(), result.newClassSource())),
+                                    result.changedImports().entrySet().stream()
+                                            .map(e -> overwrite(e.getKey(), e.getValue())))
+                                    .toList()));
+                }))
                 .build();
     }
 }

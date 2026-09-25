@@ -6,7 +6,7 @@ import static com.github.pfichtner.refactoring.mcp.Property.FILE;
 import static com.github.pfichtner.refactoring.mcp.Property.LINE;
 import static com.github.pfichtner.refactoring.mcp.Property.METHOD_NAME;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
-import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.execute;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.overwrite;
 
@@ -32,21 +32,17 @@ public final class DecomposeConditionalTool {
                         Returns the modified source. Applies by default; pass dryrun=true to preview instead.
                         """)
                         .build())
-                .callHandler((exchange, request) -> {
-                    try {
-                        var args      = opts.reader(request.arguments());
-                        SourceFile source = args.getContent(FILE);
-                        String methodName = args.getString(METHOD_NAME);
-                        int offset    = source.resolve(args.getLocator());
-                        String result = JdtDecomposeConditional.decomposeConditional(
-                                source.content(), source.path().getFileName().toString(), offset, methodName);
-                        return args.getBoolean(DRY_RUN)
-                                ? ok(result)
-                                : ok(commit(List.of(overwrite(source.path(), result))));
-                    } catch (Exception e) {
-                        return error(e.getMessage());
-                    }
-                })
+                .callHandler((exchange, request) -> execute(() -> {
+                    var args      = opts.reader(request.arguments());
+                    SourceFile source = args.getContent(FILE);
+                    String methodName = args.getString(METHOD_NAME);
+                    int offset    = source.resolve(args.getLocator());
+                    String result = JdtDecomposeConditional.decomposeConditional(
+                            source.content(), source.path().getFileName().toString(), offset, methodName);
+                    return args.getBoolean(DRY_RUN)
+                            ? ok(result)
+                            : ok(commit(List.of(overwrite(source.path(), result))));
+                }))
                 .build();
     }
 }

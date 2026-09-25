@@ -11,7 +11,7 @@ import static com.github.pfichtner.refactoring.mcp.Property.NEW_NAME;
 import static com.github.pfichtner.refactoring.mcp.Property.PROJECT_ROOT;
 import static com.github.pfichtner.refactoring.mcp.Property.TYPE;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
-import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.execute;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.formatDryrun;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
@@ -43,17 +43,13 @@ public final class RenameTool {
                         Applies by default; pass dryrun=true to preview without writing.
                         """)
                         .build())
-                .callHandler((exchange, request) -> {
-                    try {
-                        var args = opts.reader(request.arguments());
-                        List<FileChange> changed = rename(args);
-                        return args.getBoolean(DRY_RUN) 
-                        		? ok(formatDryrun(changed)) 
-                				: ok(commit(changed));
-                    } catch (Exception e) {
-                        return error(e.getMessage());
-                    }
-                })
+                .callHandler((exchange, request) -> execute(() -> {
+                    var args = opts.reader(request.arguments());
+                    List<FileChange> changed = rename(args);
+                    return args.getBoolean(DRY_RUN) 
+                    		? ok(formatDryrun(changed)) 
+            				: ok(commit(changed));
+                }))
                 .build();
     }
 

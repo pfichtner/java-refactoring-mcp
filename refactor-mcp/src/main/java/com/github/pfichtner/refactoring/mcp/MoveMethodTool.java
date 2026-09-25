@@ -11,7 +11,7 @@ import static com.github.pfichtner.refactoring.mcp.Property.TARGET_CLASS;
 import static com.github.pfichtner.refactoring.mcp.Property.WIDEN_VISIBILITY;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.changedMap;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
-import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.execute;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
 import java.util.Map;
@@ -42,27 +42,23 @@ public final class MoveMethodTool {
                         widen_visibility (default true): if the method is private, widens to package-private (same package) or public (cross-package).
                         """)
                         .build())
-                .callHandler((exchange, request) -> {
-                    try {
-                        var args         = opts.reader(request.arguments());
-                        SourceFile source = args.getContent(FILE);
-                        String targetClass = args.getString(TARGET_CLASS);
-                        int offset        = source.resolve(args.getLocator());
-                        boolean widen     = args.getBoolean(WIDEN_VISIBILITY, true);
-                        var changed = JdtMoveMethod.moveMethod(
-                                ProjectDetector.detect(
-                                        args.getPath(PROJECT_ROOT)),
-                                source.path(), offset, targetClass, widen);
-                        return args.getBoolean(DRY_RUN)
-                                ? ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
-                                        .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
-                                                + e.getValue().stripTrailing() + "\n\n")
-                                        .collect(Collectors.joining()).stripTrailing())
-                                : ok(commit(changedMap(changed)));
-                    } catch (Exception e) {
-                        return error(e.getMessage());
-                    }
-                })
+                .callHandler((exchange, request) -> execute(() -> {
+                    var args         = opts.reader(request.arguments());
+                    SourceFile source = args.getContent(FILE);
+                    String targetClass = args.getString(TARGET_CLASS);
+                    int offset        = source.resolve(args.getLocator());
+                    boolean widen     = args.getBoolean(WIDEN_VISIBILITY, true);
+                    var changed = JdtMoveMethod.moveMethod(
+                            ProjectDetector.detect(
+                                    args.getPath(PROJECT_ROOT)),
+                            source.path(), offset, targetClass, widen);
+                    return args.getBoolean(DRY_RUN)
+                            ? ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                                    .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
+                                            + e.getValue().stripTrailing() + "\n\n")
+                                    .collect(Collectors.joining()).stripTrailing())
+                            : ok(commit(changedMap(changed)));
+                }))
                 .build();
     }
 }

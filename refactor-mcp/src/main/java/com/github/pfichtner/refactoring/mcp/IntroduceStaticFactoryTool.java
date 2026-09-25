@@ -10,7 +10,7 @@ import static com.github.pfichtner.refactoring.mcp.Property.METHOD;
 import static com.github.pfichtner.refactoring.mcp.Property.PROJECT_ROOT;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.changedMap;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
-import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.execute;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.formatDryrun;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
@@ -33,29 +33,23 @@ public final class IntroduceStaticFactoryTool {
                 .tool(Tool.builder("introduce_static_factory", opts.toSchema())
                         .description("Introduce a public static factory method for a constructor and rewrite every new ClassName(...) call site in the project to use it. make_constructor_private (default false): change the constructor visibility to private. Returns a preview of all changed files. Applies by default; pass dryrun=true to preview instead.")
                         .build())
-                .callHandler((exchange, request) -> {
-                    try {
-                        var args    = opts.reader(request.arguments());
-                        Path root   = args.getPath(PROJECT_ROOT);
-                        SourceFile source = args.getContent(FILE, root);
-                        String name = args.getString(FACTORY_METHOD_NAME);
-                        boolean makePrivate = args.getBoolean(MAKE_CONSTRUCTOR_PRIVATE);
+                .callHandler((exchange, request) -> execute(() -> {
+                    var args    = opts.reader(request.arguments());
+                    Path root   = args.getPath(PROJECT_ROOT);
+                    SourceFile source = args.getContent(FILE, root);
+                    String name = args.getString(FACTORY_METHOD_NAME);
+                    boolean makePrivate = args.getBoolean(MAKE_CONSTRUCTOR_PRIVATE);
 
-                        int offset    = source.resolve(args.getLocator());
+                    int offset    = source.resolve(args.getLocator());
 
-                        var changed = JdtIntroduceStaticFactory.introduceStaticFactory(
-                                ProjectDetector.detect(root),
-                                source.path(), offset, name, makePrivate);
+                    var changed = JdtIntroduceStaticFactory.introduceStaticFactory(
+                            ProjectDetector.detect(root),
+                            source.path(), offset, name, makePrivate);
 
-                        return args.getBoolean(DRY_RUN)
-                                ? ok(formatDryrun(changed))
-                                : ok(commit(changedMap(changed)));
-                    } catch (IllegalArgumentException e) {
-                        return error(e.getMessage());
-                    } catch (Exception e) {
-                        return error(e.getMessage());
-                    }
-                })
+                    return args.getBoolean(DRY_RUN)
+                            ? ok(formatDryrun(changed))
+                            : ok(commit(changedMap(changed)));
+                }))
                 .build();
     }
 }

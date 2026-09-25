@@ -11,7 +11,7 @@ import static com.github.pfichtner.refactoring.mcp.Property.START_COLUMN;
 import static com.github.pfichtner.refactoring.mcp.Property.START_LINE;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.changedMap;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
-import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.execute;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
 import java.util.Map;
@@ -39,34 +39,30 @@ public final class IntroduceParamTool {
                         Returns a map of filename → new source for each changed file. Applies by default; pass dryrun=true to preview instead.
                         """)
                         .build())
-                .callHandler((exchange, request) -> {
-                    try {
-                        var args      = opts.reader(request.arguments());
-                        SourceFile source = args.getContent(FILE);
-                        int startLine = args.getInt(START_LINE);
-                        int startCol  = args.getInt(START_COLUMN);
-                        int endLine   = args.getInt(END_LINE);
-                        int endCol    = args.getInt(END_COLUMN);
-                        String paramName = args.getString(PARAM_NAME);
-                        String paramType = args.getString(PARAM_TYPE); // nullable
+                .callHandler((exchange, request) -> execute(() -> {
+                    var args      = opts.reader(request.arguments());
+                    SourceFile source = args.getContent(FILE);
+                    int startLine = args.getInt(START_LINE);
+                    int startCol  = args.getInt(START_COLUMN);
+                    int endLine   = args.getInt(END_LINE);
+                    int endCol    = args.getInt(END_COLUMN);
+                    String paramName = args.getString(PARAM_NAME);
+                    String paramType = args.getString(PARAM_TYPE); // nullable
 
-                        int selStart   = JdtRenamer.toOffset(source.content(), startLine, startCol);
-                        int selEnd     = JdtRenamer.toOffset(source.content(), endLine, endCol);
+                    int selStart   = JdtRenamer.toOffset(source.content(), startLine, startCol);
+                    int selEnd     = JdtRenamer.toOffset(source.content(), endLine, endCol);
 
-                        var changed = JdtIntroduceParam.introduceParam(
-                                ProjectDetector.detect(args.getPath(PROJECT_ROOT)),
-                                source.path(), selStart, selEnd - selStart, paramName, paramType);
+                    var changed = JdtIntroduceParam.introduceParam(
+                            ProjectDetector.detect(args.getPath(PROJECT_ROOT)),
+                            source.path(), selStart, selEnd - selStart, paramName, paramType);
 
-                        return args.getBoolean(DRY_RUN)
-                                ? ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
-                                        .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
-                                                + e.getValue().stripTrailing() + "\n\n")
-                                        .collect(Collectors.joining()).stripTrailing())
-                                : ok(commit(changedMap(changed)));
-                    } catch (Exception e) {
-                        return error(e.getMessage());
-                    }
-                })
+                    return args.getBoolean(DRY_RUN)
+                            ? ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                                    .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
+                                            + e.getValue().stripTrailing() + "\n\n")
+                                    .collect(Collectors.joining()).stripTrailing())
+                            : ok(commit(changedMap(changed)));
+                }))
                 .build();
     }
 }

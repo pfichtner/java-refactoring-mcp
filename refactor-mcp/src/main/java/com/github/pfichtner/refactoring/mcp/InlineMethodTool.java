@@ -10,7 +10,7 @@ import static com.github.pfichtner.refactoring.mcp.Property.PROJECT_ROOT;
 import static com.github.pfichtner.refactoring.mcp.Property.REMOVE_DECLARATION;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.changedMap;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
-import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.execute;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
 import java.util.Map;
@@ -37,26 +37,22 @@ public final class InlineMethodTool {
                         Returns new source for every changed file. Applies by default; pass dryrun=true to preview instead.
                         """)
                         .build())
-                .callHandler((exchange, request) -> {
-                    try {
-                        var args      = opts.reader(request.arguments());
-                        SourceFile source = args.getContent(FILE);
-                        boolean removeDel = args.getBoolean(REMOVE_DECLARATION);
-                        int offset    = source.resolve(args.getLocator());
-                        var changed = JdtInlineMethod.inlineMethod(
-                                ProjectDetector.detect(
-                                        args.getPath(PROJECT_ROOT)),
-                                source.path(), offset, removeDel);
-                        return args.getBoolean(DRY_RUN)
-                                ? ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
-                                        .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
-                                                + e.getValue().stripTrailing() + "\n\n")
-                                        .collect(Collectors.joining()).stripTrailing())
-                                : ok(commit(changedMap(changed)));
-                    } catch (Exception e) {
-                        return error(e.getMessage());
-                    }
-                })
+                .callHandler((exchange, request) -> execute(() -> {
+                    var args      = opts.reader(request.arguments());
+                    SourceFile source = args.getContent(FILE);
+                    boolean removeDel = args.getBoolean(REMOVE_DECLARATION);
+                    int offset    = source.resolve(args.getLocator());
+                    var changed = JdtInlineMethod.inlineMethod(
+                            ProjectDetector.detect(
+                                    args.getPath(PROJECT_ROOT)),
+                            source.path(), offset, removeDel);
+                    return args.getBoolean(DRY_RUN)
+                            ? ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                                    .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
+                                            + e.getValue().stripTrailing() + "\n\n")
+                                    .collect(Collectors.joining()).stripTrailing())
+                            : ok(commit(changedMap(changed)));
+                }))
                 .build();
     }
 }

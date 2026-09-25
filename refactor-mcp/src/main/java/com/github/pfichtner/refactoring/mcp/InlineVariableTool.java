@@ -6,7 +6,7 @@ import static com.github.pfichtner.refactoring.mcp.Property.FILE;
 import static com.github.pfichtner.refactoring.mcp.Property.LINE;
 import static com.github.pfichtner.refactoring.mcp.Property.VARIABLE;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
-import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
+import static com.github.pfichtner.refactoring.mcp.ToolSupport.execute;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.overwrite;
 
@@ -31,21 +31,17 @@ public final class InlineVariableTool {
                         and remove the declaration. Returns the rewritten source. Applies by default; pass dryrun=true to preview instead.
                         """)
                         .build())
-                .callHandler((exchange, request) -> {
-                    try {
-                        var args   = opts.reader(request.arguments());
-                        SourceFile source = args.getContent(FILE);
+                .callHandler((exchange, request) -> execute(() -> {
+                    var args   = opts.reader(request.arguments());
+                    SourceFile source = args.getContent(FILE);
 
-                        int offset    = source.resolve(args.getLocator());
-                        String result = JdtInliner.inlineVariable(
-                                source.content(), source.path().getFileName().toString(), offset);
-                        return args.getBoolean(DRY_RUN)
-                                ? ok(result)
-                                : ok(commit(List.of(overwrite(source.path(), result))));
-                    } catch (Exception e) {
-                        return error(e.getMessage());
-                    }
-                })
+                    int offset    = source.resolve(args.getLocator());
+                    String result = JdtInliner.inlineVariable(
+                            source.content(), source.path().getFileName().toString(), offset);
+                    return args.getBoolean(DRY_RUN)
+                            ? ok(result)
+                            : ok(commit(List.of(overwrite(source.path(), result))));
+                }))
                 .build();
     }
 }
