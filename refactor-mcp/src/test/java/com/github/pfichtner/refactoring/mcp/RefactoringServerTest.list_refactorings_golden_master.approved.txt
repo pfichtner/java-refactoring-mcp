@@ -1,4 +1,4 @@
-Available refactorings (30):
+Available refactorings (31):
 
 rename
   Rename a symbol (method, field, type, parameter, or local variable)
@@ -21,6 +21,15 @@ inline_constant
   Inline a static final constant: replace one or all references with its
   initializer expression, and optionally remove the field declaration.
   Returns the rewritten source. Applies by default; pass dryrun=true to preview instead.
+  Required: file
+
+convert_to_static_import
+  Convert a qualified static-method call (e.g. Collectors.joining(...))
+  to use a static import instead.
+  Adds 'import static fully.qualified.Class.method;' and removes the qualifier.
+  If the static import already exists, only the qualifier is removed.
+  Pass replace_all=true to convert every qualifying call to the same method in the file.
+  Applies by default; pass dryrun=true to preview without writing.
   Required: file
 
 extract_variable
