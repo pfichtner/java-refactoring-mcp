@@ -38,9 +38,8 @@ src/                       # starts pristine; the migration rewrites it
 ## Re-run the migration from a clean slate
 
 ```sh
-# 1. restore the pristine kata
-git checkout -- src
-rm -f src/main/java/gildedrose/ItemUpdater.java src/main/java/gildedrose/*Updater.java
+# 1. restore the pristine kata (record-demo.sh does this automatically)
+git restore --source="$(git log --reverse --diff-filter=A --format=%H -- src/main/java/gildedrose/GildedRose.java)" -- src
 
 # 2a. deterministic (scripted): runs the milestone plan through the MCP server
 python3 scripts/refactor_gilded_rose.py

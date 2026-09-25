@@ -22,22 +22,23 @@ cd "$ROOT"
 
 # Always start from the pristine kata so the cast tells one clean story.
 if git rev-parse --show-toplevel >/dev/null 2>&1; then
-  git checkout -- src 2>/dev/null || true
-  rm -f src/main/java/gildedrose/ItemUpdater.java src/main/java/gildedrose/*Updater.java
+  BASELINE_REF=${BASELINE_REF:-$(git log --reverse --diff-filter=A --format=%H -- src/main/java/gildedrose/GildedRose.java)}
+  [ -n "$BASELINE_REF" ] || { echo "could not locate the pristine Gilded Rose source"; exit 1; }
+  git restore --source="$BASELINE_REF" -- src
 fi
 
 case "${1:-}" in
   --scripted)
     CAST="$CAST_DIR/gilded-rose-scripted.cast"
     echo "Recording deterministic MCP-driven migration -> $CAST"
-    asciinema rec "$CAST" --rows 40 --cols 120 \
+    asciinema rec "$CAST" --rows 40 --cols 120 --overwrite \
       --command "python3 scripts/refactor_gilded_rose.py"
     ;;
   *)
     SAFE_MODEL="${MODEL//\//-}"
     CAST="$CAST_DIR/gilded-rose-opencode-$SAFE_MODEL.cast"
     echo "Recording opencode agent session ($MODEL) -> $CAST"
-    asciinema rec "$CAST" --rows 40 --cols 120 \
+    asciinema rec "$CAST" --rows 40 --cols 120 --overwrite \
       --command "NO_COLOR=1 opencode run -m '$MODEL' '$PROMPT'"
     ;;
 esac
