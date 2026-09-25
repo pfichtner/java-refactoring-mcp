@@ -30,7 +30,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class ChangeMethodSignatureTool {
 
     static SyncToolSpecification changeMethodSignature() {
-        Options opts = Options.builder().add(DRY_RUN, LINE, COLUMN, METHOD, CLASS, NEW_RETURN_TYPE, PARAM_ORDER, PARAM_TYPES).addRequired(PROJECT_ROOT, FILE).build();
+        Options opts = Options.builder().required(PROJECT_ROOT, FILE).optional(DRY_RUN, LINE, COLUMN, METHOD, CLASS, NEW_RETURN_TYPE, PARAM_ORDER, PARAM_TYPES).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("change_method_signature", opts.toSchema())
                         .description("""

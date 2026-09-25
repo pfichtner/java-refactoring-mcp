@@ -27,7 +27,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class PushDownMethodTool {
 
     static SyncToolSpecification pushDownMethod() {
-        Options opts = Options.builder().add(DRY_RUN, LINE, COLUMN, METHOD, CLASS).addRequired(PROJECT_ROOT, FILE).build();
+        Options opts = Options.builder().required(PROJECT_ROOT, FILE).optional(DRY_RUN, LINE, COLUMN, METHOD, CLASS).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("push_down_method", opts.toSchema())
                         .description("""

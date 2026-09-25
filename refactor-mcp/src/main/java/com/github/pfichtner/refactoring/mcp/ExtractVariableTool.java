@@ -28,7 +28,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class ExtractVariableTool {
 
     static SyncToolSpecification extractVariable() {
-        Options opts = Options.builder().add(DRY_RUN, REPLACE_ALL).addRequired(FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, VAR_NAME).build();
+        Options opts = Options.builder().required(FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, VAR_NAME).optional(DRY_RUN, REPLACE_ALL).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("extract_variable", opts.toSchema())
                         .description("""

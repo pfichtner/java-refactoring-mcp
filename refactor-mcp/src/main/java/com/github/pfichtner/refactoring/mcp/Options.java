@@ -23,8 +23,8 @@ import com.github.pfichtner.refactoring.locator.Locator;
  *
  * <pre>
  * Options opts = Options.builder()
- *         .add(METHOD_NAMES)                  // optional
- *         .addRequired(FILE, INTERFACE_NAME)  // required
+ *         .required(FILE, INTERFACE_NAME)  // required
+ *         .optional(METHOD_NAMES)          // optional
  *         .build();
  *
  * // schema registration:
@@ -56,7 +56,7 @@ public final class Options {
     public Reader reader(Map<String, Object> args) { return new Reader(args); }
 
     /** Shorthand for an all-required schema (no optional properties). */
-    public static Options of(Property... required) { return builder().addRequired(required).build(); }
+    public static Options of(Property... required) { return builder().required(required).build(); }
 
     public static Builder builder() { return new Builder(); }
 
@@ -68,18 +68,18 @@ public final class Options {
         private final Map<String, Object> properties = new LinkedHashMap<>();
         private final List<String>        required   = new ArrayList<>();
 
-        /** Adds optional properties (appear in schema but not in required list). */
-        public Builder add(Property... ps) {
-            for (Property p : ps) properties.put(p.key(), descriptor(p));
-            return this;
-        }
-
         /** Adds required properties (appear in both schema and required list). */
-        public Builder addRequired(Property... ps) {
+        public Builder required(Property... ps) {
             for (Property p : ps) {
                 properties.put(p.key(), descriptor(p));
                 required.add(p.key());
             }
+            return this;
+        }
+
+        /** Adds optional properties (appear in schema but not in required list). */
+        public Builder optional(Property... ps) {
+            for (Property p : ps) properties.put(p.key(), descriptor(p));
             return this;
         }
 

@@ -23,7 +23,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class ExtractSuperclassTool {
 
     static SyncToolSpecification extractSuperclass() {
-        Options opts = Options.builder().add(DRY_RUN, METHOD_NAMES).addRequired(FILE, SUPERCLASS_NAME).build();
+        Options opts = Options.builder().required(FILE, SUPERCLASS_NAME).optional(DRY_RUN, METHOD_NAMES).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("extract_superclass", opts.toSchema())
                         .description("""

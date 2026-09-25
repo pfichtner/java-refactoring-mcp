@@ -32,7 +32,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class IntroduceParameterObjectTool {
 
     static SyncToolSpecification introduceParameterObject() {
-        Options opts = Options.builder().add(DRY_RUN, LINE, COLUMN, METHOD, CLASS, PARAM_OBJECT_NAME, AS_RECORD).addRequired(PROJECT_ROOT, FILE, PARAM_NAMES, CLASS_NAME).build();
+        Options opts = Options.builder().required(PROJECT_ROOT, FILE, PARAM_NAMES, CLASS_NAME).optional(DRY_RUN, LINE, COLUMN, METHOD, CLASS, PARAM_OBJECT_NAME, AS_RECORD).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("introduce_parameter_object", opts.toSchema())
                         .description("Group selected method parameters into a new class (record if as_record=true). Updates the method signature and every call site in the project. Returns new source for each changed file. Applies by default; pass dryrun=true to preview instead.")

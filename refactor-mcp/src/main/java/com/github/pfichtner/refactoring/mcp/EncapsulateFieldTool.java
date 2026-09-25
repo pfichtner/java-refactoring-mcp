@@ -28,7 +28,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class EncapsulateFieldTool {
 
     static SyncToolSpecification encapsulateField() {
-        Options opts = Options.builder().add(DRY_RUN, LINE, COLUMN, FIELD, CLASS, GENERATE_SETTER).addRequired(PROJECT_ROOT, FILE).build();
+        Options opts = Options.builder().required(PROJECT_ROOT, FILE).optional(DRY_RUN, LINE, COLUMN, FIELD, CLASS, GENERATE_SETTER).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("encapsulate_field", opts.toSchema())
                         .description("""

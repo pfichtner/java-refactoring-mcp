@@ -28,7 +28,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class PullUpFieldTool {
 
     static SyncToolSpecification pullUpField() {
-        Options opts = Options.builder().add(DRY_RUN, LINE, COLUMN, FIELD, CLASS, WIDEN_VISIBILITY).addRequired(PROJECT_ROOT, FILE).build();
+        Options opts = Options.builder().required(PROJECT_ROOT, FILE).optional(DRY_RUN, LINE, COLUMN, FIELD, CLASS, WIDEN_VISIBILITY).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("pull_up_field", opts.toSchema())
                         .description("Pull a field up from a subclass to its direct superclass. widen_visibility (default true): if the field is private, changes it to protected in the superclass. Applies by default; pass dryrun=true to preview instead.")

@@ -28,7 +28,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class PullUpMethodTool {
 
     static SyncToolSpecification pullUpMethod() {
-        Options opts = Options.builder().add(DRY_RUN, LINE, COLUMN, METHOD, CLASS, WIDEN_VISIBILITY).addRequired(PROJECT_ROOT, FILE).build();
+        Options opts = Options.builder().required(PROJECT_ROOT, FILE).optional(DRY_RUN, LINE, COLUMN, METHOD, CLASS, WIDEN_VISIBILITY).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("pull_up_method", opts.toSchema())
                         .description("""

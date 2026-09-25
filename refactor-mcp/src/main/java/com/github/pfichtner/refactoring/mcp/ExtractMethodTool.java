@@ -27,7 +27,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class ExtractMethodTool {
 
     static SyncToolSpecification extractMethod() {
-        Options opts = Options.builder().add(DRY_RUN).addRequired(FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, METHOD_NAME).build();
+        Options opts = Options.builder().required(FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, METHOD_NAME).optional(DRY_RUN).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("extract_method", opts.toSchema())
                         .description("""

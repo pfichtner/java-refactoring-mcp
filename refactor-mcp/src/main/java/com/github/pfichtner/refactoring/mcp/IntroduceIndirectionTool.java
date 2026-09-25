@@ -23,7 +23,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class IntroduceIndirectionTool {
 
     static SyncToolSpecification introduceIndirection() {
-        Options opts = Options.builder().add(DRY_RUN).addRequired(FILE, LINE, COLUMN, INDIRECTION_METHOD_NAME).build();
+        Options opts = Options.builder().required(FILE, LINE, COLUMN, INDIRECTION_METHOD_NAME).optional(DRY_RUN).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("introduce_indirection", opts.toSchema())
                 .description("Add a public static indirection (wrapper) method that delegates to the method at the given position. Applies by default; pass dryrun=true to preview instead.")

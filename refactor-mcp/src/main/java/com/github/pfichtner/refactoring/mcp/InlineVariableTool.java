@@ -23,7 +23,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class InlineVariableTool {
 
     static SyncToolSpecification inlineVariable() {
-        Options opts = Options.builder().add(DRY_RUN, LINE, COLUMN, VARIABLE).addRequired(FILE).build();
+        Options opts = Options.builder().required(FILE).optional(DRY_RUN, LINE, COLUMN, VARIABLE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("inline_variable", opts.toSchema())
                         .description("""

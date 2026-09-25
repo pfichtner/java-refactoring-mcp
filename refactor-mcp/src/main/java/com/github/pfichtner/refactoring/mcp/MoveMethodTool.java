@@ -29,7 +29,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class MoveMethodTool {
 
     static SyncToolSpecification moveMethod() {
-        Options opts = Options.builder().add(DRY_RUN, LINE, COLUMN, METHOD, CLASS, WIDEN_VISIBILITY).addRequired(PROJECT_ROOT, FILE, TARGET_CLASS).build();
+        Options opts = Options.builder().required(PROJECT_ROOT, FILE, TARGET_CLASS).optional(DRY_RUN, LINE, COLUMN, METHOD, CLASS, WIDEN_VISIBILITY).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("move_method", opts.toSchema())
                         .description("""

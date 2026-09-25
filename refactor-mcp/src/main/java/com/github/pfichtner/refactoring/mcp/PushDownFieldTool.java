@@ -27,7 +27,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class PushDownFieldTool {
 
     static SyncToolSpecification pushDownField() {
-        Options opts = Options.builder().add(DRY_RUN, LINE, COLUMN, FIELD, CLASS).addRequired(PROJECT_ROOT, FILE).build();
+        Options opts = Options.builder().required(PROJECT_ROOT, FILE).optional(DRY_RUN, LINE, COLUMN, FIELD, CLASS).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("push_down_field", opts.toSchema())
                         .description("Push a field down from a class to all its direct subclasses in the project. The field is removed from the superclass and added to every subclass found. Returns new source for the superclass and all modified subclasses. Applies by default; pass dryrun=true to preview instead.")

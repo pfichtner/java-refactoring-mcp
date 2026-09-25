@@ -26,7 +26,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class InlineConstantTool {
 
     static SyncToolSpecification inlineConstant() {
-        Options opts = Options.builder().add(DRY_RUN, LINE, COLUMN, FIELD, CLASS, REPLACE_ALL, REMOVE_DECLARATION).addRequired(FILE).build();
+        Options opts = Options.builder().required(FILE).optional(DRY_RUN, LINE, COLUMN, FIELD, CLASS, REPLACE_ALL, REMOVE_DECLARATION).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("inline_constant", opts.toSchema())
                         .description("""

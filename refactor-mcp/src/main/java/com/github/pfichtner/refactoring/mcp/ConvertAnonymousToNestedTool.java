@@ -23,7 +23,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class ConvertAnonymousToNestedTool {
 
     static SyncToolSpecification convertAnonymousToNested() {
-        Options opts = Options.builder().add(DRY_RUN).addRequired(FILE, LINE, COLUMN, NESTED_CLASS_NAME).build();
+        Options opts = Options.builder().required(FILE, LINE, COLUMN, NESTED_CLASS_NAME).optional(DRY_RUN).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("convert_anonymous_to_nested", opts.toSchema())
                 .description("Convert an anonymous class at the given position to a private named nested class. Applies by default; pass dryrun=true to preview instead.")

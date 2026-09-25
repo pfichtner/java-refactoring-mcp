@@ -23,7 +23,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class ConvertNestedToTopLevelTool {
 
     static SyncToolSpecification convertNestedToTopLevel() {
-        Options opts = Options.builder().add(DRY_RUN, LINE, COLUMN).addRequired(FILE).build();
+        Options opts = Options.builder().required(FILE).optional(DRY_RUN, LINE, COLUMN).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("convert_nested_to_top_level", opts.toSchema())
                 .description("Convert a nested (member) type to a top-level type. Returns both the modified outer source and the new type's source. Applies by default; pass dryrun=true to preview instead.")

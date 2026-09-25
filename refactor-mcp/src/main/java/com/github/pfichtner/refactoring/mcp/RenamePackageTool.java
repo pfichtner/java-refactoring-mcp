@@ -22,7 +22,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class RenamePackageTool {
 
     static SyncToolSpecification renamePackage() {
-        Options opts = Options.builder().add(DRY_RUN).addRequired(PROJECT_ROOT, OLD_PACKAGE, NEW_PACKAGE).build();
+        Options opts = Options.builder().required(PROJECT_ROOT, OLD_PACKAGE, NEW_PACKAGE).optional(DRY_RUN).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("rename_package", opts.toSchema())
                         .description("""

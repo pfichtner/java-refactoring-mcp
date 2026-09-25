@@ -32,8 +32,8 @@ public final class RenameTool {
 
     static SyncToolSpecification rename() {
         Options opts = Options.builder()
-                .add(DRY_RUN, LINE, COLUMN, METHOD, FIELD, TYPE, CLASS)
-                .addRequired(PROJECT_ROOT, FILE, NEW_NAME)
+                .required(PROJECT_ROOT, FILE, NEW_NAME)
+                .optional(DRY_RUN, LINE, COLUMN, METHOD, FIELD, TYPE, CLASS)
                 .build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("rename", opts.toSchema())

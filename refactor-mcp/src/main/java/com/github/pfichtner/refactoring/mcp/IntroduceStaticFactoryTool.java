@@ -28,7 +28,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class IntroduceStaticFactoryTool {
 
     static SyncToolSpecification introduceStaticFactory() {
-        Options opts = Options.builder().add(DRY_RUN, LINE, COLUMN, METHOD, MAKE_CONSTRUCTOR_PRIVATE).addRequired(PROJECT_ROOT, FILE, FACTORY_METHOD_NAME).build();
+        Options opts = Options.builder().required(PROJECT_ROOT, FILE, FACTORY_METHOD_NAME).optional(DRY_RUN, LINE, COLUMN, METHOD, MAKE_CONSTRUCTOR_PRIVATE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("introduce_static_factory", opts.toSchema())
                         .description("Introduce a public static factory method for a constructor and rewrite every new ClassName(...) call site in the project to use it. make_constructor_private (default false): change the constructor visibility to private. Returns a preview of all changed files. Applies by default; pass dryrun=true to preview instead.")

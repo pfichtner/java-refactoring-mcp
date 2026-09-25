@@ -28,7 +28,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class MoveClassTool {
 
     static SyncToolSpecification moveClass() {
-        Options opts = Options.builder().add(DRY_RUN, WIDEN_VISIBILITY).addRequired(PROJECT_ROOT, FILE, NEW_PACKAGE).build();
+        Options opts = Options.builder().required(PROJECT_ROOT, FILE, NEW_PACKAGE).optional(DRY_RUN, WIDEN_VISIBILITY).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("move_class", opts.toSchema())
                         .description("""

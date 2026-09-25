@@ -22,7 +22,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class PromoteToFieldTool {
 
     static SyncToolSpecification promoteToField() {
-        Options opts = Options.builder().add(DRY_RUN).addRequired(FILE, LINE, COLUMN).build();
+        Options opts = Options.builder().required(FILE, LINE, COLUMN).optional(DRY_RUN).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("promote_to_field", opts.toSchema())
                 .description("Promote a local variable declaration to a private instance field of the enclosing class. Applies by default; pass dryrun=true to preview instead.")

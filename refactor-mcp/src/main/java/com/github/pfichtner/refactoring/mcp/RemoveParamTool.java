@@ -28,7 +28,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class RemoveParamTool {
 
     static SyncToolSpecification removeParam() {
-        Options opts = Options.builder().add(DRY_RUN, LINE, COLUMN, METHOD, PARAMETER, CLASS).addRequired(PROJECT_ROOT, FILE).build();
+        Options opts = Options.builder().required(PROJECT_ROOT, FILE).optional(DRY_RUN, LINE, COLUMN, METHOD, PARAMETER, CLASS).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("remove_param", opts.toSchema())
                         .description("""

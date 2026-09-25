@@ -23,7 +23,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class DecomposeConditionalTool {
 
     static SyncToolSpecification decomposeConditional() {
-        Options opts = Options.builder().add(DRY_RUN, LINE, COLUMN).addRequired(FILE, METHOD_NAME).build();
+        Options opts = Options.builder().required(FILE, METHOD_NAME).optional(DRY_RUN, LINE, COLUMN).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("decompose_conditional", opts.toSchema())
                         .description("""

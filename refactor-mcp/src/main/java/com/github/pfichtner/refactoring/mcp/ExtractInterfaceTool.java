@@ -23,7 +23,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class ExtractInterfaceTool {
 
     static SyncToolSpecification extractInterface() {
-        Options opts = Options.builder().add(DRY_RUN, METHOD_NAMES).addRequired(FILE, INTERFACE_NAME).build();
+        Options opts = Options.builder().required(FILE, INTERFACE_NAME).optional(DRY_RUN, METHOD_NAMES).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("extract_interface", opts.toSchema())
                         .description("""

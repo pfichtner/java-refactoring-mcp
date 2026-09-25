@@ -23,7 +23,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class ConvertToRecordTool {
 
     static SyncToolSpecification convertToRecord() {
-        Options opts = Options.builder().add(DRY_RUN).addRequired(PROJECT_ROOT, FILE).build();
+        Options opts = Options.builder().required(PROJECT_ROOT, FILE).optional(DRY_RUN).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("convert_to_record", opts.toSchema())
                         .description("Convert a class to a Java record and rewrite accessor call sites across the project. Returns new source for each changed file. Applies by default; pass dryrun=true to preview instead.")

@@ -27,7 +27,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class MoveStaticMemberTool {
 
     static SyncToolSpecification moveStaticMember() {
-        Options opts = Options.builder().add(DRY_RUN, WIDEN_VISIBILITY).addRequired(PROJECT_ROOT, FILE, LINE, COLUMN, TARGET_CLASS).build();
+        Options opts = Options.builder().required(PROJECT_ROOT, FILE, LINE, COLUMN, TARGET_CLASS).optional(DRY_RUN, WIDEN_VISIBILITY).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("move_static_member", opts.toSchema())
                 .description("Move a static method or static field to another class and update call sites. widen_visibility (default true): if the member is private, widens to package-private (same package) or public (cross-package). Applies by default; pass dryrun=true to preview instead.")

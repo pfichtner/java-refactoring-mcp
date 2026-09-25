@@ -28,7 +28,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class RemoveMethodTool {
 
     static SyncToolSpecification removeMethod() {
-        Options opts = Options.builder().add(DRY_RUN, LINE, COLUMN, METHOD, CLASS, CASCADE).addRequired(PROJECT_ROOT, FILE).build();
+        Options opts = Options.builder().required(PROJECT_ROOT, FILE).optional(DRY_RUN, LINE, COLUMN, METHOD, CLASS, CASCADE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("remove_method", opts.toSchema())
                         .description("""

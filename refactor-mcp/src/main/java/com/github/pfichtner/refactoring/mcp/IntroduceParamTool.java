@@ -30,7 +30,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class IntroduceParamTool {
 
     static SyncToolSpecification introduceParam() {
-        Options opts = Options.builder().add(DRY_RUN, PARAM_TYPE).addRequired(PROJECT_ROOT, FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, PARAM_NAME).build();
+        Options opts = Options.builder().required(PROJECT_ROOT, FILE, START_LINE, START_COLUMN, END_LINE, END_COLUMN, PARAM_NAME).optional(DRY_RUN, PARAM_TYPE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("introduce_param", opts.toSchema())
                         .description("""
