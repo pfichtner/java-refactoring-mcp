@@ -1,11 +1,5 @@
 package com.github.pfichtner.refactoring.mcp;
 
-import static com.github.pfichtner.refactoring.mcp.Property.CLASS;
-import static com.github.pfichtner.refactoring.mcp.Property.COLUMN;
-import static com.github.pfichtner.refactoring.mcp.Property.FIELD;
-import static com.github.pfichtner.refactoring.mcp.Property.LINE;
-import static com.github.pfichtner.refactoring.mcp.Property.METHOD;
-import static com.github.pfichtner.refactoring.mcp.Property.TYPE;
 import static java.util.Comparator.comparing;
 import static java.util.Map.Entry.comparingByKey;
 import static java.util.stream.Collectors.joining;
@@ -40,9 +34,13 @@ final class ToolSupport {
         try {
             return action.call();
         } catch (Exception e) {
-            return error(e.getMessage());
+            return error(e);
         }
     }
+
+	static CallToolResult error(Exception exception) {
+		return error(exception.getMessage());
+	}
 
     static CallToolResult error(String message) {
         return CallToolResult.builder()
