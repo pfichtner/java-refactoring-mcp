@@ -40,10 +40,9 @@ public final class DecomposeConditionalTool {
                         int offset    = source.resolve(args.getLocator());
                         String result = JdtDecomposeConditional.decomposeConditional(
                                 source.content(), source.path().getFileName().toString(), offset, methodName);
-                        if (args.getBoolean(DRY_RUN)) {
-                            return ok(result);
-                        }
-                        return ok(commit(List.of(overwrite(source.path(), result))));
+                        return args.getBoolean(DRY_RUN)
+                                ? ok(result)
+                                : ok(commit(List.of(overwrite(source.path(), result))));
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }

@@ -51,10 +51,9 @@ public final class ExtractMethodTool {
                         String result  = JdtExtractor.extractMethod(
                                 new SourceUnit(source.content(), source.path().getFileName().toString()),
                                 selStart, selEnd - selStart, methodName);
-                        if (args.getBoolean(DRY_RUN)) {
-                            return ok(result);
-                        }
-                        return ok(commit(List.of(overwrite(source.path(), result))));
+                        return args.getBoolean(DRY_RUN)
+                                ? ok(result)
+                                : ok(commit(List.of(overwrite(source.path(), result))));
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }

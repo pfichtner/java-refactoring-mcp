@@ -42,10 +42,9 @@ public final class PushDownFieldTool {
 
                         var changed = JdtPushDownField.pushDown(
                                 ProjectDetector.detect(root), source.path(), offset);
-                        if (args.getBoolean(DRY_RUN)) {
-                            return ok(formatDryrun(changed));
-                        }
-                        return ok(commit(changedMap(changed)));
+                        return args.getBoolean(DRY_RUN)
+                                ? ok(formatDryrun(changed))
+                                : ok(commit(changedMap(changed)));
                     } catch (IllegalArgumentException e) {
                         return error(e.getMessage());
                     } catch (Exception e) {

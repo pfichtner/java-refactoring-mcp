@@ -46,10 +46,9 @@ public final class EncapsulateFieldTool {
                         boolean generateSetter = args.getBoolean(GENERATE_SETTER);
                         var changed = JdtEncapsulateField.encapsulateField(
                                 ProjectDetector.detect(root), source.path(), offset, generateSetter);
-                        if (args.getBoolean(DRY_RUN)) {
-                            return ok(formatDryrun(changed));
-                        }
-                        return ok(commit(changedMap(changed)));
+                        return args.getBoolean(DRY_RUN)
+                                ? ok(formatDryrun(changed))
+                                : ok(commit(changedMap(changed)));
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }

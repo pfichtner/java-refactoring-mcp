@@ -13,6 +13,7 @@ import static com.github.pfichtner.refactoring.mcp.ToolSupport.error;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 
 import java.nio.file.Path;
+import java.util.stream.Collectors;
 
 import com.github.pfichtner.refactoring.JdtMoveStaticMember;
 import com.github.pfichtner.refactoring.project.ProjectDetector;
@@ -41,13 +42,11 @@ public final class MoveStaticMemberTool {
                         boolean widen     = args.getBoolean(WIDEN_VISIBILITY, true);
                         var project = ProjectDetector.detect(projectRoot);
 						var changed = JdtMoveStaticMember.moveStaticMember(project, source.path(), offset, target, widen);
-                        if (args.getBoolean(DRY_RUN)) {
-                            StringBuilder sb = new StringBuilder();
-                            changed.forEach((p, src) ->
-                                    sb.append("=== ").append(p.getFileName()).append(" ===\n").append(src).append("\n"));
-                            return ok(sb.toString());
-                        }
-                        return ok(commit(changedMap(changed)));
+                        return args.getBoolean(DRY_RUN)
+                                ? ok(changed.entrySet().stream()
+                                        .map(e -> "=== " + e.getKey().getFileName() + " ===\n" + e.getValue() + "\n")
+                                        .collect(Collectors.joining()))
+                                : ok(commit(changedMap(changed)));
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }

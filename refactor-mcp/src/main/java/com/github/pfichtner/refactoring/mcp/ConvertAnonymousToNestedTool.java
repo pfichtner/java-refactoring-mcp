@@ -36,10 +36,9 @@ public final class ConvertAnonymousToNestedTool {
                         String nestedName = args.getString(NESTED_CLASS_NAME);
                         String result     = JdtConvertAnonymousToNested.convert(
                                 source.content(), source.path().getFileName().toString(), offset, nestedName);
-                        if (args.getBoolean(DRY_RUN)) {
-                            return ok(result);
-                        }
-                        return ok(commit(List.of(overwrite(source.path(), result))));
+                        return args.getBoolean(DRY_RUN)
+                                ? ok(result)
+                                : ok(commit(List.of(overwrite(source.path(), result))));
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }

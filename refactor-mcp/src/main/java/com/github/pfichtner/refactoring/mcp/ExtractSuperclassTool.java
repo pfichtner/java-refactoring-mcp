@@ -41,18 +41,15 @@ public final class ExtractSuperclassTool {
                         var result = JdtExtractSuperclass.extractSuperclass(
                                 source.content(), source.path().getFileName().toString(), superName, methods);
 
-                        if (args.getBoolean(DRY_RUN)) {
-                            String out = "=== " + source.path().getFileName() + " (modified) ===\n"
-                                    + result.modifiedClassSource().stripTrailing() + "\n\n"
-                                    + "=== " + superName + ".java (new) ===\n"
-                                    + result.superclassSource().stripTrailing();
-                            return ok(out);
-                        }
-                        List<FileChange> changes = List.of(
-                                overwrite(source.path(), result.modifiedClassSource()),
-                                overwrite(source.path().getParent()
-                                        .resolve(superName + ".java"), result.superclassSource()));
-                        return ok(commit(changes));
+                        return args.getBoolean(DRY_RUN)
+                                ? ok("=== " + source.path().getFileName() + " (modified) ===\n"
+                                        + result.modifiedClassSource().stripTrailing() + "\n\n"
+                                        + "=== " + superName + ".java (new) ===\n"
+                                        + result.superclassSource().stripTrailing())
+                                : ok(commit(List.of(
+                                        overwrite(source.path(), result.modifiedClassSource()),
+                                        overwrite(source.path().getParent()
+                                                .resolve(superName + ".java"), result.superclassSource()))));
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }

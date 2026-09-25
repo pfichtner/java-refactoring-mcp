@@ -54,10 +54,9 @@ public final class ChangeMethodSignatureTool {
                         String[] paramTypes = args.getStringArray(PARAM_TYPES);
                         var changed = JdtChangeMethodSignature.changeSignature(
                                 ProjectDetector.detect(root), source.path(), offset, newReturnType, paramOrder, paramTypes);
-                        if (args.getBoolean(DRY_RUN)) {
-                            return ok(formatDryrun(changed));
-                        }
-                        return ok(commit(changedMap(changed)));
+                        return args.getBoolean(DRY_RUN)
+                                ? ok(formatDryrun(changed))
+                                : ok(commit(changedMap(changed)));
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }

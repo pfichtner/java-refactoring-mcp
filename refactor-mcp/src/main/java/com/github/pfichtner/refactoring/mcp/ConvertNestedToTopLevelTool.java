@@ -37,18 +37,15 @@ public final class ConvertNestedToTopLevelTool {
                                 JdtConvertNestedToTopLevel.convert(
                                         source.content(), source.path().getFileName().toString(), offset);
 
-                        if (args.getBoolean(DRY_RUN)) {
-                            String out = "=== " + source.path().getFileName() + " (modified) ===\n"
-                                    + result.outerSource()
-                                    + "\n=== " + result.newTypeName() + ".java (new file) ===\n"
-                                    + result.newTypeSource();
-                            return ok(out);
-                        }
-                        List<FileChange> changes = List.of(
-                                overwrite(source.path(), result.outerSource()),
-                                overwrite(source.path().getParent()
-                                        .resolve(result.newTypeName() + ".java"), result.newTypeSource()));
-                        return ok(commit(changes));
+                        return args.getBoolean(DRY_RUN)
+                                ? ok("=== " + source.path().getFileName() + " (modified) ===\n"
+                                        + result.outerSource()
+                                        + "\n=== " + result.newTypeName() + ".java (new file) ===\n"
+                                        + result.newTypeSource())
+                                : ok(commit(List.of(
+                                        overwrite(source.path(), result.outerSource()),
+                                        overwrite(source.path().getParent()
+                                                .resolve(result.newTypeName() + ".java"), result.newTypeSource()))));
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }

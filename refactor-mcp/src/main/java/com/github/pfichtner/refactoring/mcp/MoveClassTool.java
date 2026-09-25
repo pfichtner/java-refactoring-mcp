@@ -11,10 +11,9 @@ import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.overwrite;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.github.pfichtner.refactoring.FileChange;
 import com.github.pfichtner.refactoring.JdtMoveClass;
@@ -51,22 +50,20 @@ public final class MoveClassTool {
                                         args.getPath(PROJECT_ROOT)),
                                 file, newPackage, widen);
 
-                        if (args.getBoolean(DRY_RUN)) {
-                            String imports = result.changedImports().entrySet().stream()
-                                    .sorted(Map.Entry.comparingByKey())
-                                    .map(e -> "\n=== " + e.getKey().getFileName() + " (updated import) ===\n"
-                                            + e.getValue().stripTrailing() + "\n")
-                                    .collect(Collectors.joining());
-                            return ok(("New path: " + result.newFilePath() + "\n\n"
-                                    + "=== " + result.newFilePath().getFileName() + " (new) ===\n"
-                                    + result.newClassSource().stripTrailing() + "\n"
-                                    + imports).stripTrailing());
-                        }
-                        List<FileChange> changes = new ArrayList<>();
-                        changes.add(new FileChange(file, result.newFilePath(), result.newClassSource()));
-                        result.changedImports().forEach(
-                                (p, src) -> changes.add(overwrite(p, src)));
-                        return ok(commit(changes));
+                        return args.getBoolean(DRY_RUN)
+                                ? ok(("New path: " + result.newFilePath() + "\n\n"
+                                        + "=== " + result.newFilePath().getFileName() + " (new) ===\n"
+                                        + result.newClassSource().stripTrailing() + "\n"
+                                        + result.changedImports().entrySet().stream()
+                                                .sorted(Map.Entry.comparingByKey())
+                                                .map(e -> "\n=== " + e.getKey().getFileName() + " (updated import) ===\n"
+                                                        + e.getValue().stripTrailing() + "\n")
+                                                .collect(Collectors.joining())).stripTrailing())
+                                : ok(commit(Stream.concat(
+                                        Stream.of(new FileChange(file, result.newFilePath(), result.newClassSource())),
+                                        result.changedImports().entrySet().stream()
+                                                .map(e -> overwrite(e.getKey(), e.getValue())))
+                                        .toList()));
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }

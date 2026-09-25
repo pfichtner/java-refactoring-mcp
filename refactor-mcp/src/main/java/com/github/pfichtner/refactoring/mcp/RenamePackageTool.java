@@ -41,14 +41,13 @@ public final class RenamePackageTool {
                                 args.getString(OLD_PACKAGE),
                                 args.getString(NEW_PACKAGE));
 
-                        if (args.getBoolean(DRY_RUN)) {
-                            return ok(result.changedFiles().stream()
-                                    .map(fc -> "=== " + fc.newPath().getFileName()
-                                            + (fc.pathChanged() ? " (moved from " + fc.oldPath().getFileName() + ")" : "")
-                                            + " ===\n" + fc.newSource().stripTrailing() + "\n\n")
-                                    .collect(Collectors.joining()).stripTrailing());
-                        }
-                        return ok(commit(result.changedFiles()));
+                        return args.getBoolean(DRY_RUN)
+                                ? ok(result.changedFiles().stream()
+                                        .map(fc -> "=== " + fc.newPath().getFileName()
+                                                + (fc.pathChanged() ? " (moved from " + fc.oldPath().getFileName() + ")" : "")
+                                                + " ===\n" + fc.newSource().stripTrailing() + "\n\n")
+                                        .collect(Collectors.joining()).stripTrailing())
+                                : ok(commit(result.changedFiles()));
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }

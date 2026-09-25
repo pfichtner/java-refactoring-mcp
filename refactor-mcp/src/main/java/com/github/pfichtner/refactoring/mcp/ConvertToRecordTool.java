@@ -35,10 +35,9 @@ public final class ConvertToRecordTool {
                         Path file = root.resolve(args.getPath(FILE));
                         var changed = JdtConvertToRecord.convertToRecord(
                                 ProjectDetector.detect(root), file);
-                        if (args.getBoolean(DRY_RUN)) {
-                            return ok(formatDryrun(changed));
-                        }
-                        return ok(commit(changedMap(changed)));
+                        return args.getBoolean(DRY_RUN)
+                                ? ok(formatDryrun(changed))
+                                : ok(commit(changedMap(changed)));
                     } catch (IllegalArgumentException e) {
                         return error(e.getMessage());
                     } catch (Exception e) {

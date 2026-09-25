@@ -36,10 +36,9 @@ public final class IntroduceIndirectionTool {
                         String name = args.getString(INDIRECTION_METHOD_NAME);
                         String result = JdtIntroduceIndirection.introduceIndirection(
                                 source.content(), source.path().getFileName().toString(), offset, name);
-                        if (args.getBoolean(DRY_RUN)) {
-                            return ok(result);
-                        }
-                        return ok(commit(List.of(overwrite(source.path(), result))));
+                        return args.getBoolean(DRY_RUN)
+                                ? ok(result)
+                                : ok(commit(List.of(overwrite(source.path(), result))));
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }

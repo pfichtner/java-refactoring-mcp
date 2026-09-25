@@ -42,18 +42,15 @@ public final class ExtractInterfaceTool {
                                 source.content(), source.path().getFileName().toString(),
                                 interfaceName, methods);
 
-                        if (args.getBoolean(DRY_RUN)) {
-                            String out = "=== " + source.path().getFileName() + " (modified) ===\n"
-                                    + result.modifiedClassSource().stripTrailing() + "\n\n"
-                                    + "=== " + interfaceName + ".java (new) ===\n"
-                                    + result.interfaceSource().stripTrailing();
-                            return ok(out);
-                        }
-                        List<FileChange> changes = List.of(
-                                overwrite(source.path(), result.modifiedClassSource()),
-                                overwrite(source.path().getParent()
-                                        .resolve(interfaceName + ".java"), result.interfaceSource()));
-                        return ok(commit(changes));
+                        return args.getBoolean(DRY_RUN)
+                                ? ok("=== " + source.path().getFileName() + " (modified) ===\n"
+                                        + result.modifiedClassSource().stripTrailing() + "\n\n"
+                                        + "=== " + interfaceName + ".java (new) ===\n"
+                                        + result.interfaceSource().stripTrailing())
+                                : ok(commit(List.of(
+                                        overwrite(source.path(), result.modifiedClassSource()),
+                                        overwrite(source.path().getParent()
+                                                .resolve(interfaceName + ".java"), result.interfaceSource()))));
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }

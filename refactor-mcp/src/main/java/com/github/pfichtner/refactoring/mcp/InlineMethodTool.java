@@ -47,13 +47,12 @@ public final class InlineMethodTool {
                                 ProjectDetector.detect(
                                         args.getPath(PROJECT_ROOT)),
                                 source.path(), offset, removeDel);
-                        if (args.getBoolean(DRY_RUN)) {
-                            return ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
-                                    .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
-                                            + e.getValue().stripTrailing() + "\n\n")
-                                    .collect(Collectors.joining()).stripTrailing());
-                        }
-                        return ok(commit(changedMap(changed)));
+                        return args.getBoolean(DRY_RUN)
+                                ? ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                                        .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
+                                                + e.getValue().stripTrailing() + "\n\n")
+                                        .collect(Collectors.joining()).stripTrailing())
+                                : ok(commit(changedMap(changed)));
                     } catch (Exception e) {
                         return error(e.getMessage());
                     }
