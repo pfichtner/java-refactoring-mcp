@@ -7,8 +7,8 @@ import static com.github.pfichtner.refactoring.mcp.Property.PROJECT_ROOT;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.execute;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
+import static java.util.stream.Collectors.joining;
 
-import java.util.stream.Collectors;
 
 import com.github.pfichtner.refactoring.JdtRenamePackage;
 import com.github.pfichtner.refactoring.project.ProjectDetector;
@@ -45,7 +45,7 @@ public final class RenamePackageTool {
                                     .map(fc -> "=== " + fc.newPath().getFileName()
                                             + (fc.pathChanged() ? " (moved from " + fc.oldPath().getFileName() + ")" : "")
                                             + " ===\n" + fc.newSource().stripTrailing() + "\n\n")
-                                    .collect(Collectors.joining()).stripTrailing())
+                                    .collect(joining()).stripTrailing())
                             : ok(commit(result.changedFiles()));
                 }))
                 .build();

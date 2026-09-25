@@ -3,12 +3,12 @@ package com.github.pfichtner.refactoring.mcp;
 import static com.github.pfichtner.refactoring.mcp.RefactoringServer.TOOLS;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 import static java.util.function.Predicate.not;
+import static java.util.stream.Collectors.joining;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
@@ -45,7 +45,7 @@ public final class ListRefactoringsTool {
         return Stream.concat(
                         Stream.of("Available refactorings (" + refactorings.size() + "):\n"),
                         refactorings.stream().map(ListRefactoringsTool::describeTool))
-                .collect(Collectors.joining())
+                .collect(joining())
                 .stripTrailing();
     }
 
@@ -62,15 +62,15 @@ public final class ListRefactoringsTool {
                 .map(String::stripTrailing)
                 .filter(not(String::isBlank))
                 .map(line -> "  " + line + "\n")
-                .collect(Collectors.joining());
+                .collect(joining());
 
 		return Stream.of(tool.name(), description + "  Required: " + requiredArgs(tool))
-				.collect(Collectors.joining("\n", "\n", "\n"));
+				.collect(joining("\n", "\n", "\n"));
     }
 
     static String requiredArgs(Tool tool) {
         Object required = tool.inputSchema().get("required");
-        return required instanceof List<?> list ? list.stream().map(String::valueOf).collect(Collectors.joining(", ")) : "";
+        return required instanceof List<?> list ? list.stream().map(String::valueOf).collect(joining(", ")) : "";
     }
 
 }

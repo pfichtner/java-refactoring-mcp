@@ -9,10 +9,11 @@ import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.execute;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.overwrite;
+import static java.util.Map.Entry.comparingByKey;
+import static java.util.stream.Collectors.joining;
 
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.github.pfichtner.refactoring.FileChange;
@@ -54,10 +55,10 @@ public final class MoveClassTool {
                                     + "=== " + result.newFilePath().getFileName() + " (new) ===\n"
                                     + result.newClassSource().stripTrailing() + "\n"
                                     + result.changedImports().entrySet().stream()
-                                            .sorted(Map.Entry.comparingByKey())
+                                            .sorted(comparingByKey())
                                             .map(e -> "\n=== " + e.getKey().getFileName() + " (updated import) ===\n"
                                                     + e.getValue().stripTrailing() + "\n")
-                                            .collect(Collectors.joining())).stripTrailing())
+                                            .collect(joining())).stripTrailing())
                             : ok(commit(Stream.concat(
                                     Stream.of(new FileChange(file, result.newFilePath(), result.newClassSource())),
                                     result.changedImports().entrySet().stream()

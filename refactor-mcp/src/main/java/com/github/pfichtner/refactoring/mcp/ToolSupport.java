@@ -7,6 +7,7 @@ import static com.github.pfichtner.refactoring.mcp.Property.LINE;
 import static com.github.pfichtner.refactoring.mcp.Property.METHOD;
 import static com.github.pfichtner.refactoring.mcp.Property.TYPE;
 import static java.util.Comparator.comparing;
+import static java.util.Map.Entry.comparingByKey;
 import static java.util.stream.Collectors.joining;
 
 import java.nio.file.Files;
@@ -92,7 +93,7 @@ final class ToolSupport {
                 .sorted()
                 .collect(joining(", "));
         String content = changed.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
+                .sorted(comparingByKey())
                 .map(e -> "\n=== " + e.getKey().getFileName() + " ===\n"
                         + e.getValue().stripTrailing() + "\n")
                 .collect(joining());

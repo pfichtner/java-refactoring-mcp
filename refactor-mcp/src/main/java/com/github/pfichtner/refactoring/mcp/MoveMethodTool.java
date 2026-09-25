@@ -13,9 +13,10 @@ import static com.github.pfichtner.refactoring.mcp.ToolSupport.changedMap;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.execute;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.ok;
+import static java.util.Map.Entry.comparingByKey;
+import static java.util.stream.Collectors.joining;
 
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import com.github.pfichtner.refactoring.JdtMoveMethod;
 import com.github.pfichtner.refactoring.project.ProjectDetector;
@@ -53,10 +54,10 @@ public final class MoveMethodTool {
                                     args.getPath(PROJECT_ROOT)),
                             source.path(), offset, targetClass, widen);
                     return args.getBoolean(DRY_RUN)
-                            ? ok(changed.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                            ? ok(changed.entrySet().stream().sorted(comparingByKey())
                                     .map(e -> "=== " + e.getKey().getFileName() + " ===\n"
                                             + e.getValue().stripTrailing() + "\n\n")
-                                    .collect(Collectors.joining()).stripTrailing())
+                                    .collect(joining()).stripTrailing())
                             : ok(commit(changedMap(changed)));
                 }))
                 .build();
