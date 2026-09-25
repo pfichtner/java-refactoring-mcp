@@ -114,12 +114,11 @@ A set of refactoring tools plus one meta tool are exposed:
 | `list_refactorings` | Lists available refactoring operations |
 | `<refactoring>` | One tool per operation (e.g. `rename`, `extract_method`, `pull_up_method`, `move_class`) |
 
-Every tool runs as a **dry-run by default**: it returns the new source of every changed file and
-writes nothing. Pass `"apply": true` (boolean, default `false`) to write the changes to disk and
-receive a summary instead.
+Every tool **applies changes to disk by default** and returns a summary. Pass `"dryrun": true`
+(boolean, default `false`) to preview the new source for every changed file without writing anything.
 
 Every refactoring tool accepts locator parameters (`line`/`column` or name-based `method`/`field`/
-`type`/`class`) plus the tool-specific parameters from its own section below. The `apply` flag and
+`type`/`class`) plus the tool-specific parameters from its own section below. The `dryrun` flag and
 the locator resolution are shared across all tools.
 
 ### M6 — Extract Method
@@ -138,7 +137,7 @@ Extracts a range of statements into a new private method using JDT AST analysis 
 
 CLI: `java-refactor extract --file F --start-line L --start-column C --end-line L2 --end-column C2 --name methodName [--dry-run]`
 
-MCP tool: `extract_method` — returns the rewritten source; pass `apply: true` to write it to disk.
+MCP tool: `extract_method` — returns the rewritten source; pass `dryrun: true` to preview without writing.
 
 ### M7 — Inline Variable
 
@@ -146,7 +145,7 @@ MCP tool: `extract_method` — returns the rewritten source; pass `apply: true` 
 
 CLI: `java-refactor inline-var --file F --line L --column C [--dry-run]`
 
-MCP tool: `inline_variable` — returns rewritten source; pass `apply: true` to write it to disk.
+MCP tool: `inline_variable` — returns rewritten source; pass `dryrun: true` to preview without writing.
 
 ### M8 — Extract Variable
 
@@ -156,7 +155,7 @@ Introduces a local variable for the selected expression. With `replaceAll=true`,
 
 CLI: `java-refactor extract-var --file F --start-line L --start-column C --end-line L2 --end-column C2 --name N [--replace-all] [--dry-run]`
 
-MCP tool: `extract_variable` — returns rewritten source; pass `apply: true` to write it to disk.
+MCP tool: `extract_variable` — returns rewritten source; pass `dryrun: true` to preview without writing.
 
 ### M9 — Inline Method (multi-file)
 
@@ -168,7 +167,7 @@ Supported: void methods (body statements replace each call); value-returning met
 
 CLI: `java-refactor inline-method --file F --line L --column C [--project P] [--remove-declaration] [--dry-run]`
 
-MCP tool: `inline_method` — accepts `project_root` and `remove_declaration`; returns new source for every changed file; pass `apply: true` to write them to disk.
+MCP tool: `inline_method` — accepts `project_root` and `remove_declaration`; returns new source for every changed file; pass `dryrun: true` to preview without writing.
 
 ### M10 — Extract Constant
 
@@ -178,7 +177,7 @@ Introduces a `private static final` field at the top of the enclosing class for 
 
 CLI: `java-refactor extract-const --file F --start-line L --start-column C --end-line L2 --end-column C2 --name NAME [--replace-all] [--dry-run]`
 
-MCP tool: `extract_constant` — returns rewritten source; pass `apply: true` to write it to disk.
+MCP tool: `extract_constant` — returns rewritten source; pass `dryrun: true` to preview without writing.
 
 ### M11 — Introduce Parameter
 
@@ -188,7 +187,7 @@ Promotes a selected expression to a new method parameter. Uses the same multi-fi
 
 CLI: `java-refactor introduce-param --file F --start-line L --start-column C --end-line L2 --end-column C2 --name N [--type T] [--project P] [--dry-run]`
 
-MCP tool: `introduce_param` — returns new source for every changed file; pass `apply: true` to write them to disk.
+MCP tool: `introduce_param` — returns new source for every changed file; pass `dryrun: true` to preview without writing.
 
 ### M12 — Remove Parameter
 
@@ -196,7 +195,7 @@ MCP tool: `introduce_param` — returns new source for every changed file; pass 
 
 CLI: `java-refactor remove-param --file F --line L --column C [--project P] [--dry-run]`
 
-MCP tool: `remove_param` — returns changed files; pass `apply: true` to write them to disk.
+MCP tool: `remove_param` — returns changed files; pass `dryrun: true` to preview without writing.
 
 ### M13 — Extract Interface
 
@@ -206,7 +205,7 @@ Generates a new Java interface from the public non-static methods of a class and
 
 CLI: `java-refactor extract-interface --file F --name N --interface-file PATH [--methods m1,m2] [--dry-run]`
 
-MCP tool: `extract_interface` — returns both the modified class and the new interface source; pass `apply: true` to write them to disk.
+MCP tool: `extract_interface` — returns both the modified class and the new interface source; pass `dryrun: true` to preview without writing.
 
 ### M14 — Extract Superclass
 
@@ -216,7 +215,7 @@ Moves selected public non-static methods (with their bodies) into a new `public 
 
 CLI: `java-refactor extract-superclass --file F --name N --superclass-file PATH [--methods m1,m2] [--dry-run]`
 
-MCP tool: `extract_superclass` — returns the modified class and the new superclass source; pass `apply: true` to write them to disk.
+MCP tool: `extract_superclass` — returns the modified class and the new superclass source; pass `dryrun: true` to preview without writing.
 
 ### M15 — Move Class
 
@@ -224,7 +223,7 @@ MCP tool: `extract_superclass` — returns the modified class and the new superc
 
 CLI: `java-refactor move-class --file F --package com.example.util [--project P] [--dry-run]`
 
-MCP tool: `move_class` — returns new source, new path, and updated import files; pass `apply: true` to write them (and delete the original) to disk.
+MCP tool: `move_class` — returns new source, new path, and updated import files; pass `dryrun: true` to preview without writing (and without deleting the original).
 
 **Limitations:** same-package references (no explicit import), wildcard imports, and fully-qualified type references in source code are not updated.
 
@@ -234,7 +233,7 @@ MCP tool: `move_class` — returns new source, new path, and updated import file
 
 CLI: `java-refactor rename-package --old-package com.example.service --new-package com.example.util [--project P] [--dry-run]`
 
-MCP tool: `rename_package` — returns new source and new path for every changed file; pass `apply: true` to write and move them to disk.
+MCP tool: `rename_package` — writes and moves every changed file by default; pass `dryrun: true` to preview without writing.
 
 **Limitation:** fully-qualified type references in source code are not updated.
 
@@ -283,8 +282,8 @@ java-refactor introduce-factory -f Counter.java -l 7 -c 12 -n of [--private-cons
 ```
 
 MCP tool: `introduce_static_factory` — accepts `project_root`, `file`, `line`, `column`,
-`factory_method_name`, and optional `make_constructor_private`; returns a preview of all changed files
-(pass `apply: true` to write them to disk).
+`factory_method_name`, and optional `make_constructor_private`; writes all changed files by default;
+pass `dryrun: true` to preview without writing.
 
 **Preconditions checked:**
 - A constructor must exist at the given offset.
@@ -339,8 +338,8 @@ java-refactor introduce-param-object -f FILE -l LINE -c COL -p x,y -n Coordinate
 ```
 
 MCP tool: `introduce_parameter_object` — accepts `project_root`, `file`, `line`, `column`,
-`param_names` (array), `class_name`, and optional `param_object_name`; pass `apply: true` to write
-the changes to disk.
+`param_names` (array), `class_name`, and optional `param_object_name`; writes changes to disk by
+default; pass `dryrun: true` to preview without writing.
 
 **Preconditions checked:**
 - At least 2 parameter names must be specified.
@@ -370,7 +369,7 @@ CLI:
 java-refactor convert-to-record -f Point.java [--project P] [--dry-run]
 ```
 
-MCP tool: `convert_to_record` — accepts `project_root` and `file`; returns a preview of all changed files (pass `apply: true` to write them to disk).
+MCP tool: `convert_to_record` — accepts `project_root` and `file`; writes all changed files by default; pass `dryrun: true` to preview without writing.
 
 **Preconditions checked:**
 - Class must not be abstract, an interface, or already a record.
@@ -464,8 +463,8 @@ The agent sees a set of refactoring tools plus `list_refactorings` once the serv
 | `rename` | Rename a symbol project-wide |
 | `<refactoring>_*` tools | One tool per operation |
 
-Every tool has an optional boolean `apply` parameter (default `false`). Without it (or with
-`false`), the call is a dry-run: it returns the new source, writes nothing. With `apply: true` the
+Every tool has an optional boolean `dryrun` parameter (default `false`). With `dryrun: true` the
+call is a preview: it returns the new source and writes nothing. Without it (or with `false`) the
 changes are written and a summary is returned.
 
 Example — the `rename` tool (name-based locator):
@@ -476,7 +475,7 @@ Example — the `rename` tool (name-based locator):
 | `file` | `src/main/java/com/example/Calculator.java` |
 | `method` | `add` |
 | `new_name` | `plus` |
-| `apply` | `true` (optional — omit for dry-run) |
+| `dryrun` | `true` (optional — omit to apply changes) |
 
 **Example prompts you can give the agent:**
 
@@ -496,7 +495,7 @@ Inline the variable `result` declared at line 8 of App.java.
 Project root: /home/me/myproject.
 ```
 
-A well-prompted agent will call the tool first without `apply` (dry-run), show you the diff, and only re-run it with `apply: true` after your confirmation.
+A well-prompted agent will call the tool first with `dryrun: true`, show you the diff, and only re-run it without `dryrun` after your confirmation.
 
 ---
 

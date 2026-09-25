@@ -45,7 +45,7 @@ AI coding agents are great at reading and generating Java — but they edit sour
 | Decompose conditional | Single file (extracts condition into named boolean method) |
 | Introduce indirection | Single file (adds a static wrapper method that delegates to the wrapped method) |
 
-All operations follow **preview → apply**: every tool runs as a dry-run by default; pass `"apply": true` to write the exact diff to disk, after your confirmation.
+All operations follow **preview → apply**: tools write changes to disk by default; pass `"dryrun": true` to preview without writing, then re-call without it to apply.
 
 ---
 
@@ -137,12 +137,12 @@ Once connected the agent sees a set of refactoring tools plus a meta tool to enu
 | `rename` | Rename a symbol project-wide (method, field, type, parameter, local variable) |
 | `<refactoring>_*` tools | One tool per refactoring (e.g. `extract_method`, `pull_up_method`, `move_class`, …) |
 
-Every refactoring tool — including `rename` — runs as a **dry-run by default**: it returns the new
-source for every changed file and writes nothing. Pass **`"apply": true`** to write the changes to
-disk and get a summary instead.
+Every refactoring tool — including `rename` — **applies changes to disk by default** and returns a
+summary. Pass **`"dryrun": true`** to preview the new source for every changed file without writing
+anything, then re-call without it to apply.
 
-A well-prompted agent will always call a tool without `apply` first, show you the diff, and only
-re-run it with `apply: true` after your confirmation.
+A well-prompted agent will always call a tool with `dryrun: true` first, show you the diff, and only
+re-run it without `dryrun` after your confirmation.
 
 ### Giving your agent standing instructions (skill file)
 
@@ -165,8 +165,8 @@ code as text and miss bindings, overloads, and cross-file references.
 ## Workflow
 
 1. **Discover** — call `list_refactorings` if unsure which operation fits
-2. **Preview** — call the refactoring tool WITHOUT `apply` to verify the diff before writing anything
-3. **Apply** — re-call the same tool with `"apply": true`; one refactoring at a time
+2. **Preview** — call the refactoring tool with `"dryrun": true` to verify the diff before writing anything
+3. **Apply** — re-call the same tool without `dryrun`; one refactoring at a time
 
 ## Rules
 
@@ -182,7 +182,7 @@ Then invoke it at the start of a refactoring session:
 Rename the method `add` in Calculator.java to `plus`. Project root: /home/me/myproject.
 ```
 
-The agent loads the skill instructions, then proceeds with preview (no `apply`) → confirm → `apply: true` without needing further reminders.
+The agent loads the skill instructions, then proceeds with preview (`dryrun: true`) → confirm → apply (no dryrun) without needing further reminders.
 
 Other editors that support system-prompt injection (Cursor, Windsurf, OpenCode, etc.) can embed the same rules as a project-level system prompt in their config.
 
