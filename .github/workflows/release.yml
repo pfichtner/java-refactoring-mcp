@@ -30,7 +30,7 @@ jobs:
           sha256sum "refactor-mcp/target/refactor-mcp-${VERSION}-fat.jar" > "refactor-mcp/target/refactor-mcp-${VERSION}-fat.jar.sha256"
           sha256sum "refactor-cli/target/refactor-cli-${VERSION}-fat.jar" > "refactor-cli/target/refactor-cli-${VERSION}-fat.jar.sha256"
       - name: Upload release assets
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             refactor-mcp/target/refactor-mcp-${{ env.VERSION }}-fat.jar

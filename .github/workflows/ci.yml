@@ -16,7 +16,7 @@ jobs:
       - name: Build with Maven
         run: mvn --batch-mode verify
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./refactor-core/target/site/jacoco/jacoco.xml,./refactor-cli/target/site/jacoco/jacoco.xml,./refactor-mcp/target/site/jacoco/jacoco.xml

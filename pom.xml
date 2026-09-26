@@ -21,7 +21,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>6.1.3</junit.version>
         <assertj.version>3.27.7</assertj.version>
-        <jacoco.version>0.8.13</jacoco.version>
+        <jacoco.version>0.8.15</jacoco.version>
     </properties>
 
     <dependencyManagement>
@@ -41,7 +41,7 @@
             <dependency>
                 <groupId>com.tngtech.archunit</groupId>
                 <artifactId>archunit</artifactId>
-                <version>1.3.0</version>
+                <version>1.5.0</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>
