@@ -8,8 +8,10 @@ import static com.github.pfichtner.refactoring.mcp.Property.FILE;
 import static com.github.pfichtner.refactoring.mcp.Property.LINE;
 import static com.github.pfichtner.refactoring.mcp.Property.METHOD;
 import static com.github.pfichtner.refactoring.mcp.Property.NEW_NAME;
+import static com.github.pfichtner.refactoring.mcp.Property.PARAMETER;
 import static com.github.pfichtner.refactoring.mcp.Property.PROJECT_ROOT;
 import static com.github.pfichtner.refactoring.mcp.Property.TYPE;
+import static com.github.pfichtner.refactoring.mcp.Property.VARIABLE;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.execute;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.formatDryrun;
@@ -33,7 +35,7 @@ public final class RenameTool {
     static SyncToolSpecification rename() {
         Options opts = Options.builder()
                 .required(PROJECT_ROOT, FILE, NEW_NAME)
-                .optional(DRY_RUN, LINE, COLUMN, METHOD, FIELD, TYPE, CLASS)
+                .optional(DRY_RUN, LINE, COLUMN, METHOD, FIELD, TYPE, CLASS, VARIABLE, PARAMETER)
                 .build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("rename", opts.toSchema())

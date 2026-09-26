@@ -117,6 +117,15 @@ class RefactoringServerToolTest {
     }
 
     @Test
+    void tool_inline_variable_by_variable_and_method_name_returns_preview() {
+        String text = call(InlineVariableTool.inlineVariable(), Map.of(
+                "file", fixture("inline-var/multiple-uses/input/Foo.java"),
+                "method", "run",
+                "variable", "msg"));
+        Approvals.verify(text);
+    }
+
+    @Test
     void tool_inline_constant_returns_preview() {
         String text = call(InlineConstantTool.inlineConstant(), Map.of(
                 "file", fixture("inline-constant/int-constant/input/Foo.java"),

@@ -1,0 +1,17 @@
+Dry run — no files written.
+Would change (1): Person.java
+
+=== Person.java ===
+package com.example;
+
+public class Person {
+    public String name;
+
+    public Person(String fullName) {
+        this.name = fullName;
+    }
+
+    public String getName() {
+        return name;
+    }
+}

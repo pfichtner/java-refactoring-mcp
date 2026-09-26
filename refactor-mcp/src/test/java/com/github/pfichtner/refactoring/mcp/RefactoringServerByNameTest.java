@@ -23,6 +23,7 @@ class RefactoringServerByNameTest {
 
     private static final Path FIXTURE_ROOT;
     private static final Path TYPE_FIXTURE_ROOT;
+    private static final Path FIELD_FIXTURE_ROOT;
 
     static {
         try {
@@ -34,6 +35,11 @@ class RefactoringServerByNameTest {
             TYPE_FIXTURE_ROOT = Path.of(
                     RefactoringServerByNameTest.class.getClassLoader()
                             .getResource("fixtures/projects/rename-type/pom.xml")
+                            .toURI()
+            ).getParent();
+            FIELD_FIXTURE_ROOT = Path.of(
+                    RefactoringServerByNameTest.class.getClassLoader()
+                            .getResource("fixtures/projects/rename-field/pom.xml")
                             .toURI()
             ).getParent();
         } catch (Exception e) {
@@ -119,6 +125,27 @@ class RefactoringServerByNameTest {
                 "file",         "src/main/java/com/example/Rectangle.java",
                 "type",         "Rectangle",
                 "new_name",     "Rect"
+        );
+
+        var changed = RenameTool.rename(new Options.Reader(args));
+        String preview = ToolSupport.formatDryrun(changed);
+
+        Approvals.verify(preview);
+    }
+
+    /**
+     * {@code Person} declares a field {@code name} and a constructor parameter
+     * {@code name} that shadows it, while {@code Printer} reads the field. Only
+     * the parameter may be renamed.
+     */
+    @Test
+    void analyze_rename_parameter_leaves_shadowing_field_untouched() throws Exception {
+        Map<String, Object> args = Map.of(
+                "project_root", FIELD_FIXTURE_ROOT.toString(),
+                "file",         "src/main/java/com/example/Person.java",
+                "method",       "Person",
+                "parameter",    "name",
+                "new_name",     "fullName"
         );
 
         var changed = RenameTool.rename(new Options.Reader(args));

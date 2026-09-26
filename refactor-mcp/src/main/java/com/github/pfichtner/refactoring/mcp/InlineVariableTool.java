@@ -4,6 +4,7 @@ import static com.github.pfichtner.refactoring.mcp.Property.DRY_RUN;
 import static com.github.pfichtner.refactoring.mcp.Property.COLUMN;
 import static com.github.pfichtner.refactoring.mcp.Property.FILE;
 import static com.github.pfichtner.refactoring.mcp.Property.LINE;
+import static com.github.pfichtner.refactoring.mcp.Property.METHOD;
 import static com.github.pfichtner.refactoring.mcp.Property.VARIABLE;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.commit;
 import static com.github.pfichtner.refactoring.mcp.ToolSupport.execute;
@@ -23,7 +24,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 public final class InlineVariableTool {
 
     static SyncToolSpecification inlineVariable() {
-        Options opts = Options.builder().required(FILE).optional(DRY_RUN, LINE, COLUMN, VARIABLE).build();
+        Options opts = Options.builder().required(FILE).optional(DRY_RUN, LINE, COLUMN, METHOD, VARIABLE).build();
         return SyncToolSpecification.builder()
                 .tool(Tool.builder("inline_variable", opts.toSchema())
                         .description("""

@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -145,6 +146,48 @@ class RefactoringServerTest {
         assertThat(pkgDir.resolve("Rect.java")).exists();
         assertThat(pkgDir.resolve("Rectangle.java")).doesNotExist();
         assertThat(pkgDir.resolve("App.java")).exists();
+    }
+
+    // -------------------------------------------------------------------------
+    // Tool schemas advertise the locators their handlers can resolve
+    // -------------------------------------------------------------------------
+
+    @Test
+    void rename_schema_advertises_variable_and_parameter_locators() {
+        assertThat(schemaProperties("rename"))
+                .as("rename promises local-variable and parameter renaming in its description")
+                .contains("variable", "parameter");
+    }
+
+    @Test
+    void inline_variable_schema_advertises_the_method_required_by_variable() {
+        assertThat(schemaProperties("inline_variable")).contains("method", "variable");
+    }
+
+    @Test
+    void every_tool_advertising_variable_or_parameter_also_advertises_method() {
+        for (var spec : RefactoringServer.TOOLS) {
+            Set<String> props = schemaProperties(spec.tool().name());
+            for (String dependent : List.of("variable", "parameter")) {
+                if (props.contains(dependent)) {
+                    assertThat(props)
+                            .as("tool '%s' advertises '%s', which Locator.from only accepts together with 'method'",
+                                    spec.tool().name(), dependent)
+                            .contains("method");
+                }
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Set<String> schemaProperties(String toolName) {
+        var spec = RefactoringServer.TOOLS.stream()
+                .filter(s -> s.tool().name().equals(toolName))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Tool not registered: " + toolName));
+        Map<String, Object> properties =
+                (Map<String, Object>) spec.tool().inputSchema().get("properties");
+        return properties.keySet();
     }
 
     // -------------------------------------------------------------------------

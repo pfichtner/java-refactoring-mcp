@@ -424,6 +424,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 |-----------|----------|
 | Analyze rename by method name preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerByNameTest.analyze_rename_by_method_name_preview.approved.txt) |
 | Analyze rename by type name preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerByNameTest.analyze_rename_by_type_name_preview.approved.txt) |
+| Analyze rename parameter leaves shadowing field untouched | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerByNameTest.analyze_rename_parameter_leaves_shadowing_field_untouched.approved.txt) |
 
 ### Refactoring server tool
 | Test case | Approval |
@@ -444,6 +445,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Tool extract variable returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_extract_variable_returns_preview.approved.txt) |
 | Tool inline constant returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_inline_constant_returns_preview.approved.txt) |
 | Tool inline method returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_inline_method_returns_preview.approved.txt) |
+| Tool inline variable by variable and method name returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_inline_variable_by_variable_and_method_name_returns_preview.approved.txt) |
 | Tool inline variable returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_inline_variable_returns_preview.approved.txt) |
 | Tool introduce indirection returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_introduce_indirection_returns_preview.approved.txt) |
 | Tool introduce param returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_introduce_param_returns_preview.approved.txt) |
