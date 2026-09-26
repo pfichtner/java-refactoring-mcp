@@ -235,6 +235,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Convert to static import with apply writes file | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerTest.convert_to_static_import_with_apply_writes_file.approved.txt) |
 | List refactorings golden master | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerTest.list_refactorings_golden_master.approved.txt) |
 | Rename returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerTest.rename_returns_preview.approved.txt) |
+| Rename type with apply renames source file | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerTest.rename_type_with_apply_renames_source_file.approved.txt) |
 | Rename with apply writes files and returns summary | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerTest.rename_with_apply_writes_files_and_returns_summary.approved.txt) |
 
 ---
@@ -289,6 +290,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | rename | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.rename_method.approved.md) |
 | rename | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.rename_method_by_method_name.approved.md) |
 | rename-package | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.rename_package.approved.md) |
+| rename | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.rename_type_by_type_name.approved.md) |
 
 ### Cli refactoring story book
 | Test case | Approval |
@@ -329,6 +331,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | rename | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.rename_by_method_name.approved.md) |
 | rename | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.rename_method.approved.md) |
 | rename-package | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.rename_package.approved.md) |
+| rename | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.rename_type_by_type_name.approved.md) |
 
 ### Convert anonymous to nested
 | Test case | Approval |
@@ -420,6 +423,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Test case | Approval |
 |-----------|----------|
 | Analyze rename by method name preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerByNameTest.analyze_rename_by_method_name_preview.approved.txt) |
+| Analyze rename by type name preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerByNameTest.analyze_rename_by_type_name_preview.approved.txt) |
 
 ### Refactoring server tool
 | Test case | Approval |

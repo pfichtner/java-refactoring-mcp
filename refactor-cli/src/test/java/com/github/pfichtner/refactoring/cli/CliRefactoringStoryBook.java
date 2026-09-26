@@ -207,6 +207,18 @@ class CliRefactoringStoryBook {
     }
 
     @Test
+    @CliFixture(root = "fixtures/projects/rename-type/pom.xml")
+    void rename_type_by_type_name(CliTestBed bed) throws Exception {
+        Path rectFile = bed.root().resolve("src/main/java/com/example/Rectangle.java");
+        Approvals.verify(bed.preview(
+                "rename",
+                "--file", rectFile.toString(),
+                "--type", "Rectangle",
+                "--name", "Rect",
+                "--dry-run"));
+    }
+
+    @Test
     @CliFixture(root = "fixtures/projects/rename-method/pom.xml")
     void inline_method(CliTestBed bed) throws Exception {
         Path appFile = bed.root().resolve("src/main/java/com/example/App.java");

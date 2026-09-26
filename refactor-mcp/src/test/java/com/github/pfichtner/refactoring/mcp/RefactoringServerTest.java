@@ -25,12 +25,18 @@ import io.modelcontextprotocol.spec.McpSchema;
 class RefactoringServerTest {
 
     private static final Path FIXTURE_ROOT;
+    private static final Path TYPE_FIXTURE_ROOT;
 
     static {
         try {
             FIXTURE_ROOT = Path.of(
                     RefactoringServerTest.class.getClassLoader()
                             .getResource("fixtures/projects/rename-method/pom.xml")
+                            .toURI()
+            ).getParent();
+            TYPE_FIXTURE_ROOT = Path.of(
+                    RefactoringServerTest.class.getClassLoader()
+                            .getResource("fixtures/projects/rename-type/pom.xml")
                             .toURI()
             ).getParent();
         } catch (Exception e) {
@@ -114,6 +120,31 @@ class RefactoringServerTest {
         // Structure-only disk verification: both changed files exist
         assertThat(tmp.resolve("src/main/java/com/example/Calculator.java")).exists();
         assertThat(tmp.resolve("src/main/java/com/example/App.java")).exists();
+    }
+
+    @Test
+    void rename_type_with_apply_renames_source_file(@TempDir Path tmp) throws Exception {
+        // Copy the fixture project so the test is non-destructive
+        copyTree(TYPE_FIXTURE_ROOT, tmp);
+
+        Map<String, Object> args = Map.of(
+                "project_root", tmp.toString(),
+                "file",         "src/main/java/com/example/Rectangle.java",
+                "type",         "Rectangle",
+                "new_name",     "Rect"
+        );
+
+        var result = RenameTool.rename().callHandler()
+                .apply(null, fakeRequest(args));
+
+        assertThat(result.isError()).isFalse();
+        Approvals.verify(textOf(result));
+
+        // Structure-only disk verification: the file follows the type it declares
+        Path pkgDir = tmp.resolve("src/main/java/com/example");
+        assertThat(pkgDir.resolve("Rect.java")).exists();
+        assertThat(pkgDir.resolve("Rectangle.java")).doesNotExist();
+        assertThat(pkgDir.resolve("App.java")).exists();
     }
 
     // -------------------------------------------------------------------------

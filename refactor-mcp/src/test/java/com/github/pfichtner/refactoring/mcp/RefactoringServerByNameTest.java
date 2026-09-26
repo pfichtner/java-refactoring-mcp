@@ -22,12 +22,18 @@ import com.github.pfichtner.refactoring.locator.LocatorResolver;
 class RefactoringServerByNameTest {
 
     private static final Path FIXTURE_ROOT;
+    private static final Path TYPE_FIXTURE_ROOT;
 
     static {
         try {
             FIXTURE_ROOT = Path.of(
                     RefactoringServerByNameTest.class.getClassLoader()
                             .getResource("fixtures/projects/rename-method/pom.xml")
+                            .toURI()
+            ).getParent();
+            TYPE_FIXTURE_ROOT = Path.of(
+                    RefactoringServerByNameTest.class.getClassLoader()
+                            .getResource("fixtures/projects/rename-type/pom.xml")
                             .toURI()
             ).getParent();
         } catch (Exception e) {
@@ -71,6 +77,48 @@ class RefactoringServerByNameTest {
                 "file",         "src/main/java/com/example/Calculator.java",
                 "method",       "add",
                 "new_name",     "plus"
+        );
+
+        var changed = RenameTool.rename(new Options.Reader(args));
+        String preview = ToolSupport.formatDryrun(changed);
+
+        Approvals.verify(preview);
+    }
+
+    @Test
+    void rename_type_by_type_name_produces_same_result_as_position() throws Exception {
+        Map<String, Object> common = Map.of(
+                "project_root", TYPE_FIXTURE_ROOT.toString(),
+                "file",         "src/main/java/com/example/Rectangle.java",
+                "new_name",     "Rect"
+        );
+        // line 3 col 14 is the 'R' of `public class Rectangle`
+        Map<String, Object> byPosition = new HashMap<>(common);
+        byPosition.putAll(Map.of("line", 3, "column", 14));
+        Map<String, Object> byName = new HashMap<>(common);
+        byName.put("type", "Rectangle");
+
+        var resultByPosition = RenameTool.rename(new Options.Reader(byPosition));
+        var resultByName     = RenameTool.rename(new Options.Reader(byName));
+
+        // Both approaches should produce identical output for every changed file
+        assertThat(resultByName.size()).as("Same number of changed files expected").isEqualTo(resultByPosition.size());
+        for (int i = 0; i < resultByPosition.size(); i++) {
+            var fcByPos  = resultByPosition.get(i);
+            var fcByName = resultByName.get(i);
+            assertThat(fcByName.oldPath()).as("Path mismatch for entry " + i).isEqualTo(fcByPos.oldPath());
+            assertThat(fcByName.newPath()).as("New path mismatch for entry " + i).isEqualTo(fcByPos.newPath());
+            assertThat(fcByName.newSource()).as("Content mismatch for " + fcByPos.oldPath().getFileName()).isEqualTo(fcByPos.newSource());
+        }
+    }
+
+    @Test
+    void analyze_rename_by_type_name_preview() throws Exception {
+        Map<String, Object> args = Map.of(
+                "project_root", TYPE_FIXTURE_ROOT.toString(),
+                "file",         "src/main/java/com/example/Rectangle.java",
+                "type",         "Rectangle",
+                "new_name",     "Rect"
         );
 
         var changed = RenameTool.rename(new Options.Reader(args));
