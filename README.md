@@ -119,7 +119,8 @@ Add to `~/.config/opencode.json`:
   "mcp": {
     "java-refactoring": {
       "command": "java",
-      "args": ["-jar", "/absolute/path/to/refactor-mcp-0.1.3-SNAPSHOT-fat.jar"]
+      "args": ["-jar", "/absolute/path/to/refactor-mcp-0.1.3-SNAPSHOT-fat.jar"],
+      "enabled": true
     }
   }
 }
