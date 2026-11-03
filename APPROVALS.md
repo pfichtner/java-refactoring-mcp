@@ -374,6 +374,19 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Encapsulate field: Person.name — getter + setter | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/EncapsulateFieldTest.encapsulate_field_generates_getter_and_setter_rewrites_both.approved.md) |
 | Encapsulate field: Person.age — getter only (verify private result) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/EncapsulateFieldTest.encapsulate_field_rejected_when_already_private.approved.md) |
 
+### Inlining engine
+| Test case | Approval |
+|-----------|----------|
+| Aggressive inline: argument side effects evaluated once | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.argument_side_effects_are_evaluated_once.approved.md) |
+| Aggressive inline — rejected: checked exception | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.checked_exception_method_is_rejected.approved.md) |
+| Aggressive inline: iterative chain until fixed point | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.inline_chain_reaches_fixed_point.approved.md) |
+| Aggressive inline: method with local variables | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.inline_method_with_local_variables.approved.md) |
+| Aggressive inline: multiple return statements | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.inline_method_with_multiple_returns.approved.md) |
+| Aggressive inline: simple private method | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.inline_simple_private_method.approved.md) |
+| Aggressive inline — rejected: nested expression position | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.nested_expression_call_is_rejected.approved.md) |
+| Aggressive inline — rejected: explicit receiver | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.unsafe_explicit_receiver_is_rejected.approved.md) |
+| Aggressive inline — rejected: synchronized method | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.unsafe_synchronized_method_is_rejected.approved.md) |
+
 ### Introduce indirection
 | Test case | Approval |
 |-----------|----------|
