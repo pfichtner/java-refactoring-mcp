@@ -209,6 +209,353 @@ class InliningEngineTest {
         );
     }
 
+    @Test
+    void try_finally_runs_before_return() throws Exception {
+        String source = fixtures.load("inline-aggressive/try-finally/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "choose()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+
+        assertThat(compileAndInvoke("Foo", source, "run"))
+                .as("original behaviour")
+                .isEqualTo(12);
+        assertThat(compileAndInvoke("Foo", result, "run"))
+                .as("finally must still run before the inlined return completes")
+                .isEqualTo(12);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: finally runs before return")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`choose()` at " + Fixtures.lineCol(source, offset),
+                        "return becomes an assignment plus a labeled break; the finally block still runs")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void try_finally_return_overrides_earlier_return() throws Exception {
+        String source = fixtures.load("inline-aggressive/try-finally-return/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "choose()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+
+        assertThat(compileAndInvoke("Foo", source, "run"))
+                .as("original behaviour")
+                .isEqualTo(2);
+        assertThat(compileAndInvoke("Foo", result, "run"))
+                .as("a return in finally still overrides the try return")
+                .isEqualTo(2);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: return in finally overrides")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`choose()` at " + Fixtures.lineCol(source, offset),
+                        "both returns are rewritten; the finally assignment runs last")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void generated_labels_and_names_do_not_collide() throws Exception {
+        String source = fixtures.load("inline-aggressive/labels/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "twice(n)");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+
+        assertThat(compileAndInvoke("Foo", result, "run"))
+                .as("caller and callee labels/locals named like generated names")
+                .isEqualTo(10);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: generated labels avoid existing names")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`twice(n)` at " + Fixtures.lineCol(source, offset),
+                        "existing __inline_* labels and locals force suffixed generated names")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void captured_locals_are_renamed_consistently() throws Exception {
+        String source = fixtures.load("inline-aggressive/capture/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "pick(5)");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+
+        assertThat(compileAndInvoke("Foo", result, "run"))
+                .as("lambda, anonymous class, and local class keep the captured values")
+                .isEqualTo(111);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: captured locals renamed consistently")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`pick(5)` at " + Fixtures.lineCol(source, offset),
+                        "captured parameter and colliding local are renamed inside lambda, anonymous and local class")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void pattern_for_and_catch_variables_are_renamed() throws Exception {
+        String source = fixtures.load("inline-aggressive/pattern-for-catch/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "total(\"ab,cd\")");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+
+        assertThat(compileAndInvoke("Foo", result, "run"))
+                .as("pattern, enhanced-for, and catch variables keep their scopes")
+                .isEqualTo(20);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: pattern, for, and catch variables")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`total(\"ab,cd\")` at " + Fixtures.lineCol(source, offset),
+                        "colliding pattern, enhanced-for, and catch variables are renamed by binding")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void overload_and_this_receiver_are_resolved_by_binding() throws Exception {
+        String source = fixtures.load("inline-aggressive/overloads/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "this.pick(3)");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+
+        assertThat(compileAndInvoke("Foo", result, "run"))
+                .as("the int overload is inlined, not the String overload")
+                .isEqualTo(13);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: overload and explicit this receiver")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`this.pick(3)` at " + Fixtures.lineCol(source, offset),
+                        "binding key selects the int overload; explicit this receiver is accepted")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void simple_name_assignment_is_accepted() throws Exception {
+        String source = fixtures.load("inline-aggressive/assignment-simple/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "compute()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+
+        assertThat(compileAndInvoke("Foo", result, "run")).isEqualTo(7);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: simple-name assignment")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`compute()` at " + Fixtures.lineCol(source, offset),
+                        "assignment right-hand side with a side-effect-free simple-name left-hand side")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void type_qualified_static_call_is_accepted() throws Exception {
+        String source = fixtures.load("inline-aggressive/static-qualified/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "Foo.compute(2)");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+
+        assertThat(compileAndInvoke("Foo", result, "run")).isEqualTo(6);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: type-qualified static call")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`Foo.compute(2)` at " + Fixtures.lineCol(source, offset),
+                        "static method called through its type; same-type class initialization is unchanged")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void super_call_is_rejected() throws Exception {
+        String source = fixtures.load("inline-aggressive/unsafe-super/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "read()");
+
+        InlineRejectedException exception = assertThatExceptionOfType(InlineRejectedException.class)
+                .isThrownBy(() -> InliningEngine.inlineAt(source, "Foo.java", offset))
+                .actual();
+        assertThat(exception.getMessage()).contains("super method calls");
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline — rejected: super call")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`super.read()` at " + Fixtures.lineCol(source, offset),
+                        "super calls are not method invocations and have different dispatch semantics")
+                .diagnostic(exception.getMessage())
+                .build()
+        );
+    }
+
+    @Test
+    void constructor_call_is_rejected() throws Exception {
+        String source = fixtures.load("inline-aggressive/unsafe-constructor-call/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "new Foo()");
+
+        InlineRejectedException exception = assertThatExceptionOfType(InlineRejectedException.class)
+                .isThrownBy(() -> InliningEngine.inlineAt(source, "Foo.java", offset))
+                .actual();
+        assertThat(exception.getMessage()).contains("constructor calls");
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline — rejected: constructor call")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`new Foo()` at " + Fixtures.lineCol(source, offset),
+                        "constructors are not method calls and cannot be inlined")
+                .diagnostic(exception.getMessage())
+                .build()
+        );
+    }
+
+    @Test
+    void method_reference_is_rejected() throws Exception {
+        String source = fixtures.load("inline-aggressive/unsafe-method-reference/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "this::value");
+
+        InlineRejectedException exception = assertThatExceptionOfType(InlineRejectedException.class)
+                .isThrownBy(() -> InliningEngine.inlineAt(source, "Foo.java", offset))
+                .actual();
+        assertThat(exception.getMessage()).contains("method references");
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline — rejected: method reference")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`this::value` at " + Fixtures.lineCol(source, offset),
+                        "a method reference is not an invocation and cannot be inlined")
+                .diagnostic(exception.getMessage())
+                .build()
+        );
+    }
+
+    @Test
+    void assignment_with_side_effecting_lhs_is_rejected() throws Exception {
+        String source = fixtures.load("inline-aggressive/unsafe-assignment-lhs/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "compute()");
+
+        InlineRejectedException exception = assertThatExceptionOfType(InlineRejectedException.class)
+                .isThrownBy(() -> InliningEngine.inlineAt(source, "Foo.java", offset))
+                .actual();
+        assertThat(exception.getMessage()).contains("left-hand side must be a simple name");
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline — rejected: side-effecting assignment LHS")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`compute()` at " + Fixtures.lineCol(source, offset),
+                        "array index evaluation would be reordered relative to the inlined body")
+                .diagnostic(exception.getMessage())
+                .build()
+        );
+    }
+
+    @Test
+    void direct_recursion_is_rejected() throws Exception {
+        String source = fixtures.load("inline-aggressive/recursion-direct/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "countdown(value - 1)");
+
+        InlineRejectedException exception = assertThatExceptionOfType(InlineRejectedException.class)
+                .isThrownBy(() -> InliningEngine.inlineAt(source, "Foo.java", offset))
+                .actual();
+        assertThat(exception.getMessage()).contains("recursive call");
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline — rejected: direct recursion")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`countdown(value - 1)` at " + Fixtures.lineCol(source, offset),
+                        "inlining a call into its own declaration cannot terminate")
+                .diagnostic(exception.getMessage())
+                .build()
+        );
+    }
+
+    @Test
+    void non_completing_void_body_is_rejected() throws Exception {
+        String source = fixtures.load("inline-aggressive/non-completing/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "loop()");
+
+        InlineRejectedException exception = assertThatExceptionOfType(InlineRejectedException.class)
+                .isThrownBy(() -> InliningEngine.inlineAt(source, "Foo.java", offset))
+                .actual();
+        assertThat(exception.getMessage()).contains("cannot complete normally");
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline — rejected: non-completing void body")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`loop()` at " + Fixtures.lineCol(source, offset),
+                        "pasting an infinite loop before the return makes following code unreachable")
+                .diagnostic(exception.getMessage())
+                .build()
+        );
+    }
+
+    @Test
+    void max_transformations_stops_chain() throws Exception {
+        String source = fixtures.load("inline-aggressive/chain/input/Chain.java");
+
+        InliningResult result = InliningEngine.inlineAll(
+                source, "Chain.java", new InlineConfig(1, 100_000));
+
+        assertThat(result.transformationCount()).isEqualTo(1);
+        assertThat(result.fixedPoint()).isFalse();
+        assertCompiles("Chain", result.source());
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: maxTransformations budget stops the chain")
+                .javaSection("Input", source)
+                .refactoring("inline all", "`first`, `second`, `third`",
+                        "one transformation applied, then the maxTransformations budget stops the run")
+                .javaSection("Output", result.source())
+                .build()
+        );
+    }
+
+    @Test
+    void max_code_growth_stops_run_without_reporting_fixed_point() throws Exception {
+        String source = fixtures.load("inline-aggressive/private-simple/input/Foo.java");
+
+        InliningResult result = InliningEngine.inlineAll(
+                source, "Foo.java", new InlineConfig(100, 0));
+
+        assertThat(result.transformationCount()).isZero();
+        assertThat(result.fixedPoint()).isFalse();
+        assertThat(result.source()).isEqualTo(source);
+        assertThat(result.rejected())
+                .anySatisfy(rejection -> assertThat(rejection.reason())
+                        .contains("code growth limit exceeded"));
+    }
+
+    @Test
+    void mutual_recursion_stops_at_budget() throws Exception {
+        String source = fixtures.load("inline-aggressive/mutual-recursion/input/Mutual.java");
+
+        InliningResult result = InliningEngine.inlineAll(
+                source, "Mutual.java", new InlineConfig(4, 1_000_000));
+
+        assertThat(result.transformationCount()).isEqualTo(4);
+        assertThat(result.fixedPoint()).isFalse();
+        assertCompiles("Mutual", result.source());
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: mutual recursion stopped by budget")
+                .javaSection("Input", source)
+                .refactoring("inline all", "`first`, `second`",
+                        "mutual recursion keeps producing candidates; the maxTransformations budget stops it")
+                .javaSection("Output", result.source())
+                .build()
+        );
+    }
+
     // -------------------------------------------------------------------------
     // Compilation helpers
     // -------------------------------------------------------------------------

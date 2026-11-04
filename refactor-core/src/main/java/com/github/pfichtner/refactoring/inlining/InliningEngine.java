@@ -65,6 +65,7 @@ public final class InliningEngine {
         while (applied.size() < config.maxTransformations()) {
             CompilationUnit cu = JdtProjectSources.parseUnitWithBindings(current, unitName);
             boolean progress = false;
+            boolean budgetBlocked = false;
 
             for (MethodInvocation call : collectCalls(cu)) {
                 IMethodBinding binding = call.resolveMethodBinding();
@@ -90,6 +91,7 @@ public final class InliningEngine {
                     }
                     int growth = next.length() - source.length();
                     if (growth > config.maxCodeGrowthChars()) {
+                        budgetBlocked = true;
                         addRejection(rejected, rejectedKeys, methodName, offset,
                                 "code growth limit exceeded (" + growth + " > "
                                         + config.maxCodeGrowthChars() + " chars)");
@@ -105,7 +107,7 @@ public final class InliningEngine {
             }
 
             if (!progress) {
-                fixedPoint = true;
+                fixedPoint = !budgetBlocked;
                 break;
             }
         }

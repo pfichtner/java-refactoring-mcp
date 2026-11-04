@@ -14,16 +14,19 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.BreakStatement;
 import org.eclipse.jdt.core.dom.ChildListPropertyDescriptor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.ContinueStatement;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.LabeledStatement;
+import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.ReturnStatement;
@@ -73,6 +76,7 @@ final class InlineMethodTransformation {
         generatedAvoid.addAll(identifiers(decl.getBody()));
 
         Map<String, String> localRenames = planLocalRenames(decl.getBody(), callerNames, generatedAvoid);
+        Map<String, String> labelRenames = planLabelRenames(decl.getBody(), caller, generatedAvoid);
 
         @SuppressWarnings("unchecked")
         List<SingleVariableDeclaration> params = decl.parameters();
@@ -96,6 +100,7 @@ final class InlineMethodTransformation {
         }
 
         Block bodyCopy = (Block) ASTNode.copySubtree(ast, decl.getBody());
+        renameLabels(bodyCopy, labelRenames);
         substituteNames(ast, decl.getBody(), bodyCopy, parameterTemps, localRenames);
 
         List<ReturnStatement> returns = ownReturns(bodyCopy);
@@ -172,9 +177,14 @@ final class InlineMethodTransformation {
             return new CallSite(statement, false);
         }
         if (parent instanceof Assignment assignment
-                && assignment.getRightHandSide() == call
-                && assignment.getLeftHandSide() instanceof SimpleName
-                && assignment.getParent() instanceof ExpressionStatement statement) {
+                && assignment.getRightHandSide() == call) {
+            if (!(assignment.getLeftHandSide() instanceof SimpleName)) {
+                throw reject("assignment left-hand side must be a simple name; "
+                        + "receiver or index side effects would be reordered");
+            }
+            if (!(assignment.getParent() instanceof ExpressionStatement statement)) {
+                throw reject("assignment call must be a standalone expression statement");
+            }
             return new CallSite(statement, false);
         }
         throw reject("call is not the whole expression of a supported statement "
@@ -205,6 +215,71 @@ final class InlineMethodTransformation {
                     key -> fresh("__inline_" + variable.getName(), generatedAvoid));
         }
         return renames;
+    }
+
+    private static Map<String, String> planLabelRenames(
+            ASTNode calleeBody, MethodDeclaration caller, Set<String> generatedAvoid) {
+
+        Set<String> callerLabels = labelNames(caller.getBody());
+        Map<String, String> renames = new HashMap<>();
+        for (String label : labelNames(calleeBody)) {
+            if (callerLabels.contains(label)) {
+                renames.put(label, fresh("__inline_label_" + label, generatedAvoid));
+            }
+        }
+        return renames;
+    }
+
+    /** Label declarations in this method body, excluding nested lambdas and local methods. */
+    private static Set<String> labelNames(ASTNode body) {
+        Set<String> result = new HashSet<>();
+        body.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(LabeledStatement statement) {
+                result.add(statement.getLabel().getIdentifier());
+                return true;
+            }
+
+            @Override
+            public boolean visit(LambdaExpression statement) { return false; }
+            @Override
+            public boolean visit(MethodDeclaration statement) { return false; }
+        });
+        return result;
+    }
+
+    private static void renameLabels(ASTNode body, Map<String, String> renames) {
+        if (renames.isEmpty()) return;
+        body.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(LabeledStatement statement) {
+                renameLabelReference(statement.getLabel(), renames);
+                return true;
+            }
+
+            @Override
+            public boolean visit(BreakStatement statement) {
+                renameLabelReference(statement.getLabel(), renames);
+                return true;
+            }
+
+            @Override
+            public boolean visit(ContinueStatement statement) {
+                renameLabelReference(statement.getLabel(), renames);
+                return true;
+            }
+
+            @Override
+            public boolean visit(LambdaExpression statement) { return false; }
+            @Override
+            public boolean visit(MethodDeclaration statement) { return false; }
+        });
+    }
+
+    private static void renameLabelReference(SimpleName label, Map<String, String> renames) {
+        if (label == null) return;
+        String renamed = renames.get(label.getIdentifier());
+        if (renamed != null) label.setIdentifier(renamed);
     }
 
     private static void substituteNames(

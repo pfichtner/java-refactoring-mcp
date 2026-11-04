@@ -38,6 +38,8 @@ The working rule stays:
 
 ## Phase 1 — Harden the spike
 
+Status: complete. `InliningEngineTest` has 26 tests; full reactor is green on JDK 21.
+
 ### Work
 
 1. Add regression fixtures for:
@@ -234,7 +236,8 @@ Resolve these before the phase that needs them:
 1. Cross-class static inlining: how to preserve class initialization triggers.
 2. Explicit receiver support: when is substituting `this` provably safe.
 3. Method removal: opt-in flag versus always keeping declarations.
-4. Formatting: rely on JDT default output or add a formatter step.
+4. Formatting: decided to keep JDT output and document mixed/compact formatting; no
+   formatter in Phase 1.
 5. Public operation name and whether an existing tool receives an `aggressive` mode.
 6. Batch strategy: non-overlapping edits per pass versus re-parse after every edit.
 7. Whether a final compile check requires a user-supplied classpath and how failure

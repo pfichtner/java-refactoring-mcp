@@ -1,6 +1,7 @@
 # Aggressive Java Inlining — Investigation and Technical Spike
 
-Status: investigation + isolated prototype. No existing public API was changed.
+Status: Phase 1 hardening complete; isolated prototype, not yet wired into CLI/MCP.
+No existing public API was changed.
 
 Central question:
 
@@ -230,7 +231,9 @@ is preserved. Cross-object locking requires alias analysis and is out of scope.
 - Returns inside lambdas or nested/anonymous methods are not rewritten.
 - `break`/`continue` inside loops and switches in the body remain bound to those
   constructs.
-- Generated labels are fresh against all identifiers in caller and callee.
+- Generated labels are fresh against all identifiers in caller and callee. Callee
+  labels that collide with caller labels are renamed together with their
+  `break`/`continue` references.
 
 ### 3.9 Access and initialization order
 
@@ -345,13 +348,20 @@ over "we ran out of budget".
 
 ### 5.1 Implemented transformations
 
-- Simple private method call.
-- Method with local variables.
-- Method with multiple return statements.
+- Simple private method call, static call through the type, and explicit `this`
+  receiver resolved by binding.
+- Method with local variables, multiple returns, `try/finally`, and existing labels.
+- Locals captured by lambdas, anonymous classes, and local classes.
+- Pattern variables, enhanced-for variables, and catch parameters.
 - Side-effecting argument used multiple times (captured once).
+- Simple-name assignment right-hand side.
 - Iterative chain `first → second → third` until fixed point.
+- Budget stops for `maxTransformations` and `maxCodeGrowthChars`, including mutual
+  recursion.
 - Explicit rejection of synchronized methods, explicit receivers, checked
-  exceptions, and nested-expression call positions.
+  exceptions, nested-expression call positions, `super`/constructor calls, method
+  references, side-effecting assignment left-hand sides, direct recursion, and
+  non-completing bodies.
 
 ### 5.2 Algorithm
 
@@ -360,11 +370,13 @@ For a value-returning call at a supported statement root:
 1. Bind each argument to a fresh local of the formal parameter's type.
 2. Copy the callee body with `ASTNode.copySubtree`.
 3. Rename callee locals only when their names collide with caller-visible names.
-4. Replace parameter uses with the captured locals, using binding keys from the
+4. Rename callee labels that collide with caller labels, including their
+   `break`/`continue` references.
+5. Replace parameter uses with the captured locals, using binding keys from the
    original body.
-5. Create a result local of the declared return type.
-6. Rewrite each own `return expr` into `result = expr; break label;`.
-7. Insert the argument/results statements before the containing statement and replace
+6. Create a result local of the declared return type.
+7. Rewrite each own `return expr` into `result = expr; break label;`.
+8. Insert the argument/results statements before the containing statement and replace
    the call expression with the result local.
 
 Void calls replace the expression statement with the copied body. Early returns use
@@ -374,18 +386,19 @@ the same labeled break so they exit the whole inlined body, not just an inner lo
 
 `refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.java`
 
-- 9 approval/semantic tests.
+- 26 approval/semantic tests.
 - Successful outputs are compiled with the JDK compiler.
-- The side-effect test compiles and invokes both original and transformed classes,
-  proving `increment()` runs once.
-- The chain test compiles and invokes the transformed entry point, and asserts a
-  fixed point after three transformations.
+- Runtime tests compile and invoke original and transformed classes, covering
+  side-effecting arguments, `try/finally` ordering, captures, labels, overloads, and
+  static calls.
+- The chain test asserts a fixed point after three transformations; budget tests assert
+  the applied count and fixed-point flag.
 - Rejections assert the diagnostic fragment and record it in approved markdown.
 
 Fixtures live under
 `refactor-core/src/test/resources/fixtures/inline-aggressive/`.
 
-The full Maven test suite passes: 237 core + 84 CLI + 89 MCP tests.
+The full Maven test suite passes: 254 core + 84 CLI + 89 MCP tests.
 
 ### 5.4 What the spike proves
 
@@ -429,22 +442,18 @@ Implemented but intentionally narrow:
 - No data-flow purity analysis; every argument gets a temporary.
 - Method-level generics and varargs are rejected.
 - `synchronized` methods and checked exceptions are rejected.
-- Formatting is not normalised; inserted code can mix tabs and spaces.
-- The accepted return/`finally` interaction is reasoned about but should get dedicated
-  fixtures before production use.
+- Formatting is not normalised; inserted code can mix tabs and spaces, and modified
+  copied bodies may fall back to compact JDT formatting. The approved output is the
+  spec, so downstream edits stay AST-based.
 - The spike does not perform a final project compile; tests compile individual outputs.
 
 Known edge cases to test before promotion:
 
-- `try/finally` with returns in both try and finally.
-- Local/inner/anonymous classes capturing renamed locals and parameters.
-- Pattern variables, enhanced-for variables, catch parameters.
-- Labels already present in the body or caller.
+- Bridge methods.
+- Static imports.
 - Method invocation inside an argument of the same method.
-- Overloads and bridge methods.
-- Static imports and type-qualified static calls.
 - Initialization order for cross-class static calls.
-- Very large method bodies and code-growth limits.
+- Very large method bodies.
 
 ---
 
@@ -487,8 +496,8 @@ Known edge cases to test before promotion:
 
 ### Roadmap
 
-1. **Harden the spike**: finish statement positions (including assignment LHS
-   side-effect checks), add `try/finally`, capture, label, and overload fixtures,
+1. **Harden the spike** (complete): finish statement positions (including assignment
+   LHS side-effect checks), add `try/finally`, capture, label, and overload fixtures,
    add final compile verification for every approved output.
 2. **Project model**: move from one `CompilationUnit` to `JavaProject` parsing,
    add `ImportRewrite`, apply a batch of non-overlapping transformations per pass.
@@ -502,6 +511,6 @@ Known edge cases to test before promotion:
 7. **Adapters**: expose an opt-in aggressive operation through CLI and MCP once the
    engine API and diagnostics are stable.
 
-The next implementation phase should be items 1–2. They add real capability without
-weakening the semantic gate, and they convert the spike into a usable project-wide
-engine while preserving the existing public APIs.
+The next implementation phase should be item 2. It adds real capability without
+weakening the semantic gate, and converts the spike into a usable project-wide engine
+while preserving the existing public APIs.
