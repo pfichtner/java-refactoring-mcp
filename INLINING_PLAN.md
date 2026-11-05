@@ -76,7 +76,11 @@ Status: complete. `InliningEngineTest` has 26 tests; full reactor is green on JD
 
 ---
 
-## Phase 2 — Project-wide parsing and imports
+## Phase 2 — Project-wide same-type parsing
+
+Status: complete for the same-type scope. Import rewriting and cross-type inlining are
+deferred to the next step; cross-type calls are explicitly rejected.
+`ProjectInliningEngineTest` has 6 tests; full reactor is green on JDK 21.
 
 ### Work
 
@@ -84,26 +88,32 @@ Status: complete. `InliningEngineTest` has 26 tests; full reactor is green on JD
    by `JavaProject` and `JdtProjectSources.parseAll`.
 2. Locate candidate calls across all parsed units using bindings, not source text.
 3. Introduce a shared import-rewriting step (`ImportRewrite` or equivalent) for
-   cross-package types copied into a caller.
+   cross-package types copied into a caller. **Deferred**: same-type calls already have
+   the callee's imports in scope.
 4. Keep the first project-wide scope conservative:
    - same type across files;
    - private/final/static methods only;
    - no constructor or structural inlining.
 5. Apply a batch of non-overlapping transformations per pass, then re-parse once.
-   Fall back to one-at-a-time only when positions overlap.
+   The file is the non-overlapping batch unit: one candidate per file per pass.
 6. Keep a deterministic candidate order so approvals stay stable.
 7. Return a per-file change map plus diagnostics.
 
 ### Acceptance
 
-- Multi-file fixtures prove the same-type restriction and import correctness.
+- Multi-file fixtures prove the same-type restriction.
 - Applying the engine does not modify files during analyze/dry-run.
 - Batched passes produce the same result as one-at-a-time on the fixtures.
 - Full reactor passes.
 
 ### Commit
 
-`feat(inlining): support project-wide inlining with import rewriting`
+`feat(inlining): add project-wide same-type inlining`
+
+### Deferred
+
+Cross-type/cross-package inlining, import rewriting, and the class-initialization
+check move together to the next step.
 
 ---
 
@@ -218,7 +228,7 @@ export JAVA_HOME=/tmp/jdk21
 export PATH=/tmp/jdk21/bin:$PATH
 
 # Focused
-mvn -pl refactor-core -Dtest=InliningEngineTest test
+mvn -pl refactor-core -Dtest=InliningEngineTest,ProjectInliningEngineTest test
 
 # Full reactor
 mvn test
@@ -239,7 +249,8 @@ Resolve these before the phase that needs them:
 4. Formatting: decided to keep JDT output and document mixed/compact formatting; no
    formatter in Phase 1.
 5. Public operation name and whether an existing tool receives an `aggressive` mode.
-6. Batch strategy: non-overlapping edits per pass versus re-parse after every edit.
+6. Batch strategy: resolved for project runs as one candidate per file per pass, then
+   re-parse once. Multiple candidates in one file still wait for later passes.
 7. Whether a final compile check requires a user-supplied classpath and how failure
    is reported.
 

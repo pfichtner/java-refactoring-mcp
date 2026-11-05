@@ -441,6 +441,12 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Move static without widen_visibility: private modifier preserved | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveStaticMemberTest.no_widen_visibility_keeps_private_modifier.approved.md) |
 | Move static with widen_visibility (same package): private → package-private | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveStaticMemberTest.widen_visibility_changes_private_to_package_private_same_package.approved.md) |
 
+### Project inlining engine
+| Test case | Approval |
+|-----------|----------|
+| Project inline — rejected: cross-type call | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_call_is_rejected.approved.md) |
+| Project inline: same-type methods across files | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.same_type_methods_are_inlined_across_files.approved.md) |
+
 ### Promote to field
 | Test case | Approval |
 |-----------|----------|

@@ -1,7 +1,8 @@
 # Aggressive Java Inlining — Investigation and Technical Spike
 
-Status: Phase 1 hardening complete; isolated prototype, not yet wired into CLI/MCP.
-No existing public API was changed.
+Status: Phase 1 hardening and Phase 2 project-wide same-type inlining are complete.
+Cross-type inlining and import rewriting are deliberately deferred. The engine is an
+isolated prototype, not yet wired into CLI/MCP. No existing public API was changed.
 
 Central question:
 
@@ -274,7 +275,8 @@ com.github.pfichtner.refactoring.inlining
 ├── SemanticSafetyAnalyzer         local semantic proof / rejection
 ├── InliningSupport                AST navigation shared by the above
 ├── InlineConfig                   budgets
-├── InliningResult                 applied + rejected + fixed-point status
+├── InliningResult                 single-CU applied + rejected + fixed-point status
+├── ProjectInliningResult          per-file changes, applied + rejected, fixed-point
 └── InlineRejectedException        diagnostic for refused transformations
 ```
 
@@ -299,7 +301,7 @@ continues to hold.
 | `SemanticSafetyAnalyzer` | Central safety gate | Implemented for the spike subset |
 | `CallGraphAnalyzer` | Recursion, dispatch, reachability | Not implemented; direct recursion only |
 | `DataFlowAnalyzer` | Multiple evaluation, purity, definite assignment | Argument capture only |
-| `IterativeInliningOptimizer` | Fixed-point/budgeted scheduler | `inlineAll` (reparse per pass) |
+| `IterativeInliningOptimizer` | Fixed-point/budgeted scheduler | `inlineAll` (single CU) and `inlineProject` (project, same-type) |
 
 ### 4.3 Iterative pipeline
 
@@ -310,18 +312,24 @@ continues to hold.
 5. Re-parse (fresh bindings and source positions).
 6. Repeat until no candidate applies or a budget is exhausted.
 
-The spike deliberately applies one transformation per pass. That is correct and easy
-to reason about, but O(passes × files). The production optimizer should apply a batch
-of non-overlapping candidates per pass and re-parse once, or maintain a binding-aware
-index between passes. Correctness must be validated by a final re-parse plus compile
-check when a classpath is available.
+`inlineAll` deliberately applies one transformation per pass. That is correct and easy
+to reason about, but O(passes × files). `inlineProject` applies at most one
+non-overlapping transformation per file per pass, then re-parses all files once. Because
+a file is the unit of rewriting, edits in different files cannot overlap; a second
+candidate in the same file waits for the next pass. Correctness must be validated by a
+final re-parse plus compile check when a classpath is available.
+
+Project sources are snapshotted into a temporary tree for each parse pass, because
+`JdtProjectSources.parseAll` reads from disk. The original files are never touched; the
+temporary tree is mapped back to the original paths and deleted after parsing.
 
 ### 4.4 Budgets
 
 Implemented now:
 
-- `maxTransformations`
-- `maxCodeGrowthChars` (total growth relative to the original source)
+- `maxTransformations` (per single-CU run, project-wide for `inlineProject`)
+- `maxCodeGrowthChars` (per single-CU run; total project growth relative to the
+  original sources for `inlineProject`)
 
 Proposed next:
 
@@ -356,8 +364,12 @@ over "we ran out of budget".
 - Side-effecting argument used multiple times (captured once).
 - Simple-name assignment right-hand side.
 - Iterative chain `first → second → third` until fixed point.
+- Project-wide same-type inlining across files, with one candidate per file per pass
+  and a fixed point after all call sites are gone.
+- Project-wide cross-type calls are rejected with
+  `cross-type inlining is not supported by the spike`; import rewriting is deferred.
 - Budget stops for `maxTransformations` and `maxCodeGrowthChars`, including mutual
-  recursion.
+  recursion and project-wide growth.
 - Explicit rejection of synchronized methods, explicit receivers, checked
   exceptions, nested-expression call positions, `super`/constructor calls, method
   references, side-effecting assignment left-hand sides, direct recursion, and
@@ -382,6 +394,20 @@ For a value-returning call at a supported statement root:
 Void calls replace the expression statement with the copied body. Early returns use
 the same labeled break so they exit the whole inlined body, not just an inner loop.
 
+Project-wide (`inlineProject`):
+
+1. Snapshot all current sources into a temporary tree mirroring the project source
+   roots.
+2. Parse all units once with `JdtProjectSources.parseAll`.
+3. Build a declaration index keyed by `IMethodBinding.getMethodDeclaration().getKey()`.
+4. Visit calls in deterministic order: files sorted by normalized path, calls in
+   reverse AST order within a file.
+5. Apply the first safe candidate per file, then re-parse once for the next pass.
+6. Repeat until no candidate applies or a budget stops the loop.
+
+Same-type candidates share a compilation unit, so the callee's imports are already in
+scope. This is why import rewriting is not needed until cross-type inlining is enabled.
+
 ### 5.3 Tests
 
 `refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.java`
@@ -395,10 +421,20 @@ the same labeled break so they exit the whole inlined body, not just an inner lo
   the applied count and fixed-point flag.
 - Rejections assert the diagnostic fragment and record it in approved markdown.
 
-Fixtures live under
-`refactor-core/src/test/resources/fixtures/inline-aggressive/`.
+`refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.java`
 
-The full Maven test suite passes: 254 core + 84 CLI + 89 MCP tests.
+- 6 approval/semantic tests for project-wide runs.
+- Same-type fixture: two files change, both outputs compile and run.
+- Cross-type fixture: no changes, explicit rejection diagnostic.
+- Batch equivalence: project result for each file equals single-file `inlineAll`.
+- Dry-run: fixture bytes are unchanged on disk.
+- Budgets: `maxTransformations` and project-wide `maxCodeGrowthChars`.
+
+Fixtures live under
+`refactor-core/src/test/resources/fixtures/inline-aggressive/` and
+`refactor-core/src/test/resources/fixtures/projects/inline-aggressive-project/`.
+
+The full Maven test suite passes: 260 core + 84 CLI + 89 MCP + 13 demo tests (446 total).
 
 ### 5.4 What the spike proves
 
@@ -406,6 +442,8 @@ The full Maven test suite passes: 254 core + 84 CLI + 89 MCP tests.
 - Multiple returns and argument side effects can be handled without text replacement.
 - A conservative safety gate can reject the cases the implementation does not model.
 - Iterative inlining can reach a fixed point by re-parsing after each application.
+- Project-wide same-type inlining can run deterministically without touching project
+  files during analysis.
 
 ---
 
@@ -432,12 +470,14 @@ engine.
 
 Implemented but intentionally narrow:
 
-- Single compilation unit, single named type, same-type calls only.
+- Same-type calls only. Single-CU runs handle one named type; project runs resolve
+  calls across all files but still reject cross-type callers/callees.
 - Calls must be the whole expression of a variable initializer, return, simple
   assignment, or expression statement.
 - No direct expression substitution; all value calls are hoisted.
 - No declaration removal or unused-method cleanup.
-- No cross-file import management, no project-wide loop.
+- No cross-file import management. Cross-type inlining, including the class
+  initialization check, is deferred until import rewriting exists.
 - No call graph beyond direct recursion; mutual recursion is stopped only by budget.
 - No data-flow purity analysis; every argument gets a temporary.
 - Method-level generics and varargs are rejected.
@@ -445,7 +485,8 @@ Implemented but intentionally narrow:
 - Formatting is not normalised; inserted code can mix tabs and spaces, and modified
   copied bodies may fall back to compact JDT formatting. The approved output is the
   spec, so downstream edits stay AST-based.
-- The spike does not perform a final project compile; tests compile individual outputs.
+- The engine does not perform a final project compile; tests compile single outputs
+  and the changed project sources with the JDK compiler.
 
 Known edge cases to test before promotion:
 
@@ -468,11 +509,13 @@ Known edge cases to test before promotion:
 - Multiple value returns via result temporary and labeled break.
 - Argument capture with exactly-once evaluation.
 - Iterative fixed-point inlining of a call chain.
+- Project-wide same-type inlining across files, one candidate per file per pass.
 - Semantic rejection with diagnostics for the unsafe subset.
 
 **Technically feasible, not implemented**
 
-- Project-wide/cross-file method inlining with import rewriting.
+- Cross-type/cross-package method inlining with import rewriting and class
+  initialization analysis.
 - Explicit receiver inlining by binding the receiver to a temporary and substituting
   `this` carefully.
 - Getter, constant, final-field, parameter, and temporary inlining.
@@ -499,8 +542,9 @@ Known edge cases to test before promotion:
 1. **Harden the spike** (complete): finish statement positions (including assignment
    LHS side-effect checks), add `try/finally`, capture, label, and overload fixtures,
    add final compile verification for every approved output.
-2. **Project model**: move from one `CompilationUnit` to `JavaProject` parsing,
-   add `ImportRewrite`, apply a batch of non-overlapping transformations per pass.
+2. **Project model** (partial): project-wide same-type `JavaProject` parsing and
+   one-candidate-per-file batching are complete. Next: `ImportRewrite`, cross-type
+   inlining, and the class initialization check.
 3. **Data flow**: purity and multiple-evaluation analysis; argument capture only when
    needed; receiver capture; enable direct expression substitution safely.
 4. **Call graph**: recursion (direct and mutual), dispatch, reachability, unused
@@ -511,6 +555,6 @@ Known edge cases to test before promotion:
 7. **Adapters**: expose an opt-in aggressive operation through CLI and MCP once the
    engine API and diagnostics are stable.
 
-The next implementation phase should be item 2. It adds real capability without
-weakening the semantic gate, and converts the spike into a usable project-wide engine
-while preserving the existing public APIs.
+The next implementation phase is the cross-type remainder of item 2: import rewriting,
+cross-package inlining, and the class initialization check. Same-type project-wide
+inlining already works without weakening the semantic gate.
