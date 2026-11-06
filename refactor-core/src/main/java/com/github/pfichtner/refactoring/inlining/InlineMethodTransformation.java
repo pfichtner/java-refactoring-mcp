@@ -24,6 +24,7 @@ import org.eclipse.jdt.core.dom.ContinueStatement;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.LabeledStatement;
 import org.eclipse.jdt.core.dom.LambdaExpression;
@@ -142,6 +143,10 @@ final class InlineMethodTransformation {
             }
             rewrite.replace(call, ast.newSimpleName(resultName), null);
         }
+
+        IMethodBinding callerBinding = caller.resolveBinding();
+        ITypeBinding callerType = callerBinding == null ? null : callerBinding.getDeclaringClass();
+        InlineImports.create(cu, decl, callerType).insertInto(rewrite, cu);
         return applyRewrite(cu, source, rewrite);
     }
 

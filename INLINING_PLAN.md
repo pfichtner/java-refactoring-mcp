@@ -78,18 +78,18 @@ Status: complete. `InliningEngineTest` has 26 tests; full reactor is green on JD
 
 ## Phase 2 — Project-wide same-type parsing
 
-Status: complete for the same-type scope. Import rewriting and cross-type inlining are
-deferred to the next step; cross-type calls are explicitly rejected.
-`ProjectInliningEngineTest` has 6 tests; full reactor is green on JDK 21.
+Status: complete for the same-type and cross-type instance scope. Static cross-type
+inlining and class-initialization analysis remain deferred.
+`ProjectInliningEngineTest` has 11 tests; full reactor is green on JDK 21.
 
 ### Work
 
 1. Replace the single-`CompilationUnit` entry point with a project-level engine driven
    by `JavaProject` and `JdtProjectSources.parseAll`.
 2. Locate candidate calls across all parsed units using bindings, not source text.
-3. Introduce a shared import-rewriting step (`ImportRewrite` or equivalent) for
-   cross-package types copied into a caller. **Deferred**: same-type calls already have
-   the callee's imports in scope.
+3. Introduce an import step for cross-package types copied into a caller. Same-type
+   calls already have the callee's imports in scope; cross-type calls use
+   `InlineImports` to add AST import nodes and reject simple-name conflicts.
 4. Keep the first project-wide scope conservative:
    - same type across files;
    - private/final/static methods only;
@@ -110,10 +110,22 @@ deferred to the next step; cross-type calls are explicitly rejected.
 
 `feat(inlining): add project-wide same-type inlining`
 
+### Phase 2b — Cross-type instance inlining
+
+Status: complete. Commit: `feat(inlining): support cross-type instance inlining`.
+
+- Accept inherited final/private instance methods declared on a caller supertype.
+- Reject cross-type static calls pending a class-initialization check.
+- Reject generic declaring types, bodies using `super` or qualified `this`, and
+  inaccessible types/members.
+- Add normal and static imports with `InlineImports`; reject simple-name conflicts.
+- Fixtures: successful cross-type instance and static-import runs; rejected static
+  call, `super`, private member, and import conflict.
+
 ### Deferred
 
-Cross-type/cross-package inlining, import rewriting, and the class-initialization
-check move together to the next step.
+Cross-type static inlining and the class-initialization check move together to a later
+step.
 
 ---
 

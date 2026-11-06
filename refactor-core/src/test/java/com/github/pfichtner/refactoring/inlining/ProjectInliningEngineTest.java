@@ -56,7 +56,56 @@ class ProjectInliningEngineTest {
     }
 
     @Test
-    void cross_type_call_is_rejected() throws Exception {
+    void cross_type_instance_method_is_inlined_with_import() throws Exception {
+        MavenProject project = project("cross-type-instance");
+        Map<String, String> inputs = inputs("cross-type-instance");
+
+        ProjectInliningResult result = InliningEngine.inlineProject(project);
+
+        assertThat(result.changedFiles()).hasSize(1);
+        assertThat(result.transformationCount()).isEqualTo(1);
+        assertThat(result.fixedPoint()).isTrue();
+
+        Map<String, String> sources = merged(inputs, result.changedFiles());
+        Path classes = compileProject(sources);
+        assertThat(invoke(classes, "com.example.app.App", "run")).hasToString("PT2S");
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Project inline: cross-type instance method and import")
+                .inputProject(inputs)
+                .refactoring("inline project", "`defaultDuration()`",
+                        "the inherited final method is inlined into the subclass; the Duration import is added to the caller")
+                .outputProject(result.changedFiles())
+                .build()
+        );
+    }
+
+    @Test
+    void cross_type_static_import_is_added_to_caller() throws Exception {
+        MavenProject project = project("cross-type-static-import");
+        Map<String, String> inputs = inputs("cross-type-static-import");
+
+        ProjectInliningResult result = InliningEngine.inlineProject(project);
+
+        assertThat(result.changedFiles()).hasSize(1);
+        assertThat(result.transformationCount()).isEqualTo(1);
+
+        Map<String, String> sources = merged(inputs, result.changedFiles());
+        Path classes = compileProject(sources);
+        assertThat(invoke(classes, "com.example.app.App", "run")).isEqualTo(5);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Project inline: cross-type static import")
+                .inputProject(inputs)
+                .refactoring("inline project", "`magnitude(-5)`",
+                        "the copied body calls the statically imported Math.abs; the caller gets the same static import")
+                .outputProject(result.changedFiles())
+                .build()
+        );
+    }
+
+    @Test
+    void cross_type_static_call_is_rejected() throws Exception {
         MavenProject project = project("cross-type");
         Map<String, String> inputs = inputs("cross-type");
 
@@ -66,13 +115,70 @@ class ProjectInliningEngineTest {
         assertThat(result.transformationCount()).isZero();
         assertThat(result.rejected())
                 .anySatisfy(rejection -> assertThat(rejection.reason())
-                        .contains("cross-type inlining is not supported"));
+                        .contains("cross-type static inlining would remove the class-initialization trigger"));
 
         Approvals.verify(
-            RefactoringStoryBoard.titled("Project inline — rejected: cross-type call")
+            RefactoringStoryBoard.titled("Project inline — rejected: cross-type static call")
                 .inputProject(inputs)
                 .refactoring("inline project", "`Beta.compute(3)`",
-                        "the callee lives in another type; import rewriting is deferred")
+                        "the callee is static in another type; inlining would remove its class-initialization trigger")
+                .diagnostic(result.rejected().get(0).reason())
+                .build()
+        );
+    }
+
+    @Test
+    void cross_type_super_usage_is_rejected() throws Exception {
+        ProjectInliningResult result = InliningEngine.inlineProject(project("cross-type-super"));
+
+        assertThat(result.changedFiles()).isEmpty();
+        assertThat(result.rejected())
+                .anySatisfy(rejection -> assertThat(rejection.reason())
+                        .contains("cross-type callee body uses 'super'"));
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Project inline — rejected: cross-type body uses super")
+                .inputProject(inputs("cross-type-super"))
+                .refactoring("inline project", "`describe()`",
+                        "the copied body contains a super call; it would bind to App's superclass")
+                .diagnostic(result.rejected().get(0).reason())
+                .build()
+        );
+    }
+
+    @Test
+    void cross_type_private_member_is_rejected() throws Exception {
+        ProjectInliningResult result = InliningEngine.inlineProject(project("cross-type-private"));
+
+        assertThat(result.changedFiles()).isEmpty();
+        assertThat(result.rejected())
+                .anySatisfy(rejection -> assertThat(rejection.reason())
+                        .contains("cross-type callee references private field"));
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Project inline — rejected: cross-type private member")
+                .inputProject(inputs("cross-type-private"))
+                .refactoring("inline project", "`peek()`",
+                        "the copied body reads a private field of the superclass; the subclass cannot access it")
+                .diagnostic(result.rejected().get(0).reason())
+                .build()
+        );
+    }
+
+    @Test
+    void cross_type_import_conflict_is_rejected() throws Exception {
+        ProjectInliningResult result = InliningEngine.inlineProject(project("cross-type-conflict"));
+
+        assertThat(result.changedFiles()).isEmpty();
+        assertThat(result.rejected())
+                .anySatisfy(rejection -> assertThat(rejection.reason())
+                        .contains("import conflict"));
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Project inline — rejected: cross-type import conflict")
+                .inputProject(inputs("cross-type-conflict"))
+                .refactoring("inline project", "`defaultSeconds()`",
+                        "the callee needs java.time.Duration, but the caller already imports a different Duration")
                 .diagnostic(result.rejected().get(0).reason())
                 .build()
         );

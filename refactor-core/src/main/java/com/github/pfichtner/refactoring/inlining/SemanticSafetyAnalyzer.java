@@ -6,19 +6,33 @@ import static com.github.pfichtner.refactoring.inlining.InliningSupport.isVoid;
 import static com.github.pfichtner.refactoring.inlining.InliningSupport.ownReturns;
 import static org.eclipse.jdt.core.dom.Modifier.isFinal;
 import static org.eclipse.jdt.core.dom.Modifier.isPrivate;
+import static org.eclipse.jdt.core.dom.Modifier.isProtected;
+import static org.eclipse.jdt.core.dom.Modifier.isPublic;
 import static org.eclipse.jdt.core.dom.Modifier.isStatic;
 import static org.eclipse.jdt.core.dom.Modifier.isSynchronized;
 
+import java.util.List;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.IPackageBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.ReturnStatement;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.SuperFieldAccess;
+import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 import org.eclipse.jdt.core.dom.ThisExpression;
 
 /**
@@ -73,9 +87,11 @@ final class SemanticSafetyAnalyzer {
         if (declaringType == null || callType == null) {
             return "cannot determine the enclosing named types";
         }
-        if (!declaringType.getTypeDeclaration().getKey()
-                .equals(callType.getTypeDeclaration().getKey())) {
-            return "cross-type inlining is not supported by the spike";
+        boolean sameType = declaringType.getTypeDeclaration().getKey()
+                .equals(callType.getTypeDeclaration().getKey());
+        if (!sameType) {
+            String crossType = crossTypeRejection(decl, binding, callType, declaringType);
+            if (crossType != null) return crossType;
         }
 
         Expression receiver = call.getExpression();
@@ -109,6 +125,157 @@ final class SemanticSafetyAnalyzer {
             }
         }
         return null;
+    }
+
+    private static String crossTypeRejection(
+            MethodDeclaration decl, IMethodBinding binding,
+            ITypeBinding callType, ITypeBinding declaringType) {
+
+        if (isStatic(binding.getModifiers())) {
+            return "cross-type static inlining would remove the class-initialization trigger; "
+                    + "static cross-type inlining is not supported by the spike";
+        }
+        if (!callType.isSubTypeCompatible(declaringType)) {
+            return "cross-type callee is not a supertype of the caller; 'this' would change";
+        }
+        if (declaringType.getTypeDeclaration().getTypeParameters().length > 0) {
+            return "generic declaring types are not supported by cross-type inlining";
+        }
+        String superUsage = superOrQualifiedThis(decl.getBody());
+        if (superUsage != null) return superUsage;
+        String signature = inaccessibleSignature(decl, callType);
+        if (signature != null) return signature;
+        return inaccessibleBody(decl.getBody(), callType);
+    }
+
+    private static String superOrQualifiedThis(Block body) {
+        String[] reason = {null};
+        body.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(SuperMethodInvocation node) {
+                reason[0] = "cross-type callee body uses 'super'; it would bind to the caller's superclass";
+                return false;
+            }
+
+            @Override
+            public boolean visit(SuperFieldAccess node) {
+                reason[0] = "cross-type callee body uses 'super'; it would bind to the caller's superclass";
+                return false;
+            }
+
+            @Override
+            public boolean visit(ThisExpression node) {
+                if (node.getQualifier() != null) {
+                    reason[0] = "cross-type callee body uses qualified 'this'; the enclosing instance would change";
+                }
+                return reason[0] == null;
+            }
+        });
+        return reason[0];
+    }
+
+    @SuppressWarnings("unchecked")
+    private static String inaccessibleSignature(MethodDeclaration decl, ITypeBinding callerType) {
+        List<SingleVariableDeclaration> params = decl.parameters();
+        for (SingleVariableDeclaration param : params) {
+            String reason = inaccessibleType(param.getType().resolveBinding(), callerType);
+            if (reason != null) return reason;
+        }
+        if (decl.getReturnType2() != null) {
+            return inaccessibleType(decl.getReturnType2().resolveBinding(), callerType);
+        }
+        return null;
+    }
+
+    private static String inaccessibleBody(Block body, ITypeBinding callerType) {
+        String[] reason = {null};
+        body.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(SimpleName name) {
+                if (reason[0] != null) return false;
+                IBinding binding = name.resolveBinding();
+                if (binding instanceof ITypeBinding type) {
+                    reason[0] = inaccessibleType(type, callerType);
+                } else if (binding instanceof IMethodBinding method) {
+                    reason[0] = inaccessibleMember(
+                            "method", method.getDeclaringClass(), method.getModifiers(), name, callerType);
+                } else if (binding instanceof IVariableBinding variable
+                        && (variable.isField() || variable.isEnumConstant())) {
+                    reason[0] = inaccessibleMember(
+                            "field", variable.getDeclaringClass(), variable.getModifiers(), name, callerType);
+                }
+                return reason[0] == null;
+            }
+        });
+        return reason[0];
+    }
+
+    private static String inaccessibleType(ITypeBinding type, ITypeBinding callerType) {
+        if (type == null) return null;
+        if (type.isArray()) return inaccessibleType(type.getElementType(), callerType);
+        if (type.isPrimitive() || type.isTypeVariable() || type.isWildcardType()
+                || type.isCapture() || type.isNullType() || type.isLocal() || type.isAnonymous()) {
+            return null;
+        }
+        ITypeBinding declaration = type.getTypeDeclaration();
+        if (declaration == null) return null;
+        if (isPrivate(declaration.getModifiers())) {
+            return "cross-type callee references private type " + declaration.getQualifiedName();
+        }
+        if (!samePackage(declaration, callerType) && !isPublic(declaration.getModifiers())) {
+            return "cross-type callee references inaccessible type "
+                    + declaration.getQualifiedName();
+        }
+        ITypeBinding enclosing = declaration.getDeclaringClass();
+        return enclosing == null ? null : inaccessibleType(enclosing, callerType);
+    }
+
+    private static String inaccessibleMember(
+            String kind, ITypeBinding declaring, int modifiers,
+            SimpleName name, ITypeBinding callerType) {
+
+        if (declaring == null) return null;
+        ITypeBinding declaration = declaring.getTypeDeclaration();
+        String typeReason = inaccessibleType(declaration, callerType);
+        if (typeReason != null) return typeReason;
+
+        String memberName = declaration.getQualifiedName() + "." + name.getIdentifier();
+        if (isPrivate(modifiers)) {
+            return "cross-type callee references private " + kind + " " + memberName;
+        }
+        if (samePackage(declaration, callerType)) return null;
+        if (isPublic(modifiers)) return null;
+        if (isProtected(modifiers) && callerType.isSubTypeCompatible(declaration)
+                && protectedAccessThroughThisOrUnqualified(name)) {
+            return null;
+        }
+        return "cross-type callee references inaccessible " + kind + " " + memberName;
+    }
+
+    private static boolean protectedAccessThroughThisOrUnqualified(SimpleName name) {
+        ASTNode parent = name.getParent();
+        if (parent instanceof MethodInvocation invocation) {
+            return invocation.getName() == name
+                    && (invocation.getExpression() == null
+                            || invocation.getExpression() instanceof ThisExpression);
+        }
+        if (parent instanceof FieldAccess access) {
+            return access.getName() == name
+                    && access.getExpression() instanceof ThisExpression;
+        }
+        if (parent instanceof SuperFieldAccess
+                || parent instanceof SuperMethodInvocation
+                || parent instanceof QualifiedName) {
+            return false;
+        }
+        return true;
+    }
+
+    private static boolean samePackage(ITypeBinding a, ITypeBinding b) {
+        IPackageBinding packageA = a.getPackage();
+        IPackageBinding packageB = b.getPackage();
+        if (packageA == null || packageB == null) return packageA == packageB;
+        return packageA.getName().equals(packageB.getName());
     }
 
     private static boolean isTypeExpression(Expression expression) {

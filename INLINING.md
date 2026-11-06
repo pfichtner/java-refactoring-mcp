@@ -1,8 +1,9 @@
 # Aggressive Java Inlining — Investigation and Technical Spike
 
-Status: Phase 1 hardening and Phase 2 project-wide same-type inlining are complete.
-Cross-type inlining and import rewriting are deliberately deferred. The engine is an
-isolated prototype, not yet wired into CLI/MCP. No existing public API was changed.
+Status: Phase 1 hardening and Phase 2 project-wide same-type and cross-type instance
+inlining are complete. Cross-type static inlining, class-initialization analysis, and
+CLI/MCP wiring remain deferred. The engine is an isolated prototype, not yet wired into
+CLI/MCP. No existing public API was changed.
 
 Central question:
 
@@ -67,8 +68,9 @@ Existing operations follow the same shape:
 - Existing operations do not run a formatter. Copied nodes keep their original
   formatting; inserted nodes use JDT's default formatting (sometimes tabs).
 - Imports are currently handled ad hoc by operations that introduce a type
-  (`JdtMoveClass`, etc.). There is no shared `ImportRewrite` layer yet. This matters
-  for cross-file aggressive inlining and should be added before project-wide inlining.
+  (`JdtMoveClass`, etc.). There is no shared `ImportRewrite` layer. Inlining uses
+  `InlineImports`, an AST-node-based collector that adds the imports needed by a copied
+  body or signature and rejects simple-name conflicts; it does not edit source text.
 
 ### Validation and tests
 
@@ -106,7 +108,7 @@ renaming, argument temporaries, and return rewriting.
 | Private method, same type | Yes (single return or void) | Yes | Realistic; implementation proves it |
 | Static method, same type | Partly | Yes (implicit/type-qualified) | Realistic |
 | Instance method, same type, non-virtual | Partly | Yes if private/final or type is final | Must reject virtual dispatch otherwise |
-| Cross-class method | No | No (rejected) | Feasible; needs binding-driven type copy/imports and initialization analysis |
+| Cross-class method | No | Yes for guarded instance calls | Accepted only on a caller supertype, non-generic, no `super`/qualified `this`, all copied types/members accessible; imports are added. Static calls stay rejected pending class-initialization analysis |
 | Multiple returns | No | Yes (result temp + labeled break) | Realistic for statement-root call sites |
 | Local variables | No scoping/renaming | Yes (copy + collision rename) | Realistic |
 | Checked exceptions | Not analysed | Rejected | Feasible with call-site catch/`throws` analysis |
@@ -186,7 +188,10 @@ adopt the same capture rule before being called aggressive.
   this case.
 - Static methods are non-virtual. Calls through a value expression are rejected
   because Java evaluates that receiver even though the method ignores it.
-- Cross-type and `super` calls are rejected in the spike; both need a dispatch model.
+- Cross-type instance calls are accepted only when the callee is declared on a caller
+  supertype and remains non-virtual; cross-type static calls and bodies using `super`
+  are rejected because the spike does not model class initialization or the caller's
+  superclass binding.
 
 ### 3.4 Scope, capture, `this`, and `super`
 
@@ -240,9 +245,11 @@ is preserved. Cross-object locking requires alias analysis and is out of scope.
 
 - Same-type inlining preserves access and does not add a class-initialization edge.
 - Cross-class static inlining can remove the class-initialization trigger that the
-  original invocation performed. That is a mandatory check before cross-class
-  inlining is enabled.
-- Cross-type instance inlining needs `super`/`this` and dispatch analysis.
+  original invocation performed. Static cross-type calls stay rejected until that check
+  exists.
+- Cross-type instance inlining is accepted for non-generic callee types on the caller's
+  supertype chain. Bodies using `super` or qualified `this`, and members/types the
+  caller cannot access, are rejected.
 
 ### 3.10 Decision summary
 
@@ -257,7 +264,9 @@ is preserved. Cross-object locking requires alias analysis and is out of scope.
 | Checked exception declared | Reject |
 | Generic method, varargs | Reject |
 | Synchronized method | Reject |
-| Direct recursion, cross-type, anonymous receiver | Reject |
+| Cross-type instance on caller supertype, final/non-virtual, accessible, no `super`/generic | Accept |
+| Cross-type static, generic declaring type, body uses `super`/qualified `this`, inaccessible member/type | Reject |
+| Direct recursion, anonymous receiver | Reject |
 | Body cannot complete normally and has no return | Reject |
 
 ---
@@ -366,8 +375,12 @@ over "we ran out of budget".
 - Iterative chain `first → second → third` until fixed point.
 - Project-wide same-type inlining across files, with one candidate per file per pass
   and a fixed point after all call sites are gone.
-- Project-wide cross-type calls are rejected with
-  `cross-type inlining is not supported by the spike`; import rewriting is deferred.
+- Project-wide cross-type instance inlining when the callee is inherited from a caller
+  supertype; missing type and static imports are added to the caller.
+- Import conflicts, inaccessible types/members, generic declaring types, and bodies
+  using `super` or qualified `this` are rejected with diagnostics.
+- Project-wide cross-type static calls are rejected with the class-initialization
+  diagnostic.
 - Budget stops for `maxTransformations` and `maxCodeGrowthChars`, including mutual
   recursion and project-wide growth.
 - Explicit rejection of synchronized methods, explicit receivers, checked
@@ -406,7 +419,9 @@ Project-wide (`inlineProject`):
 6. Repeat until no candidate applies or a budget stops the loop.
 
 Same-type candidates share a compilation unit, so the callee's imports are already in
-scope. This is why import rewriting is not needed until cross-type inlining is enabled.
+scope. Cross-type candidates collect the type and static member references in the
+copied signature and body, add the needed imports as AST nodes, and reject simple-name
+conflicts instead of guessing.
 
 ### 5.3 Tests
 
@@ -423,9 +438,13 @@ scope. This is why import rewriting is not needed until cross-type inlining is e
 
 `refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.java`
 
-- 6 approval/semantic tests for project-wide runs.
+- 11 approval/semantic tests for project-wide runs.
 - Same-type fixture: two files change, both outputs compile and run.
-- Cross-type fixture: no changes, explicit rejection diagnostic.
+- Cross-type instance fixture: the subclass output gains the `Duration` import, compiles,
+  and runs.
+- Cross-type static-import fixture: the caller gains the static `Math.abs` import,
+  compiles, and runs.
+- Cross-type rejections: static call, `super` usage, private member, import conflict.
 - Batch equivalence: project result for each file equals single-file `inlineAll`.
 - Dry-run: fixture bytes are unchanged on disk.
 - Budgets: `maxTransformations` and project-wide `maxCodeGrowthChars`.
@@ -434,7 +453,7 @@ Fixtures live under
 `refactor-core/src/test/resources/fixtures/inline-aggressive/` and
 `refactor-core/src/test/resources/fixtures/projects/inline-aggressive-project/`.
 
-The full Maven test suite passes: 260 core + 84 CLI + 89 MCP + 13 demo tests (446 total).
+The full Maven test suite passes: 265 core + 84 CLI + 89 MCP + 13 demo tests (451 total).
 
 ### 5.4 What the spike proves
 
@@ -442,8 +461,10 @@ The full Maven test suite passes: 260 core + 84 CLI + 89 MCP + 13 demo tests (44
 - Multiple returns and argument side effects can be handled without text replacement.
 - A conservative safety gate can reject the cases the implementation does not model.
 - Iterative inlining can reach a fixed point by re-parsing after each application.
-- Project-wide same-type inlining can run deterministically without touching project
-  files during analysis.
+- Project-wide same-type and guarded cross-type instance inlining can run
+  deterministically without touching project files during analysis.
+- Imports for copied bodies and signatures can be added through AST nodes, with
+  conflicts rejected rather than resolved by guessing.
 
 ---
 
@@ -470,14 +491,15 @@ engine.
 
 Implemented but intentionally narrow:
 
-- Same-type calls only. Single-CU runs handle one named type; project runs resolve
-  calls across all files but still reject cross-type callers/callees.
+- Single-CU runs handle one named type. Project runs add guarded cross-type instance
+  calls, but only when the callee is inherited from a caller supertype; arbitrary
+  cross-type callers/callees are still rejected.
 - Calls must be the whole expression of a variable initializer, return, simple
   assignment, or expression statement.
 - No direct expression substitution; all value calls are hoisted.
 - No declaration removal or unused-method cleanup.
-- No cross-file import management. Cross-type inlining, including the class
-  initialization check, is deferred until import rewriting exists.
+- Cross-type static inlining and the class-initialization check are deferred.
+  Cross-type imports are otherwise handled, with simple-name conflicts rejected.
 - No call graph beyond direct recursion; mutual recursion is stopped only by budget.
 - No data-flow purity analysis; every argument gets a temporary.
 - Method-level generics and varargs are rejected.
@@ -491,7 +513,7 @@ Implemented but intentionally narrow:
 Known edge cases to test before promotion:
 
 - Bridge methods.
-- Static imports.
+- Static field imports and on-demand imports.
 - Method invocation inside an argument of the same method.
 - Initialization order for cross-class static calls.
 - Very large method bodies.
@@ -510,12 +532,13 @@ Known edge cases to test before promotion:
 - Argument capture with exactly-once evaluation.
 - Iterative fixed-point inlining of a call chain.
 - Project-wide same-type inlining across files, one candidate per file per pass.
+- Project-wide cross-type instance inlining from a caller supertype, with normal and
+  static import insertion and conflict rejection.
 - Semantic rejection with diagnostics for the unsafe subset.
 
 **Technically feasible, not implemented**
 
-- Cross-type/cross-package method inlining with import rewriting and class
-  initialization analysis.
+- Cross-type static method inlining with class initialization analysis.
 - Explicit receiver inlining by binding the receiver to a temporary and substituting
   `this` carefully.
 - Getter, constant, final-field, parameter, and temporary inlining.
@@ -542,9 +565,9 @@ Known edge cases to test before promotion:
 1. **Harden the spike** (complete): finish statement positions (including assignment
    LHS side-effect checks), add `try/finally`, capture, label, and overload fixtures,
    add final compile verification for every approved output.
-2. **Project model** (partial): project-wide same-type `JavaProject` parsing and
-   one-candidate-per-file batching are complete. Next: `ImportRewrite`, cross-type
-   inlining, and the class initialization check.
+2. **Project model** (partial): project-wide same-type and guarded cross-type instance
+   inlining with imports are complete. Next: exact class-initialization analysis for
+   cross-type static calls.
 3. **Data flow**: purity and multiple-evaluation analysis; argument capture only when
    needed; receiver capture; enable direct expression substitution safely.
 4. **Call graph**: recursion (direct and mutual), dispatch, reachability, unused

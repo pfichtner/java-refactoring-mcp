@@ -1,4 +1,4 @@
-# Project inline — rejected: cross-type call
+# Project inline — rejected: cross-type static call
 
 
 ### Input: Alpha.java:
@@ -25,9 +25,9 @@ public class Beta {
 
 ### Refactoring:
 **inline project** `Beta.compute(3)`  
-the callee lives in another type; import rewriting is deferred
+the callee is static in another type; inlining would remove its class-initialization trigger
 
 ### Diagnostic:
 ```
-cross-type inlining is not supported by the spike
+cross-type static inlining would remove the class-initialization trigger; static cross-type inlining is not supported by the spike
 ```
