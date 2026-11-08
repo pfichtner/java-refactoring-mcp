@@ -26,11 +26,10 @@ binding key selects the int overload; explicit this receiver is accepted
 ```java
 public class Foo {
     public int run() {
-        int __inline_value = 3;
-		int __inline_result;
+        int __inline_result;
 		__inline_label: {
 			{
-				__inline_result = __inline_value + 10;
+				__inline_result = 3 + 10;
 				break __inline_label;
 			}
 		}

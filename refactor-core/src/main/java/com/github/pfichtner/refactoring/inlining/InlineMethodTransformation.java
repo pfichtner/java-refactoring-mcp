@@ -1,5 +1,6 @@
 package com.github.pfichtner.refactoring.inlining;
 
+import static com.github.pfichtner.refactoring.inlining.InliningSupport.canSubstituteArgument;
 import static com.github.pfichtner.refactoring.inlining.InliningSupport.enclosingMethod;
 import static com.github.pfichtner.refactoring.inlining.InliningSupport.isVoid;
 import static com.github.pfichtner.refactoring.inlining.InliningSupport.ownReturns;
@@ -47,11 +48,12 @@ import org.eclipse.text.edits.TextEdit;
  * One method-call inline transformation.
  *
  * <p>Arguments are bound to synthetic locals first, so each argument is
- * evaluated exactly once, in source order. The method body is then copied,
- * local variables are renamed only when they would collide with the caller,
- * parameters are substituted with the argument locals, and returns are
- * rewritten to assignments plus a labeled break. Value-returning calls are
- * hoisted into a synthetic result variable.
+ * evaluated exactly once, in source order. A pure argument used exactly once
+ * is substituted directly instead. The method body is then copied, local
+ * variables are renamed only when they would collide with the caller,
+ * parameters are substituted, and returns are rewritten to assignments plus a
+ * labeled break. Value-returning calls are hoisted into a synthetic result
+ * variable.
  */
 final class InlineMethodTransformation {
 
@@ -88,6 +90,7 @@ final class InlineMethodTransformation {
         }
 
         Map<String, String> parameterTemps = new HashMap<>();
+        Map<String, Expression> parameterArguments = new HashMap<>();
         List<Statement> prelude = new ArrayList<>();
         for (int i = 0; i < params.size(); i++) {
             SingleVariableDeclaration param = params.get(i);
@@ -95,14 +98,21 @@ final class InlineMethodTransformation {
             if (paramBinding == null) {
                 throw reject("cannot resolve parameter '" + param.getName() + "'");
             }
-            String tempName = fresh("__inline_" + paramBinding.getName(), generatedAvoid);
-            parameterTemps.put(paramBinding.getKey(), tempName);
-            prelude.add(variableDeclaration(ast, tempName, param.getType(), args.get(i)));
+            Expression argument = args.get(i);
+            String key = paramBinding.getKey();
+            if (canSubstituteArgument(argument, paramBinding, decl.getBody())) {
+                parameterArguments.put(key, argument);
+            } else {
+                String tempName = fresh("__inline_" + paramBinding.getName(), generatedAvoid);
+                parameterTemps.put(key, tempName);
+                prelude.add(variableDeclaration(ast, tempName, param.getType(), argument));
+            }
         }
 
         Block bodyCopy = (Block) ASTNode.copySubtree(ast, decl.getBody());
         renameLabels(bodyCopy, labelRenames);
-        substituteNames(ast, decl.getBody(), bodyCopy, parameterTemps, localRenames);
+        substituteNames(ast, decl.getBody(), bodyCopy,
+                parameterTemps, parameterArguments, localRenames);
 
         List<ReturnStatement> returns = ownReturns(bodyCopy);
         String resultName = null;
@@ -289,7 +299,9 @@ final class InlineMethodTransformation {
 
     private static void substituteNames(
             AST ast, ASTNode originalBody, ASTNode copiedBody,
-            Map<String, String> parameterTemps, Map<String, String> localRenames) {
+            Map<String, String> parameterTemps,
+            Map<String, Expression> parameterArguments,
+            Map<String, String> localRenames) {
 
         List<SimpleName> originalNames = simpleNames(originalBody);
         List<SimpleName> copiedNames = simpleNames(copiedBody);
@@ -299,6 +311,11 @@ final class InlineMethodTransformation {
 
         for (int i = 0; i < originalNames.size(); i++) {
             if (!(originalNames.get(i).resolveBinding() instanceof IVariableBinding variable)) {
+                continue;
+            }
+            Expression argument = parameterArguments.get(variable.getKey());
+            if (argument != null) {
+                replaceNode(copiedNames.get(i), ASTNode.copySubtree(ast, argument));
                 continue;
             }
             String parameterTemp = parameterTemps.get(variable.getKey());

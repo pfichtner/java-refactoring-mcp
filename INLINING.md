@@ -1,9 +1,10 @@
 # Aggressive Java Inlining — Investigation and Technical Spike
 
-Status: Phase 1 hardening and Phase 2 project-wide same-type and cross-type instance
-inlining are complete. Cross-type static inlining, class-initialization analysis, and
-CLI/MCP wiring remain deferred. The engine is an isolated prototype, not yet wired into
-CLI/MCP. No existing public API was changed.
+Status: Phase 1 hardening, Phase 2 project-wide same-type and cross-type instance
+inlining, and Phase 3a pure argument substitution are complete. Explicit receivers,
+additional call positions, cross-type static inlining, class-initialization analysis,
+and CLI/MCP wiring remain deferred. The engine is an isolated prototype, not yet wired
+into CLI/MCP. No existing public API was changed.
 
 Central question:
 
@@ -371,6 +372,8 @@ over "we ran out of budget".
 - Locals captured by lambdas, anonymous classes, and local classes.
 - Pattern variables, enhanced-for variables, and catch parameters.
 - Side-effecting argument used multiple times (captured once).
+- Pure argument used once is copied to its use instead of captured; multi-use, written,
+  loop-contained, and lambda-captured arguments keep the temporary.
 - Simple-name assignment right-hand side.
 - Iterative chain `first → second → third` until fixed point.
 - Project-wide same-type inlining across files, with one candidate per file per pass
@@ -392,7 +395,8 @@ over "we ran out of budget".
 
 For a value-returning call at a supported statement root:
 
-1. Bind each argument to a fresh local of the formal parameter's type.
+1. Bind each argument to a fresh local of the formal parameter's type, unless it is a
+   pure argument used once outside a loop or closure; substitute that argument directly.
 2. Copy the callee body with `ASTNode.copySubtree`.
 3. Rename callee locals only when their names collide with caller-visible names.
 4. Rename callee labels that collide with caller labels, including their
@@ -427,11 +431,11 @@ conflicts instead of guessing.
 
 `refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.java`
 
-- 26 approval/semantic tests.
+- 31 approval/semantic tests.
 - Successful outputs are compiled with the JDK compiler.
 - Runtime tests compile and invoke original and transformed classes, covering
-  side-effecting arguments, `try/finally` ordering, captures, labels, overloads, and
-  static calls.
+  side-effecting arguments, pure single-use substitution, written/loop/lambda argument
+  fallbacks, `try/finally` ordering, captures, labels, overloads, and static calls.
 - The chain test asserts a fixed point after three transformations; budget tests assert
   the applied count and fixed-point flag.
 - Rejections assert the diagnostic fragment and record it in approved markdown.
@@ -453,7 +457,7 @@ Fixtures live under
 `refactor-core/src/test/resources/fixtures/inline-aggressive/` and
 `refactor-core/src/test/resources/fixtures/projects/inline-aggressive-project/`.
 
-The full Maven test suite passes: 265 core + 84 CLI + 89 MCP + 13 demo tests (451 total).
+The full Maven test suite passes: 270 core + 84 CLI + 89 MCP + 13 demo tests (456 total).
 
 ### 5.4 What the spike proves
 
@@ -501,7 +505,10 @@ Implemented but intentionally narrow:
 - Cross-type static inlining and the class-initialization check are deferred.
   Cross-type imports are otherwise handled, with simple-name conflicts rejected.
 - No call graph beyond direct recursion; mutual recursion is stopped only by budget.
-- No data-flow purity analysis; every argument gets a temporary.
+- Data-flow analysis is intentionally narrow. Only literals, unqualified `this`, and
+  caller local/parameter reads may be substituted, and only when read once outside
+  loops, lambdas, and local/anonymous classes. The parameter must not be written in the
+  callee.
 - Method-level generics and varargs are rejected.
 - `synchronized` methods and checked exceptions are rejected.
 - Formatting is not normalised; inserted code can mix tabs and spaces, and modified
@@ -529,7 +536,8 @@ Known edge cases to test before promotion:
 - Same-type private/final/static method inlining.
 - Local variable copying and collision renaming.
 - Multiple value returns via result temporary and labeled break.
-- Argument capture with exactly-once evaluation.
+- Argument capture with exactly-once evaluation, plus conservative direct substitution
+  for pure single-use arguments.
 - Iterative fixed-point inlining of a call chain.
 - Project-wide same-type inlining across files, one candidate per file per pass.
 - Project-wide cross-type instance inlining from a caller supertype, with normal and
@@ -542,7 +550,8 @@ Known edge cases to test before promotion:
 - Explicit receiver inlining by binding the receiver to a temporary and substituting
   `this` carefully.
 - Getter, constant, final-field, parameter, and temporary inlining.
-- Direct expression substitution when arguments are pure and used at most once.
+- Broader purity analysis (method calls, field reads, arithmetic) and additional call
+  positions.
 - Call-graph-based recursion detection and removal of unused declarations.
 - Formatter integration and compile verification.
 
@@ -568,8 +577,9 @@ Known edge cases to test before promotion:
 2. **Project model** (partial): project-wide same-type and guarded cross-type instance
    inlining with imports are complete. Next: exact class-initialization analysis for
    cross-type static calls.
-3. **Data flow**: purity and multiple-evaluation analysis; argument capture only when
-   needed; receiver capture; enable direct expression substitution safely.
+3. **Data flow** (partial): conservative purity/use-count analysis and pure single-use
+   argument substitution are complete. Next: receiver capture and additional safe call
+   positions.
 4. **Call graph**: recursion (direct and mutual), dispatch, reachability, unused
    declaration removal.
 5. **Expression inlining**: getters, constants, final fields, parameters, temporaries.
@@ -578,6 +588,6 @@ Known edge cases to test before promotion:
 7. **Adapters**: expose an opt-in aggressive operation through CLI and MCP once the
    engine API and diagnostics are stable.
 
-The next implementation phase is the cross-type remainder of item 2: import rewriting,
-cross-package inlining, and the class initialization check. Same-type project-wide
-inlining already works without weakening the semantic gate.
+The next implementation step is the remainder of the data-flow phase: explicit receiver
+capture, then additional call positions with evaluation-order checks. Cross-type static
+inlining still waits for exact class-initialization analysis.

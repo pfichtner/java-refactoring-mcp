@@ -395,6 +395,11 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Aggressive inline — rejected: non-completing void body | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.non_completing_void_body_is_rejected.approved.md) |
 | Aggressive inline: overload and explicit this receiver | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.overload_and_this_receiver_are_resolved_by_binding.approved.md) |
 | Aggressive inline: pattern, for, and catch variables | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.pattern_for_and_catch_variables_are_renamed.approved.md) |
+| Aggressive inline: argument assigned inside callee | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.pure_argument_assigned_in_callee_keeps_temporary.approved.md) |
+| Aggressive inline: argument captured by a lambda | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.pure_argument_captured_by_lambda_keeps_temporary.approved.md) |
+| Aggressive inline: argument used in a loop | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.pure_argument_used_in_loop_keeps_temporary.approved.md) |
+| Aggressive inline: pure argument used twice | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.pure_multi_use_argument_keeps_temporary.approved.md) |
+| Aggressive inline: pure single-use argument substituted | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.pure_single_use_argument_is_substituted.approved.md) |
 | Aggressive inline: simple-name assignment | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.simple_name_assignment_is_accepted.approved.md) |
 | Aggressive inline — rejected: super call | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.super_call_is_rejected.approved.md) |
 | Aggressive inline: return in finally overrides | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.try_finally_return_overrides_earlier_return.approved.md) |

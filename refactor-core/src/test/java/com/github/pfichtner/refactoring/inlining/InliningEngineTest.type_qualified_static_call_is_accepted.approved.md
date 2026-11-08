@@ -22,11 +22,10 @@ static method called through its type; same-type class initialization is unchang
 ```java
 public class Foo {
     public int run() {
-        int __inline_value = 2;
-		int __inline_result;
+        int __inline_result;
 		__inline_label: {
 			{
-				__inline_result = __inline_value * 3;
+				__inline_result = 2 * 3;
 				break __inline_label;
 			}
 		}

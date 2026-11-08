@@ -104,6 +104,106 @@ class InliningEngineTest {
     }
 
     @Test
+    void pure_single_use_argument_is_substituted() throws Exception {
+        String source = fixtures.load("inline-aggressive/pure-single-use/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "plusOne(value)");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(22);
+        assertThat(compileAndInvoke("Foo", result, "run")).isEqualTo(22);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: pure single-use argument substituted")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`plusOne(value)` at " + Fixtures.lineCol(source, offset),
+                        "the pure local argument is copied to its single use; no argument temporary")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void pure_multi_use_argument_keeps_temporary() throws Exception {
+        String source = fixtures.load("inline-aggressive/pure-multi-use/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "twice(value)");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(10);
+        assertThat(compileAndInvoke("Foo", result, "run")).isEqualTo(10);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: pure argument used twice")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`twice(value)` at " + Fixtures.lineCol(source, offset),
+                        "the pure local argument is read twice, so it stays captured in a temporary")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void pure_argument_assigned_in_callee_keeps_temporary() throws Exception {
+        String source = fixtures.load("inline-aggressive/pure-assigned-parameter/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "bump(value)");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(102);
+        assertThat(compileAndInvoke("Foo", result, "run")).isEqualTo(102);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: argument assigned inside callee")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`bump(value)` at " + Fixtures.lineCol(source, offset),
+                        "the callee increments its parameter, so the argument stays a captured temporary")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void pure_argument_used_in_loop_keeps_temporary() throws Exception {
+        String source = fixtures.load("inline-aggressive/pure-used-in-loop/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "sumBelow(limit)");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(6);
+        assertThat(compileAndInvoke("Foo", result, "run")).isEqualTo(6);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: argument used in a loop")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`sumBelow(limit)` at " + Fixtures.lineCol(source, offset),
+                        "the single use sits in a loop, so the argument stays a captured temporary")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void pure_argument_captured_by_lambda_keeps_temporary() throws Exception {
+        String source = fixtures.load("inline-aggressive/pure-captured-in-lambda/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "plusOneLater(value)");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(6);
+        assertThat(compileAndInvoke("Foo", result, "run")).isEqualTo(6);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: argument captured by a lambda")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`plusOneLater(value)` at " + Fixtures.lineCol(source, offset),
+                        "the single use is captured by a lambda, so the argument stays a captured temporary")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
     void inline_chain_reaches_fixed_point() throws Exception {
         String source = fixtures.load("inline-aggressive/chain/input/Chain.java");
 

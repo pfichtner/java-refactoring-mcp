@@ -6,12 +6,14 @@ import java.util.List;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.AssertStatement;
+import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.BooleanLiteral;
 import org.eclipse.jdt.core.dom.BreakStatement;
 import org.eclipse.jdt.core.dom.CatchClause;
+import org.eclipse.jdt.core.dom.CharacterLiteral;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ConstructorInvocation;
@@ -22,8 +24,10 @@ import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.ForStatement;
+import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.LabeledStatement;
 import org.eclipse.jdt.core.dom.LambdaExpression;
@@ -31,14 +35,21 @@ import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.MethodReference;
 import org.eclipse.jdt.core.dom.NodeFinder;
+import org.eclipse.jdt.core.dom.NullLiteral;
+import org.eclipse.jdt.core.dom.NumberLiteral;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.PostfixExpression;
+import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.SuperConstructorInvocation;
 import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 import org.eclipse.jdt.core.dom.SwitchCase;
 import org.eclipse.jdt.core.dom.SwitchStatement;
 import org.eclipse.jdt.core.dom.SynchronizedStatement;
+import org.eclipse.jdt.core.dom.ThisExpression;
 import org.eclipse.jdt.core.dom.ThrowStatement;
 import org.eclipse.jdt.core.dom.TryStatement;
 import org.eclipse.jdt.core.dom.TypeDeclarationStatement;
@@ -149,6 +160,86 @@ final class InliningSupport {
             }
         });
         return names;
+    }
+
+    /**
+     * True when the argument can replace one read of the parameter without capture.
+     * Purity is intentionally narrow: only literals, unqualified {@code this}, and
+     * reads of caller locals/parameters qualify.
+     */
+    static boolean canSubstituteArgument(
+            Expression argument, IVariableBinding parameter, ASTNode body) {
+
+        if (!isPureArgument(argument)) return false;
+
+        int[] uses = {0};
+        boolean[] unsafe = {false};
+        body.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(SimpleName name) {
+                if (!(name.resolveBinding() instanceof IVariableBinding variable)
+                        || !variable.getKey().equals(parameter.getKey())) {
+                    return true;
+                }
+                uses[0]++;
+                if (isWriteTarget(name) || hasUnsafeEvaluationContext(name, body)) {
+                    unsafe[0] = true;
+                }
+                return true;
+            }
+        });
+        return uses[0] == 1 && !unsafe[0];
+    }
+
+    private static boolean isPureArgument(Expression expression) {
+        if (expression instanceof NumberLiteral
+                || expression instanceof BooleanLiteral
+                || expression instanceof CharacterLiteral
+                || expression instanceof StringLiteral
+                || expression instanceof NullLiteral) {
+            return true;
+        }
+        if (expression instanceof ThisExpression thisExpression) {
+            return thisExpression.getQualifier() == null;
+        }
+        if (expression instanceof ParenthesizedExpression parenthesized) {
+            return isPureArgument(parenthesized.getExpression());
+        }
+        if (expression instanceof SimpleName name) {
+            return name.resolveBinding() instanceof IVariableBinding variable
+                    && !variable.isField()
+                    && !variable.isEnumConstant();
+        }
+        return false;
+    }
+
+    private static boolean isWriteTarget(SimpleName name) {
+        ASTNode parent = name.getParent();
+        if (parent instanceof Assignment assignment) {
+            return assignment.getLeftHandSide() == name;
+        }
+        if (parent instanceof PrefixExpression prefix) {
+            return prefix.getOperand() == name;
+        }
+        if (parent instanceof PostfixExpression postfix) {
+            return postfix.getOperand() == name;
+        }
+        return false;
+    }
+
+    private static boolean hasUnsafeEvaluationContext(ASTNode node, ASTNode body) {
+        for (ASTNode n = node.getParent(); n != null && n != body; n = n.getParent()) {
+            if (n instanceof ForStatement
+                    || n instanceof EnhancedForStatement
+                    || n instanceof WhileStatement
+                    || n instanceof DoStatement
+                    || n instanceof LambdaExpression
+                    || n instanceof AnonymousClassDeclaration
+                    || n instanceof TypeDeclarationStatement) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

@@ -30,10 +30,9 @@ three passes; each pass re-parses the rewritten source
 ```java
 public class Chain {
     public int start() {
-        int __inline_x2 = 1;
-		int __inline_result2;
+        int __inline_result2;
 		__inline_label2: {
-			int __inline_x1 = __inline_x2 + 1;
+			int __inline_x1 = 1 + 1;
 			int __inline_result1;
 			__inline_label1: {
 				int __inline_x = __inline_x1 * 2;

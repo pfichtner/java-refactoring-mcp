@@ -37,10 +37,9 @@ public class Foo {
         int n = 5;
         __inline_label: {
             if (n > 0) {
-                int __inline_value = n;
-				int __inline_result1;
+                int __inline_result1;
 				__inline_label1: {
-					int __inline_result = __inline_value;
+					int __inline_result = n;
 					__inline_label___inline_label: {
 						if (__inline_result > 10) {
 							{

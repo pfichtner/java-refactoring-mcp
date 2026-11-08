@@ -41,11 +41,10 @@ package com.example;
 
 public class Alpha {
     public int run() {
-        int __inline_value = 3;
-		int __inline_result;
+        int __inline_result;
 		__inline_label: {
 			{
-				__inline_result = __inline_value * 2;
+				__inline_result = 3 * 2;
 				break __inline_label;
 			}
 		}
@@ -64,11 +63,10 @@ package com.example;
 
 public class Beta {
     public int run() {
-        int __inline_value = 5;
-		int __inline_result;
+        int __inline_result;
 		__inline_label: {
 			{
-				__inline_result = __inline_value + 10;
+				__inline_result = 5 + 10;
 				break __inline_label;
 			}
 		}

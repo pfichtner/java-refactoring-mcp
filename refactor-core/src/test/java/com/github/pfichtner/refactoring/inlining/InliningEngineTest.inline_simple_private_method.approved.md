@@ -22,11 +22,10 @@ argument bound to a temporary; return value hoisted into a result temporary
 ```java
 public class Foo {
     public int compute() {
-        int __inline_value = 21;
-		int __inline_result;
+        int __inline_result;
 		__inline_label: {
 			{
-				__inline_result = __inline_value * 2;
+				__inline_result = 21 * 2;
 				break __inline_label;
 			}
 		}

@@ -24,10 +24,9 @@ body locals are copied and kept when they do not collide with caller names
 ```java
 public class Foo {
     public int compute(int input) {
-        int __inline_value = input;
-		int __inline_result;
+        int __inline_result;
 		__inline_label: {
-			int shifted = __inline_value + 1;
+			int shifted = input + 1;
 			int doubled = shifted * 2;
 			{
 				__inline_result = doubled;

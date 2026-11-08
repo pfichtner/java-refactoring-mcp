@@ -38,7 +38,7 @@ The working rule stays:
 
 ## Phase 1 — Harden the spike
 
-Status: complete. `InliningEngineTest` has 26 tests; full reactor is green on JDK 21.
+Status: complete. `InliningEngineTest` has 31 tests; full reactor is green on JDK 21.
 
 ### Work
 
@@ -131,18 +131,30 @@ step.
 
 ## Phase 3 — Data-flow and expression positions
 
-### Work
+Status: Phase 3a complete. Commit: `feat(inlining): substitute pure single-use arguments`.
 
-1. Implement purity and use-count analysis for arguments.
-2. Use direct substitution only when the argument is pure and used at most once;
-   otherwise keep the existing capture-once temporary.
-3. Add receiver capture for explicit receivers, substituting `this` and `super`
-   only when the receiver is the same instance.
-4. Support additional call positions when the analysis proves evaluation order:
-   - assignment RHS with a side-effect-free LHS;
-   - nested expressions with pure arguments and a safe insertion point;
-   - return expressions already handled by the spike.
-5. Add definite-assignment and exception-flow checks for the new positions.
+### Phase 3a — Pure argument substitution (complete)
+
+1. Purity and binding-based use-count analysis for arguments.
+2. Direct substitution only for literals, unqualified `this`, and caller local/parameter
+   reads used once outside loops and closures. Written parameters and all other
+   arguments keep the capture-once temporary.
+3. Runtime-equivalence tests for substitution and for written, multi-use, loop-contained,
+   and lambda-captured fallbacks.
+
+### Phase 3b — Receiver capture (next)
+
+1. Capture explicit receivers once.
+2. Substitute `this` only when the receiver is provably the same instance.
+3. Keep `super` and qualified `this` rejected.
+4. Add side-effect-once, null-receiver, and private-member fixtures.
+
+### Phase 3c — Additional call positions
+
+1. Assignment RHS with a side-effect-free LHS.
+2. Nested expressions with pure arguments and a safe insertion point.
+3. Return expressions already handled by the spike.
+4. Definite-assignment and exception-flow checks for the new positions.
 
 ### Acceptance
 
@@ -150,10 +162,6 @@ step.
 - Pure argument substitution is proven not to duplicate evaluation.
 - Unsafe positions still reject with a diagnostic.
 - Full reactor passes.
-
-### Commit
-
-`feat(inlining): add safe data-flow based inlining positions`
 
 ---
 
@@ -270,7 +278,7 @@ Resolve these before the phase that needs them:
 
 ## Definition of done for the next continuation
 
-- Phase 1 and Phase 2 are complete.
+- Phase 1, Phase 2, and Phase 3a are complete.
 - Existing public APIs are unchanged.
 - New operations are opt-in.
 - Success paths compile and approvals were reviewed.
