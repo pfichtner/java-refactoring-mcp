@@ -628,14 +628,54 @@ Full reactor: 321 core + 86 CLI + 91 MCP tests (498 total) pass.
 
 ---
 
+## Phase 14 — Additional safe call positions (array access index, for-loop initializer)
+
+Status: **complete**.
+
+`InlineMethodTransformation.evaluationOrderViolation` gains an `ArrayAccess` case:
+when the call is the index of an array access, the array expression is checked for
+purity; a pure array allows hoisting (return null); an impure array expression rejects
+with "array expression has side effects". When the call is the array expression itself
+(evaluated first), hoisting is accepted unconditionally.
+
+`InlineMethodTransformation.findNestedCallSite` gains a `ForStatement` terminal case:
+when the traversal chain ends at a `VariableDeclarationFragment` whose initializer is
+`child`, the VDF is the sole fragment of a `VariableDeclarationExpression`, that VDE is
+the sole initializer of a `ForStatement`, and the for-statement is directly in a block,
+a `CallSite(regularForStmt, false)` is returned. The existing prelude-insertion and
+in-place replacement mechanism hoists the body before the for-statement and replaces the
+call with the result variable, leaving the for-loop variable declaration intact.
+
+New imports: `ArrayAccess`, `ForStatement`, `VariableDeclarationExpression` added to
+`InlineMethodTransformation`.
+
+Three new single-file approval tests:
+- `call_as_array_index_is_inlined` — `compute()` returns `2`; body hoisted before the
+  `return` statement; `arr[__inline_result]` = `arr[2]` = 30; compiles and runtime returns 30.
+- `call_as_array_index_with_impure_array_is_rejected` — `compute()` is the index of
+  `makeArray()[compute()]`; `makeArray()` is a method call (impure array); rejected with
+  "array expression has side effects" diagnostic.
+- `call_in_for_loop_initializer_is_inlined` — `compute()` returns `2`; body hoisted
+  before the for-statement; `for (int i = __inline_result; i < 5; i++)` with i=2,3,4;
+  sum = 9; compiles and runtime returns 9.
+
+Full reactor: 324 core + 86 CLI + 91 MCP tests (501 total) pass.
+
+### Commit
+
+`feat(inlining): additional safe call positions — array access index and for-loop initializer (Phase 14)`
+
+---
+
 ## Definition of done for the next continuation
 
 - Phases 1–4, Phase 5a–5f, Phase 6 (CLI/MCP exposure), Phase 7a–7c, Phase 8, Phase 9,
   Phase 10 (generic type-variable substitution for implicit-receiver cross-type calls),
   Phase 11 (additional safe call positions: if-condition, ternary condition, constructor
   argument), Phase 12 (additional safe call positions: throw expression, switch
-  selector), and Phase 13 (additional safe call positions: array dimension expression,
-  enhanced-for iterable) are complete.
+  selector), Phase 13 (additional safe call positions: array dimension expression,
+  enhanced-for iterable), and Phase 14 (additional safe call positions: array access
+  index, for-loop variable-declaration initializer) are complete.
 - Existing public APIs are unchanged.
 - New operations are opt-in.
 - Success paths compile and approvals were reviewed.
@@ -645,9 +685,12 @@ Full reactor: 321 core + 86 CLI + 91 MCP tests (498 total) pass.
 - Remaining limitations: `while`/`for`/`do-while` condition positions are not supported
   (re-evaluation per iteration requires loop restructuring, not just hoisting);
   `assert` condition is not supported (condition is not evaluated when assertions are
-  disabled, so hoisting changes semantics); cross-type static calls on generic declaring
+  disabled, so hoisting changes semantics); for-loop expression initializer (e.g.,
+  `for (i = compute(); ...)`) is not supported (would require a new ForStatement terminal
+  that handles expression initializer lists); cross-type static calls on generic declaring
   types are still conservatively rejected; superclass/interface/wrapper flattening
   requires a separate design review; multi-dimensional array creation where an earlier
   dimension is not pure is rejected (not supported).
 - Next phase: superclass/interface/wrapper flattening (separate design review required),
-  or further safe call positions (`for`-loop initializer, array index expression, etc.).
+  or further safe call positions (for-loop expression initializer, return-expression
+  array index, etc.).

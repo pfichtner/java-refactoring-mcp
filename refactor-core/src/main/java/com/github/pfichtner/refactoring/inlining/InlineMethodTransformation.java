@@ -8,9 +8,12 @@ import static com.github.pfichtner.refactoring.inlining.InliningSupport.ownRetur
 import static com.github.pfichtner.refactoring.inlining.InliningSupport.simpleNames;
 import static org.eclipse.jdt.core.dom.Modifier.isStatic;
 
+import org.eclipse.jdt.core.dom.ArrayAccess;
 import org.eclipse.jdt.core.dom.ArrayCreation;
 import org.eclipse.jdt.core.dom.ArrayType;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
+import org.eclipse.jdt.core.dom.ForStatement;
+import org.eclipse.jdt.core.dom.VariableDeclarationExpression;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.ParameterizedType;
 import org.eclipse.jdt.core.dom.PrimitiveType;
@@ -337,12 +340,23 @@ final class InlineMethodTransformation {
                 return new CallSite(forStmt, false);
             }
 
+            if (parent instanceof VariableDeclarationFragment fragment
+                    && fragment.getInitializer() == child
+                    && fragment.getParent() instanceof VariableDeclarationExpression vde
+                    && vde.fragments().size() == 1
+                    && vde.getParent() instanceof ForStatement regularForStmt
+                    && regularForStmt.initializers().size() == 1
+                    && regularForStmt.getParent() instanceof Block) {
+                return new CallSite(regularForStmt, false);
+            }
+
             break;
         }
 
         throw reject("call is not the whole expression of a supported statement "
                 + "(variable initializer, return, simple assignment, expression statement, "
-                + "if condition, throw expression, switch selector, or enhanced-for iterable)");
+                + "if condition, throw expression, switch selector, enhanced-for iterable, "
+                + "array index, or for-loop initializer)");
     }
 
     /**
@@ -464,6 +478,14 @@ final class InlineMethodTransformation {
                                 + "earlier array dimension has side effects";
                     }
                 }
+            }
+            return null;
+        }
+
+        if (parent instanceof ArrayAccess access) {
+            if (child == access.getIndex() && !isPure(access.getArray())) {
+                return "hoisting before statement would reorder evaluation: "
+                        + "array expression has side effects";
             }
             return null;
         }

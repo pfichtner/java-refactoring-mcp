@@ -98,6 +98,21 @@ as anchor when the call is the iterable expression and the for-statement is dire
 a block; both positions reuse the existing prelude-insertion and in-place replacement
 mechanism unchanged; two new single-file approval tests:
 `call_as_array_dimension_is_inlined` and `call_as_enhanced_for_iterable_is_inlined`)
+and Phase 14 additional safe call positions (`ArrayAccess` index expression and
+`ForStatement` variable-declaration initializer;
+`InlineMethodTransformation.evaluationOrderViolation` gains an `ArrayAccess` case —
+when the call is the index of an array access, the array expression is checked for
+purity; a pure array allows hoisting, an impure array expression rejects with
+"array expression has side effects"; when the call is the array expression itself
+(evaluated first), hoisting is always accepted;
+`InlineMethodTransformation.findNestedCallSite` gains a `ForStatement` terminal case
+that returns a `CallSite` with the for-statement as anchor when the call is the
+initializer of a single-fragment `VariableDeclarationExpression` that is itself the
+sole initializer of a `ForStatement` directly in a block; both positions reuse the
+existing prelude-insertion and in-place replacement mechanism unchanged; three new
+single-file approval tests: `call_as_array_index_is_inlined`,
+`call_as_array_index_with_impure_array_is_rejected`, and
+`call_in_for_loop_initializer_is_inlined`)
 are complete. No existing public API was changed.
 
 Central question:
@@ -375,6 +390,10 @@ is preserved. Cross-object locking requires alias analysis and is out of scope.
 | `ArrayCreation` dimension: call is a dimension expression, all earlier dimensions side-effect-free | Accept (body hoisted before enclosing statement, dimension replaced with result variable) |
 | `ArrayCreation` dimension: an earlier dimension expression has side effects | Reject with reorder diagnostic |
 | `EnhancedForStatement` iterable: call is the iterable expression of an enhanced for-statement in a block | Accept (body hoisted before for-statement, iterable replaced with result variable) |
+| `ArrayAccess` index: call is the index of an array access, array expression is pure | Accept (body hoisted before enclosing statement, index replaced with result variable) |
+| `ArrayAccess` index: call is the index of an array access, array expression has side effects | Reject with array-expression-side-effects diagnostic |
+| `ArrayAccess` array: call is the array expression of an array access (evaluated first) | Accept (body hoisted before enclosing statement, array replaced with result variable) |
+| `ForStatement` initializer: call is the initializer of a single-fragment VDE that is the sole `ForStatement` initializer, for-statement is directly in a block | Accept (body hoisted before for-statement, initializer replaced with result variable) |
 | Same-type explicit receiver, non-static nested | Accept (capture once + null check; type variables in scope) |
 | Cross-type explicit receiver, non-static nested, accessible body, body/signature does not reference type variable | Accept (capture once + null check + receiver substitution) |
 | Cross-type explicit receiver, all type args concrete (no wildcard/capture/raw), body uses no complex-type-arg type variable | Accept (type substitution applied to receiver, result, params, and body) |
@@ -706,7 +725,7 @@ Fixtures live under
 `refactor-core/src/test/resources/fixtures/inline-aggressive/` and
 `refactor-core/src/test/resources/fixtures/projects/inline-aggressive-project/`.
 
-The full Maven test suite passes: 321 core + 86 CLI + 91 MCP tests (498 total).
+The full Maven test suite passes: 324 core + 86 CLI + 91 MCP tests (501 total).
 
 ### 5.4 What the spike proves
 

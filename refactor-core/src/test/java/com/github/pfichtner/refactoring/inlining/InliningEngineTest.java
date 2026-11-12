@@ -1641,6 +1641,72 @@ class InliningEngineTest {
     }
 
     // -------------------------------------------------------------------------
+    // Phase 14 — Additional safe call positions (array index, for-loop initializer)
+    // -------------------------------------------------------------------------
+
+    @Test
+    void call_as_array_index_is_inlined() throws Exception {
+        String source = fixtures.load("inline-aggressive/array-index/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "compute()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+        assertCompiles("Foo", result);
+
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(30);
+        assertThat(compileAndInvoke("Foo", result, "run")).isEqualTo(30);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: call as array index")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`compute()` at " + Fixtures.lineCol(source, offset),
+                        "array index; body hoisted before enclosing statement, index replaced with result")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void call_as_array_index_with_impure_array_is_rejected() throws Exception {
+        String source = fixtures.load("inline-aggressive/array-index-impure/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "compute()");
+
+        InlineRejectedException exception = assertThatExceptionOfType(InlineRejectedException.class)
+                .isThrownBy(() -> InliningEngine.inlineAt(source, "Foo.java", offset))
+                .actual();
+        assertThat(exception.getMessage()).contains("array expression has side effects");
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline — rejected: array index with impure array expression")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`compute()` at " + Fixtures.lineCol(source, offset),
+                        "hoisting would reorder: array expression has side effects")
+                .diagnostic(exception.getMessage())
+                .build()
+        );
+    }
+
+    @Test
+    void call_in_for_loop_initializer_is_inlined() throws Exception {
+        String source = fixtures.load("inline-aggressive/for-loop-initializer/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "compute()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+        assertCompiles("Foo", result);
+
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(9);
+        assertThat(compileAndInvoke("Foo", result, "run")).isEqualTo(9);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: call in for-loop initializer")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`compute()` at " + Fixtures.lineCol(source, offset),
+                        "for-loop initializer; body hoisted before for-statement, initializer replaced with result")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    // -------------------------------------------------------------------------
     // Compilation helpers
     // -------------------------------------------------------------------------
 
