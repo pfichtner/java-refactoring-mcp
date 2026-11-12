@@ -78,9 +78,13 @@ Status: complete. `InliningEngineTest` has 31 tests; full reactor is green on JD
 
 ## Phase 2 — Project-wide same-type parsing
 
-Status: complete for the same-type and cross-type instance scope. Static cross-type
-inlining and class-initialization analysis remain deferred.
-`ProjectInliningEngineTest` has 11 tests; full reactor is green on JDK 21.
+Status: complete, including cross-type static inlining with class-initialization
+analysis. `SemanticSafetyAnalyzer.classInitializationRejection` inspects the
+declaring `TypeDeclaration` for static initializer blocks and non-constant static
+field initializers. If none are found the call falls through to accessibility checks;
+otherwise it is rejected with a targeted diagnostic. Enum and annotation declaring
+types remain conservatively rejected.
+`ProjectInliningEngineTest` has 13 tests; full reactor is green on JDK 21.
 
 ### Work
 
@@ -122,10 +126,18 @@ Status: complete. Commit: `feat(inlining): support cross-type instance inlining`
 - Fixtures: successful cross-type instance and static-import runs; rejected static
   call, `super`, private member, and import conflict.
 
-### Deferred
+### Phase 2c — Cross-type static inlining with class-initialization analysis (complete)
 
-Cross-type static inlining and the class-initialization check move together to a later
-step.
+- `SemanticSafetyAnalyzer.classInitializationRejection` replaces the blanket
+  "not supported by spike" rejection for static cross-type calls.
+- Declaring type must be a plain `TypeDeclaration` (not enum/annotation).
+- Declaring type must have no `static {}` initializer blocks and no `static` field
+  fragments with non-constant initializers (`IVariableBinding.getConstantValue() == null`).
+- If safe: falls through to `inaccessibleSignature` + `inaccessibleBody` checks.
+- Fixtures: `cross-type` (simple Beta, now succeeds) and `cross-type-static-init`
+  (Beta with static block, still rejected with targeted diagnostic).
+- Approval tests: `cross_type_static_method_is_inlined` (success) and
+  `cross_type_static_call_is_rejected` (rejection, updated to use new fixture).
 
 ---
 
@@ -342,12 +354,15 @@ Resolve these before the phase that needs them:
 
 ## Definition of done for the next continuation
 
-- Phases 1–4, Phase 5a–5f, and Phase 6 (CLI/MCP exposure) are complete.
+- Phases 1–4, Phase 5a–5f, Phase 6 (CLI/MCP exposure), and Phase 7a (cross-type
+  static inlining with class-initialization analysis) are complete.
 - Existing public APIs are unchanged.
 - New operations are opt-in.
 - Success paths compile and approvals were reviewed.
 - Rejections are explicit and tested.
-- Full reactor passes on JDK 21 (302 core + 86 CLI + 91 MCP = 479 tests).
+- Full reactor passes on JDK 21 (303 core + 86 CLI + 91 MCP = 480 tests).
 - `INLINING.md` and `INLINING_PLAN.md` reflect the delivered state.
-- Next phase: Phase 7 (superclass/interface/wrapper flattening) requires a separate
-  design review before implementation.
+- Open decisions resolved: cross-class static inlining now has a concrete
+  class-initialization analysis instead of a blanket deferral.
+- Next phase: Phase 7b (cross-type and generic explicit receiver support) or
+  superclass/interface/wrapper flattening (requires separate design review).

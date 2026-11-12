@@ -20,11 +20,13 @@ import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldAccess;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.IPackageBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.Initializer;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
@@ -35,7 +37,9 @@ import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.SuperFieldAccess;
 import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 import org.eclipse.jdt.core.dom.ThisExpression;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.TypeDeclarationStatement;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
 /**
  * Rejects method inlining when Java execution semantics cannot be preserved
@@ -136,8 +140,11 @@ final class SemanticSafetyAnalyzer {
             ITypeBinding callType, ITypeBinding declaringType) {
 
         if (isStatic(binding.getModifiers())) {
-            return "cross-type static inlining would remove the class-initialization trigger; "
-                    + "static cross-type inlining is not supported by the spike";
+            String initRejection = classInitializationRejection(decl);
+            if (initRejection != null) return initRejection;
+            String signature = inaccessibleSignature(decl, callType);
+            if (signature != null) return signature;
+            return inaccessibleBody(decl.getBody(), callType);
         }
         if (!callType.isSubTypeCompatible(declaringType)) {
             return "cross-type callee is not a supertype of the caller; 'this' would change";
@@ -214,6 +221,33 @@ final class SemanticSafetyAnalyzer {
             }
         });
         return found[0];
+    }
+
+    @SuppressWarnings("unchecked")
+    private static String classInitializationRejection(MethodDeclaration decl) {
+        ASTNode parent = decl.getParent();
+        if (!(parent instanceof TypeDeclaration typeDecl)) {
+            return "cross-type static inlining: declaring type is not a plain class declaration";
+        }
+        for (Object bd : typeDecl.bodyDeclarations()) {
+            if (bd instanceof Initializer init && isStatic(init.getModifiers())) {
+                return "cross-type static inlining would remove the class-initialization trigger: "
+                        + "declaring type has a static initializer block";
+            }
+            if (bd instanceof FieldDeclaration fd && isStatic(fd.getModifiers())) {
+                for (Object frag : fd.fragments()) {
+                    if (frag instanceof VariableDeclarationFragment vdf
+                            && vdf.getInitializer() != null) {
+                        IVariableBinding vb = vdf.resolveBinding();
+                        if (vb == null || vb.getConstantValue() == null) {
+                            return "cross-type static inlining would remove the class-initialization trigger: "
+                                    + "declaring type has a non-constant static field initializer";
+                        }
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     private static String superOrQualifiedThis(Block body) {

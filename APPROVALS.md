@@ -485,8 +485,9 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Project inline — rejected: cross-type import conflict | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_import_conflict_is_rejected.approved.md) |
 | Project inline: cross-type instance method and import | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_instance_method_is_inlined_with_import.approved.md) |
 | Project inline — rejected: cross-type private member | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_private_member_is_rejected.approved.md) |
-| Project inline — rejected: cross-type static call | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_static_call_is_rejected.approved.md) |
+| Project inline — rejected: cross-type static call with class initializer | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_static_call_is_rejected.approved.md) |
 | Project inline: cross-type static import | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_static_import_is_added_to_caller.approved.md) |
+| Project inline — cross-type static method (no class initializer) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_static_method_is_inlined.approved.md) |
 | Project inline — rejected: cross-type body uses super | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_super_usage_is_rejected.approved.md) |
 | Project inline: same-type methods across files | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.same_type_methods_are_inlined_across_files.approved.md) |
 

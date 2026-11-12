@@ -1,4 +1,4 @@
-# Project inline — rejected: cross-type static call
+# Project inline — rejected: cross-type static call with class initializer
 
 
 ### Input: Alpha.java:
@@ -17,6 +17,10 @@ public class Alpha {
 package com.example;
 
 public class Beta {
+    static {
+        // side-effecting class initializer that must not be silently removed
+    }
+
     static int compute(int value) {
         return value * 2;
     }
@@ -25,9 +29,9 @@ public class Beta {
 
 ### Refactoring:
 **inline project** `Beta.compute(3)`  
-the callee is static in another type; inlining would remove its class-initialization trigger
+Beta has a static initializer block; inlining would silently drop the class-initialization trigger
 
 ### Diagnostic:
 ```
-cross-type static inlining would remove the class-initialization trigger; static cross-type inlining is not supported by the spike
+cross-type static inlining would remove the class-initialization trigger: declaring type has a static initializer block
 ```

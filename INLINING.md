@@ -15,11 +15,15 @@ body of the target constructor), Phase 5e delegation elimination (replacing call
 to single-delegated-call methods with the inner call in-place, working at any
 position including nested expressions), Phase 5f anonymous-class-to-lambda
 flattening (replacing anonymous functional-interface implementations with lambda
-expressions, using expression-form lambda bodies when possible), and Phase 6
+expressions, using expression-form lambda bodies when possible), Phase 6
 CLI/MCP exposure (inline-aggressive CLI command and inline_aggressive MCP tool
 wiring the engine into both adapters with dry-run, budget options, and
-remove-unused-declarations support) are complete. Cross-type static inlining and
-class-initialization analysis remain deferred. No existing public API was changed.
+remove-unused-declarations support), and Phase 7a cross-type static method inlining
+with class-initialization analysis (SemanticSafetyAnalyzer.classInitializationRejection
+inspects the declaring TypeDeclaration for static initializer blocks and non-constant
+static field initializers; if none are found the static call is allowed and falls
+through to accessibility checks, otherwise rejected with a targeted diagnostic)
+are complete. No existing public API was changed.
 
 Central question:
 
@@ -269,9 +273,11 @@ is preserved. Cross-object locking requires alias analysis and is out of scope.
 ### 3.9 Access and initialization order
 
 - Same-type inlining preserves access and does not add a class-initialization edge.
-- Cross-class static inlining can remove the class-initialization trigger that the
-  original invocation performed. Static cross-type calls stay rejected until that check
-  exists.
+- Cross-class static inlining now checks the declaring type for static initializer
+  blocks and non-constant static field initializers
+  (`SemanticSafetyAnalyzer.classInitializationRejection`). If the check passes (no
+  such constructs), the call is accepted and falls through to accessibility checks.
+  If the check fails, the call is rejected with a targeted diagnostic.
 - Cross-type instance inlining is accepted for non-generic callee types on the caller's
   supertype chain. Bodies using `super` or qualified `this`, and members/types the
   caller cannot access, are rejected.
@@ -291,6 +297,9 @@ is preserved. Cross-object locking requires alias analysis and is out of scope.
 | Generic method, varargs | Reject |
 | Synchronized method | Reject |
 | Cross-type instance on caller supertype, final/non-virtual, accessible, no `super`/generic | Accept |
+| Cross-type static, declaring type has no static initializer or non-constant static field, accessible body | Accept (falls through to signature/body accessibility checks) |
+| Cross-type static, declaring type has static initializer block or non-constant static field initializer | Reject with class-initialization diagnostic |
+| Cross-type static, declaring type is not a TypeDeclaration (enum, annotation) | Reject conservatively |
 | Cross-type static, generic declaring type, body uses `super`/qualified `this`, inaccessible member/type | Reject |
 | Direct recursion, anonymous receiver | Reject |
 | Mutual recursion (caller transitively reachable from callee in call graph) | Reject |
@@ -415,8 +424,11 @@ over "we ran out of budget".
   supertype; missing type and static imports are added to the caller.
 - Import conflicts, inaccessible types/members, generic declaring types, and bodies
   using `super` or qualified `this` are rejected with diagnostics.
-- Project-wide cross-type static calls are rejected with the class-initialization
-  diagnostic.
+- Project-wide cross-type static calls are allowed when the declaring TypeDeclaration
+  has no static initializer block and no non-constant static field initializers
+  (`classInitializationRejection`). Calls to types with static initializers are
+  rejected with a targeted diagnostic. Enum and annotation declaring types are
+  rejected conservatively.
 - Budget stops for `maxTransformations` and `maxCodeGrowthChars`, including mutual
   recursion and project-wide growth.
 - Explicit rejection of synchronized methods, cross-type/generic/non-static-nested
@@ -627,8 +639,10 @@ Implemented but intentionally narrow:
   with a side-effect-free left-hand side, or expression statement.
 - No direct expression substitution; all value calls are hoisted.
 - No declaration removal or unused-method cleanup.
-- Cross-type static inlining and the class-initialization check are deferred.
-  Cross-type imports are otherwise handled, with simple-name conflicts rejected.
+- Cross-type static inlining is now enabled for plain class declaring types with no
+  static initializer block and no non-constant static field initializers.
+  Enum and annotation declaring types remain conservatively rejected.
+  Cross-type imports are handled, with simple-name conflicts rejected.
 - No call graph beyond direct recursion; mutual recursion is stopped only by budget.
 - Data-flow analysis is intentionally narrow. Only literals, unqualified `this`, and
   caller local/parameter reads may be substituted, and only when read once outside
@@ -701,9 +715,10 @@ Known edge cases to test before promotion:
 1. **Harden the spike** (complete): finish statement positions (including assignment
    LHS side-effect checks), add `try/finally`, capture, label, and overload fixtures,
    add final compile verification for every approved output.
-2. **Project model** (partial): project-wide same-type and guarded cross-type instance
-   inlining with imports are complete. Next: exact class-initialization analysis for
-   cross-type static calls.
+2. **Project model** (complete): project-wide same-type, guarded cross-type instance,
+   and cross-type static inlining are complete. Static inlining uses
+   `classInitializationRejection` to guard against silently dropping class
+   initializers; enum and annotation declaring types remain conservatively rejected.
 3. **Data flow** (partial): conservative purity/use-count analysis, pure single-use
    argument substitution, and same-type explicit receiver capture are complete. Next:
    additional safe call positions.

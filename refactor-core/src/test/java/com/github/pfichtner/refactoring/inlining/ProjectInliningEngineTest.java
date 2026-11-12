@@ -105,9 +105,34 @@ class ProjectInliningEngineTest {
     }
 
     @Test
-    void cross_type_static_call_is_rejected() throws Exception {
+    void cross_type_static_method_is_inlined() throws Exception {
         MavenProject project = project("cross-type");
         Map<String, String> inputs = inputs("cross-type");
+
+        ProjectInliningResult result = InliningEngine.inlineProject(project);
+
+        assertThat(result.changedFiles()).hasSize(1);
+        assertThat(result.transformationCount()).isPositive();
+        assertThat(result.fixedPoint()).isTrue();
+
+        Map<String, String> sources = merged(inputs, result.changedFiles());
+        Path classes = compileProject(sources);
+        assertThat(invoke(classes, "com.example.Alpha", "run")).isEqualTo(6);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Project inline — cross-type static method (no class initializer)")
+                .inputProject(inputs)
+                .refactoring("inline project", "`Beta.compute(3)`",
+                        "Beta has no static initializer; the class-initialization check passes and the body is inlined safely")
+                .outputProject(result.changedFiles())
+                .build()
+        );
+    }
+
+    @Test
+    void cross_type_static_call_is_rejected() throws Exception {
+        MavenProject project = project("cross-type-static-init");
+        Map<String, String> inputs = inputs("cross-type-static-init");
 
         ProjectInliningResult result = InliningEngine.inlineProject(project);
 
@@ -118,10 +143,10 @@ class ProjectInliningEngineTest {
                         .contains("cross-type static inlining would remove the class-initialization trigger"));
 
         Approvals.verify(
-            RefactoringStoryBoard.titled("Project inline — rejected: cross-type static call")
+            RefactoringStoryBoard.titled("Project inline — rejected: cross-type static call with class initializer")
                 .inputProject(inputs)
                 .refactoring("inline project", "`Beta.compute(3)`",
-                        "the callee is static in another type; inlining would remove its class-initialization trigger")
+                        "Beta has a static initializer block; inlining would silently drop the class-initialization trigger")
                 .diagnostic(result.rejected().get(0).reason())
                 .build()
         );
