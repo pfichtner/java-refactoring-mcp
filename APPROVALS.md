@@ -269,6 +269,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | extract | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_method.approved.md) |
 | extract-superclass | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_superclass.approved.md) |
 | extract-var | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_variable.approved.md) |
+| inline-aggressive | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.inline_aggressive.approved.md) |
 | inline-const | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.inline_constant.approved.md) |
 | inline-method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.inline_method.approved.md) |
 | inline-var | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.inline_variable.approved.md) |
@@ -310,6 +311,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | extract | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_method.approved.md) |
 | extract-superclass | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_superclass.approved.md) |
 | extract-var | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_variable.approved.md) |
+| inline-aggressive | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.inline_aggressive.approved.md) |
 | inline-const | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.inline_constant.approved.md) |
 | inline-method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.inline_method.approved.md) |
 | inline-var | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.inline_variable.approved.md) |
@@ -374,6 +376,93 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Encapsulate field: Person.name — getter + setter | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/EncapsulateFieldTest.encapsulate_field_generates_getter_and_setter_rewrites_both.approved.md) |
 | Encapsulate field: Person.age — getter only (verify private result) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/EncapsulateFieldTest.encapsulate_field_rejected_when_already_private.approved.md) |
 
+### Inlining engine
+| Test case | Approval |
+|-----------|----------|
+| Aggressive inline — rejected: anonymous class uses 'this' | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.anonymous_class_using_this_is_rejected.approved.md) |
+| Aggressive inline — rejected: anonymous class has fields | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.anonymous_class_with_fields_is_rejected.approved.md) |
+| Aggressive inline: anonymous Comparator flattened to lambda | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.anonymous_comparator_is_converted_to_lambda.approved.md) |
+| Aggressive inline: anonymous Runnable flattened to lambda | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.anonymous_runnable_is_converted_to_lambda.approved.md) |
+| Aggressive inline: argument side effects evaluated once | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.argument_side_effects_are_evaluated_once.approved.md) |
+| Aggressive inline — rejected: side-effecting assignment LHS | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.assignment_with_side_effecting_lhs_is_rejected.approved.md) |
+| Aggressive inline: call as array dimension | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.call_as_array_dimension_is_inlined.approved.md) |
+| Aggressive inline: call as array index | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.call_as_array_index_is_inlined.approved.md) |
+| Aggressive inline — rejected: array index with impure array expression | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.call_as_array_index_with_impure_array_is_rejected.approved.md) |
+| Aggressive inline: call as enhanced-for iterable | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.call_as_enhanced_for_iterable_is_inlined.approved.md) |
+| Aggressive inline: call as instanceof left operand | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.call_as_instanceof_left_operand_is_inlined.approved.md) |
+| Aggressive inline: call as switch expression selector | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.call_as_switch_expression_selector_is_inlined.approved.md) |
+| Aggressive inline: call as switch selector | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.call_as_switch_selector_is_inlined.approved.md) |
+| Aggressive inline: call as ternary condition | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.call_as_ternary_condition_is_inlined.approved.md) |
+| Aggressive inline: call in constructor argument | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.call_in_constructor_argument_is_inlined.approved.md) |
+| Aggressive inline: call in for-loop expression initializer | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.call_in_for_loop_expression_initializer_is_inlined.approved.md) |
+| Aggressive inline: call in for-loop initializer | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.call_in_for_loop_initializer_is_inlined.approved.md) |
+| Aggressive inline: call in if-condition | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.call_in_if_condition_is_inlined.approved.md) |
+| Aggressive inline — rejected: call in ternary then-branch | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.call_in_ternary_then_branch_is_rejected.approved.md) |
+| Aggressive inline: call in throw expression | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.call_in_throw_expression_is_inlined.approved.md) |
+| Aggressive inline: captured locals renamed consistently | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.captured_locals_are_renamed_consistently.approved.md) |
+| Aggressive inline — rejected: checked exception | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.checked_exception_method_is_rejected.approved.md) |
+| Aggressive inline: static final boolean constant | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.constant_boolean_field_is_inlined.approved.md) |
+| Aggressive inline: constant inlined after method inline | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.constant_inlined_after_method_inline.approved.md) |
+| Aggressive inline: static final int constant | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.constant_int_field_is_inlined.approved.md) |
+| Aggressive inline: static final String constant | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.constant_string_field_is_inlined.approved.md) |
+| Aggressive inline — rejected: constructor call | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.constructor_call_is_rejected.approved.md) |
+| Aggressive inline: cross-type explicit receiver | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.cross_type_explicit_receiver_is_inlined.approved.md) |
+| Aggressive inline — rejected: cross-type explicit receiver body has private field | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.cross_type_explicit_receiver_with_private_body_is_rejected.approved.md) |
+| Aggressive inline: cross-type generic explicit receiver with parameterized type argument | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.cross_type_generic_explicit_receiver_with_parameterized_type_arg_is_inlined.approved.md) |
+| Aggressive inline: cross-type generic explicit receiver with typed parameter | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.cross_type_generic_explicit_receiver_with_typed_param_is_inlined.approved.md) |
+| Aggressive inline: cross-type generic explicit receiver with typed return | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.cross_type_generic_explicit_receiver_with_typed_return_is_inlined.approved.md) |
+| Aggressive inline — rejected: cross-type generic explicit receiver with wildcard type argument | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.cross_type_generic_explicit_receiver_with_wildcard_is_rejected.approved.md) |
+| Aggressive inline: cross-type generic explicit receiver without type variable | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.cross_type_generic_explicit_receiver_without_type_var_is_inlined.approved.md) |
+| Aggressive inline: cross-type generic implicit receiver | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.cross_type_generic_implicit_receiver_is_inlined.approved.md) |
+| Aggressive inline — rejected: cross-type generic implicit receiver with raw type | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.cross_type_generic_implicit_receiver_raw_is_rejected.approved.md) |
+| Aggressive inline all: delegating constructor | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.delegating_constructor_inlined_all_passes.approved.md) |
+| Aggressive inline: delegating constructor | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.delegating_constructor_no_args_is_inlined.approved.md) |
+| Aggressive inline — rejected: chained delegating constructor | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.delegating_constructor_with_chained_this_is_rejected.approved.md) |
+| Aggressive inline: delegating constructor with early return | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.delegating_constructor_with_early_return_is_inlined.approved.md) |
+| Aggressive inline — rejected: delegating constructor with super() | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.delegating_constructor_with_explicit_super_is_rejected.approved.md) |
+| Aggressive inline: delegating constructor with params | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.delegating_constructor_with_params_is_inlined.approved.md) |
+| Aggressive inline: delegation chain fully resolved (inlineAll) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.delegation_chain_fully_resolved_via_inlineAll.approved.md) |
+| Aggressive inline: delegation substituted at nested position (inlineAt) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.delegation_substituted_at_nested_position_via_inlineAt.approved.md) |
+| Aggressive inline — rejected: direct recursion | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.direct_recursion_is_rejected.approved.md) |
+| Aggressive inline: explicit receiver captured | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.explicit_receiver_is_captured_once.approved.md) |
+| Aggressive inline: explicit receiver null check | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.explicit_receiver_null_check_is_preserved.approved.md) |
+| Aggressive inline: explicit receiver side effect once | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.explicit_receiver_side_effect_runs_once.approved.md) |
+| Aggressive inline: field assignment | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.field_assignment_is_accepted.approved.md) |
+| Aggressive inline: private final field via this reference | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.final_field_accessed_via_this_is_inlined.approved.md) |
+| Aggressive inline: private final int field | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.final_field_int_is_inlined.approved.md) |
+| Aggressive inline: private final String field | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.final_field_string_is_inlined.approved.md) |
+| Aggressive inline: private final field with arithmetic initializer | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.final_field_with_arithmetic_initializer_is_inlined.approved.md) |
+| Aggressive inline: generated labels avoid existing names | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.generated_labels_and_names_do_not_collide.approved.md) |
+| Aggressive inline: pure getter substituted at right of impure infix | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.getter_body_substituted_at_right_of_impure_infix.approved.md) |
+| Aggressive inline: getter substituted in argument position | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.getter_body_substituted_in_argument_position.approved.md) |
+| Aggressive inline: getter substituted in assignment RHS despite side-effecting LHS | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.getter_body_substituted_in_assignment_rhs_despite_side_effecting_lhs.approved.md) |
+| Aggressive inline: iterative chain until fixed point | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.inline_chain_reaches_fixed_point.approved.md) |
+| Aggressive inline: method with local variables | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.inline_method_with_local_variables.approved.md) |
+| Aggressive inline: multiple return statements | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.inline_method_with_multiple_returns.approved.md) |
+| Aggressive inline: simple private method | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.inline_simple_private_method.approved.md) |
+| Aggressive inline: maxTransformations budget stops the chain | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.max_transformations_stops_chain.approved.md) |
+| Aggressive inline — rejected: method reference | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.method_reference_is_rejected.approved.md) |
+| Aggressive inline: mutual recursion stopped by budget | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.mutual_recursion_stops_at_budget.approved.md) |
+| Aggressive inline: nested expression in return | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.nested_expression_in_return_is_inlined.approved.md) |
+| Aggressive inline — rejected: non-completing void body | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.non_completing_void_body_is_rejected.approved.md) |
+| Aggressive inline — rejected: non-getter body in impure infix | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.non_getter_body_nested_in_impure_infix_is_rejected.approved.md) |
+| Aggressive inline — rejected: inner explicit receiver | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.non_static_nested_explicit_receiver_is_rejected.approved.md) |
+| Aggressive inline: overload and explicit this receiver | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.overload_and_this_receiver_are_resolved_by_binding.approved.md) |
+| Aggressive inline: pattern, for, and catch variables | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.pattern_for_and_catch_variables_are_renamed.approved.md) |
+| Aggressive inline: argument assigned inside callee | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.pure_argument_assigned_in_callee_keeps_temporary.approved.md) |
+| Aggressive inline: argument captured by a lambda | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.pure_argument_captured_by_lambda_keeps_temporary.approved.md) |
+| Aggressive inline: argument used in a loop | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.pure_argument_used_in_loop_keeps_temporary.approved.md) |
+| Aggressive inline: pure argument used twice | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.pure_multi_use_argument_keeps_temporary.approved.md) |
+| Aggressive inline: pure single-use argument substituted | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.pure_single_use_argument_is_substituted.approved.md) |
+| Aggressive inline: same-type generic explicit receiver | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.same_type_generic_explicit_receiver_is_inlined.approved.md) |
+| Aggressive inline: simple-name assignment | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.simple_name_assignment_is_accepted.approved.md) |
+| Aggressive inline — rejected: super call | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.super_call_is_rejected.approved.md) |
+| Aggressive inline: return in finally overrides | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.try_finally_return_overrides_earlier_return.approved.md) |
+| Aggressive inline: finally runs before return | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.try_finally_runs_before_return.approved.md) |
+| Aggressive inline: type-qualified static call | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.type_qualified_static_call_is_accepted.approved.md) |
+| Aggressive inline — rejected: synchronized method | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.unsafe_synchronized_method_is_rejected.approved.md) |
+| Aggressive inline: unused declaration removed after inlining | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.unused_declarations_are_removed_after_inlining.approved.md) |
+
 ### Introduce indirection
 | Test case | Approval |
 |-----------|----------|
@@ -412,6 +501,20 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Move static without widen_visibility: private modifier preserved | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveStaticMemberTest.no_widen_visibility_keeps_private_modifier.approved.md) |
 | Move static with widen_visibility (same package): private → package-private | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/MoveStaticMemberTest.widen_visibility_changes_private_to_package_private_same_package.approved.md) |
 
+### Project inlining engine
+| Test case | Approval |
+|-----------|----------|
+| Project inline: cross-type explicit receiver | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_explicit_receiver_is_inlined.approved.md) |
+| Project inline: cross-type generic instance method | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_generic_instance_method_is_inlined.approved.md) |
+| Project inline — rejected: cross-type import conflict | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_import_conflict_is_rejected.approved.md) |
+| Project inline: cross-type instance method and import | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_instance_method_is_inlined_with_import.approved.md) |
+| Project inline — rejected: cross-type private member | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_private_member_is_rejected.approved.md) |
+| Project inline — rejected: cross-type static call with class initializer | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_static_call_is_rejected.approved.md) |
+| Project inline: cross-type static import | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_static_import_is_added_to_caller.approved.md) |
+| Project inline — cross-type static method (no class initializer) | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_static_method_is_inlined.approved.md) |
+| Project inline — rejected: cross-type body uses super | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_super_usage_is_rejected.approved.md) |
+| Project inline: same-type methods across files | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.same_type_methods_are_inlined_across_files.approved.md) |
+
 ### Promote to field
 | Test case | Approval |
 |-----------|----------|
@@ -443,6 +546,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Tool extract method returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_extract_method_returns_preview.approved.txt) |
 | Tool extract superclass returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_extract_superclass_returns_preview.approved.txt) |
 | Tool extract variable returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_extract_variable_returns_preview.approved.txt) |
+| Tool inline aggressive returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_inline_aggressive_returns_preview.approved.txt) |
 | Tool inline constant returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_inline_constant_returns_preview.approved.txt) |
 | Tool inline method returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_inline_method_returns_preview.approved.txt) |
 | Tool inline variable by variable and method name returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_inline_variable_by_variable_and_method_name_returns_preview.approved.txt) |

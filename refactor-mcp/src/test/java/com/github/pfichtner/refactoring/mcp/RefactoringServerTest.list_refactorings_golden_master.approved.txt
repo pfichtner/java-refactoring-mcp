@@ -1,4 +1,4 @@
-Available refactorings (31):
+Available refactorings (32):
 
 rename
   Rename a symbol (method, field, type, parameter, or local variable)
@@ -42,6 +42,14 @@ inline_method
   Optionally removes the method declaration.
   Returns new source for every changed file. Applies by default; pass dryrun=true to preview instead.
   Required: project_root, file
+
+inline_aggressive
+  Aggressively inline all inlineable calls project-wide to a fixed point.
+  Applies multiple rounds of inlining (method calls, getters, constants,
+  final fields, delegating constructors, delegation) until no further
+  transformations apply or a budget is reached.
+  Returns new source for every changed file. Applies by default; pass dryrun=true to preview instead.
+  Required: project_root
 
 extract_constant
   Extract an expression into a private static final constant at class level.

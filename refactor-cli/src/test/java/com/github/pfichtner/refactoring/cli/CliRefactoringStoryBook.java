@@ -230,6 +230,15 @@ class CliRefactoringStoryBook {
     }
 
     @Test
+    @CliFixture(root = "fixtures/projects/inline-aggressive-project/same-type/pom.xml")
+    void inline_aggressive(CliTestBed bed) throws Exception {
+        Approvals.verify(bed.preview(
+                "inline-aggressive",
+                "--project", bed.root().toString(),
+                "--dry-run"));
+    }
+
+    @Test
     @CliFixture(root = "fixtures/projects/pull-up-method/pom.xml")
     void pull_up_method(CliTestBed bed) throws Exception {
         Path dogFile = bed.root().resolve("src/main/java/com/example/Dog.java");

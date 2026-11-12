@@ -1,0 +1,805 @@
+# Aggressive Inlining — Next Steps Plan
+
+Baseline branch: `feature/aggressive-inlining`
+Baseline artefact: `INLINING.md` (investigation and spike results)
+
+This plan continues from the isolated spike in
+`refactor-core/src/main/java/com/github/pfichtner/refactoring/inlining/`.
+The spike is not yet wired into CLI or MCP.
+
+---
+
+## Goal
+
+Turn the isolated inlining spike into a project-wide, conservative aggressive
+inlining engine without changing the semantics of existing refactorings.
+
+The working rule stays:
+
+> Prove locally, reject explicitly. If a safety condition cannot be shown from the
+> JDT model, do not edit.
+
+---
+
+## Guardrails
+
+- Keep the existing `inline_method`, `inline_variable`, and constant APIs unchanged.
+- Add the new capability as a separate operation, exposed through CLI/MCP only after
+  the engine API is stable.
+- All source edits go through JDT AST nodes and `ASTRewrite`; no regex or raw string
+  source surgery.
+- Every successful transformation needs an approval fixture. Every rejection or bug
+  becomes a regression fixture.
+- Inspect approval diffs before accepting them. Never bulk-regenerate approvals.
+- Run the full reactor before finishing each phase.
+- Commit after each completed phase.
+
+---
+
+## Phase 1 — Harden the spike
+
+Status: complete. `InliningEngineTest` has 31 tests; full reactor is green on JDK 21.
+
+### Work
+
+1. Add regression fixtures for:
+   - `return` inside `try` and `finally`, including a `finally` that returns.
+   - Existing labels in the caller and callee; generated labels must not collide.
+   - Locals captured by an inner class, anonymous class, or lambda.
+   - Pattern variables, enhanced-for variables, and catch parameters.
+   - Overloaded methods and calls through `this`/`super`.
+   - Argument expression with side effects used multiple times.
+   - Direct recursion rejection and a mutual-recursion budget stop.
+   - Assignment whose left-hand side is not a simple name with a side-effecting
+     receiver or index.
+2. Audit every supported call position. Add the missing rejection checks rather than
+   widening accepted positions.
+3. Ensure every successful approval test compiles the output with the JDK compiler.
+4. Add focused tests for the two budgets:
+   - `maxTransformations`
+   - `maxCodeGrowthChars`
+5. Review the generated formatting. Add a formatter only if mixed indentation makes
+   approval output or downstream edits unreliable; otherwise document it.
+6. Update `INLINING.md` with any behavior that changes.
+
+### Acceptance
+
+- All new fixtures compile where successful.
+- Rejections carry a stable diagnostic fragment.
+- `InliningEngineTest` passes.
+- Full `mvn test` passes on JDK 21.
+- No existing approval file changes unexpectedly.
+
+### Commit
+
+`feat(inlining): harden aggressive inlining safety checks`
+
+---
+
+## Phase 2 — Project-wide same-type parsing
+
+Status: complete, including cross-type static inlining with class-initialization
+analysis. `SemanticSafetyAnalyzer.classInitializationRejection` inspects the
+declaring `TypeDeclaration` for static initializer blocks and non-constant static
+field initializers. If none are found the call falls through to accessibility checks;
+otherwise it is rejected with a targeted diagnostic. Enum and annotation declaring
+types remain conservatively rejected.
+`ProjectInliningEngineTest` has 13 tests; full reactor is green on JDK 21.
+
+### Work
+
+1. Replace the single-`CompilationUnit` entry point with a project-level engine driven
+   by `JavaProject` and `JdtProjectSources.parseAll`.
+2. Locate candidate calls across all parsed units using bindings, not source text.
+3. Introduce an import step for cross-package types copied into a caller. Same-type
+   calls already have the callee's imports in scope; cross-type calls use
+   `InlineImports` to add AST import nodes and reject simple-name conflicts.
+4. Keep the first project-wide scope conservative:
+   - same type across files;
+   - private/final/static methods only;
+   - no constructor or structural inlining.
+5. Apply a batch of non-overlapping transformations per pass, then re-parse once.
+   The file is the non-overlapping batch unit: one candidate per file per pass.
+6. Keep a deterministic candidate order so approvals stay stable.
+7. Return a per-file change map plus diagnostics.
+
+### Acceptance
+
+- Multi-file fixtures prove the same-type restriction.
+- Applying the engine does not modify files during analyze/dry-run.
+- Batched passes produce the same result as one-at-a-time on the fixtures.
+- Full reactor passes.
+
+### Commit
+
+`feat(inlining): add project-wide same-type inlining`
+
+### Phase 2b — Cross-type instance inlining
+
+Status: complete. Commit: `feat(inlining): support cross-type instance inlining`.
+
+- Accept inherited final/private instance methods declared on a caller supertype.
+- Reject cross-type static calls pending a class-initialization check.
+- Reject generic declaring types, bodies using `super` or qualified `this`, and
+  inaccessible types/members.
+- Add normal and static imports with `InlineImports`; reject simple-name conflicts.
+- Fixtures: successful cross-type instance and static-import runs; rejected static
+  call, `super`, private member, and import conflict.
+
+### Phase 2c — Cross-type static inlining with class-initialization analysis (complete)
+
+- `SemanticSafetyAnalyzer.classInitializationRejection` replaces the blanket
+  "not supported by spike" rejection for static cross-type calls.
+- Declaring type must be a plain `TypeDeclaration` (not enum/annotation).
+- Declaring type must have no `static {}` initializer blocks and no `static` field
+  fragments with non-constant initializers (`IVariableBinding.getConstantValue() == null`).
+- If safe: falls through to `inaccessibleSignature` + `inaccessibleBody` checks.
+- Fixtures: `cross-type` (simple Beta, now succeeds) and `cross-type-static-init`
+  (Beta with static block, still rejected with targeted diagnostic).
+- Approval tests: `cross_type_static_method_is_inlined` (success) and
+  `cross_type_static_call_is_rejected` (rejection, updated to use new fixture).
+
+---
+
+## Phase 3 — Data-flow and expression positions
+
+Status: Phase 3b complete. Initial Phase 3c step complete (side-effect-free assignment LHS).
+
+### Phase 3a — Pure argument substitution (complete)
+
+1. Purity and binding-based use-count analysis for arguments.
+2. Direct substitution only for literals, unqualified `this`, and caller local/parameter
+   reads used once outside loops and closures. Written parameters and all other
+   arguments keep the capture-once temporary.
+3. Runtime-equivalence tests for substitution and for written, multi-use, loop-contained,
+   and lambda-captured fallbacks.
+
+### Phase 3b — Receiver capture (complete)
+
+1. Capture same-type explicit receivers once before the arguments.
+2. Add a null check and rewrite unqualified `this`, instance fields, and instance
+   method calls to the captured receiver.
+3. Keep cross-type, generic, and non-static nested explicit receivers rejected, along
+   with `super`, qualified `this`, and local/anonymous classes in the body.
+4. Added side-effect-once, null-receiver, private-member, cross-type, generic, and
+   non-static nested fixtures.
+
+### Phase 3c — Additional call positions (complete for key positions)
+
+1. Assignment RHS with a side-effect-free LHS. (done: simple name and unqualified `this.field`)
+2. Nested expressions with pure preceding sub-expressions and a safe insertion point. (done)
+3. Return expressions already handled by the spike.
+4. Definite-assignment and exception-flow checks for the new positions.
+
+### Acceptance
+
+- Evaluation-order tests compare original and transformed runtime results.
+- Pure argument substitution is proven not to duplicate evaluation.
+- Unsafe positions still reject with a diagnostic.
+- Full reactor passes.
+
+---
+
+## Phase 4 — Call graph and cleanup
+
+Status: complete.
+
+### Work completed
+
+1. `CallGraphAnalyzer` built per pass (single-file: from `CompilationUnit`;
+   project-wide: from snapshot declarations and calls).
+2. Mutual recursion (caller transitively reachable from callee in the call graph)
+   rejected with "mutual recursion detected" before the semantic safety check.
+3. Dispatch analysis deferred: virtual non-private/non-final/non-static methods
+   remain rejected by the existing `SemanticSafetyAnalyzer` check.
+4. Opt-in unused-declaration removal via `InlineConfig.removeUnusedDeclarations()`:
+   after the fixed point, private methods with no remaining call sites are removed
+   via `ASTRewrite`; results reported in `InliningResult.removed()` and
+   `ProjectInliningResult.removed()`.
+5. Removal uses a fresh parse of the final source state.
+6. Only private methods are removed (guaranteed no external callers for single-file
+   and project-wide runs).
+
+### Acceptance
+
+- Mutual recursion is rejected by analysis, not merely by budget exhaustion. ✓
+- `start` in the Mutual fixture is correctly unrolled (not cross-inlined). ✓
+- Removal of `helper()`, `twice()`, `plusTen()` is approval-covered. ✓
+- Both single-file and project outputs compile and run correctly. ✓
+- Full reactor passes (277 core + 84 CLI + 89 MCP + 13 demo = 463 tests). ✓
+
+### Commit
+
+`feat(inlining): add call graph analysis and opt-in unused-declaration removal`
+
+---
+
+## Phase 5 — Expression and structural inlining
+
+Implement one item at a time, each with its own safety analyzer and fixtures:
+
+1. Getter inlining for side-effect-free, non-overridable getters. **Status: complete.**
+   `GetterInliningTransformation` substitutes the return expression of a single-return
+   pure-body method directly at the call site (no hoisting) when the hoisting
+   transformation rejects the position. Enabled positions: right operand of an impure
+   infix, argument after an impure earlier arg, assignment RHS with side-effecting LHS.
+   Three new fixtures (`getter-impure-body-nested`, `getter-nested-argument`,
+   `getter-assignment-rhs`) and four new/updated tests in `InliningEngineTest`.
+2. Compile-time constant inlining. **Status: complete.**
+   `ConstantInliningTransformation` replaces references to `static final` fields with a
+   non-null `IVariableBinding.getConstantValue()` with the corresponding literal AST
+   node (`boolean`, `char`, `String`, integral and floating-point types; skips NaN and
+   Infinity). Negative values use `PrefixExpression(MINUS, NumberLiteral)`. The engine's
+   `inlineAll` and `inlineProject` loops try constant candidates after method candidates
+   find no progress, so a constant reference inlined in one pass may expose a new method
+   candidate in the next. Four approval tests: `constant-int`, `constant-string`,
+   `constant-boolean`, and `constant-after-method-inline`.
+3. Final-field inlining (non-static `final` instance fields). **Status: complete.**
+   `FinalFieldInliningTransformation` replaces references to `private final` non-static
+   fields whose declaration initializer is `isPure` (literals and constant arithmetic)
+   with that initializer. Atomic initializers substitute directly; compound initializers
+   are wrapped in `ParenthesizedExpression`. Both unqualified and `this.field` access
+   are handled. The engine runs the final-field loop after the constant loop.
+4. Constructor inlining for simple constructors only. **Status: complete.**
+   `ConstructorInliningTransformation` inlines `this(args)` delegating constructor calls
+   by replacing them with the target constructor's body. Parameters are captured in
+   temporaries when not pure-single-use; pure single-use arguments are substituted
+   directly. Early `return;` → labeled `break` (same mechanism as void method inlining).
+   Rejected: explicit `super()` in target, chained `this()`, checked exceptions, generics,
+   varargs. `InliningEngine.inlineAt` dispatches on `ConstructorInvocation`; `inlineAll`
+   and `inlineProject` add a constructor-inlining tier between method and constant tiers.
+   Six approval tests: three successes and two rejections.
+5. Delegation elimination as a composed transform. **Status: complete.**
+   `DelegationEliminationTransformation` replaces calls to methods whose body is a single
+   delegated call (`return inner(args)` or `inner(args);`) with the inner call expression,
+   substituting outer parameters with the outer call's actual arguments. The substitution
+   is in-place: the outer call expression is replaced without hoisting, so it works at any
+   call-site position including nested expressions where hoisting and getter inlining both
+   fail. Inner args must be simple param refs, pure literals, or accessible field refs;
+   non-pure outer args must correspond to inner args used at most once. Inner method must
+   be in the same type with no explicit non-this receiver. `InliningEngine.tryTransform`
+   tries delegation as the third fallback after hoisting and getter inlining. Two approval
+   tests: `inlineAt` (single delegation step at nested position) and `inlineAll` (full
+   two-pass chain: delegation then getter inlining).
+6. Lambda and anonymous-class flattening. **Status: complete.**
+   `AnonymousClassFlatteningTransformation` converts anonymous class declarations that
+   implement a functional interface into lambda expressions. Safety conditions: exactly
+   one body declaration (the SAM override), no field declarations, no unqualified `this`
+   or `super` in the body, no nested type declarations, no generic/varargs SAM, no
+   constructor arguments. Parameters use inferred types (`VariableDeclarationFragment`).
+   Body is simplified to expression form for single-return or single-statement-expression
+   bodies; otherwise a block lambda is produced. Added as the last tier in `inlineAll`
+   and `inlineProject`, after final-field inlining. Rejections tracked in
+   `InliningResult` / `ProjectInliningResult`. Four approval tests: `anon-runnable`,
+   `anon-comparator`, `anon-with-this` (rejected), `anon-with-fields` (rejected).
+7. Superclass/interface/wrapper flattening only after a separate design review.
+
+### Acceptance per item
+
+- Dedicated fixtures cover initialization order, `this`, capture, exceptions, and
+  identity where relevant.
+- Unsafe cases are rejected and recorded.
+- Full reactor passes.
+
+---
+
+## Phase 6 — CLI and MCP exposure
+
+Status: **complete**.
+
+### Work completed
+
+1. Added `inline-aggressive` CLI command (`InlineAggressiveCommand`) extending
+   `AbstractRefactoringCommand`. Options: `--project`, `--max-transformations` (default 100),
+   `--max-code-growth` (default 100 000), `--remove-unused-declarations`. Output reports
+   transformation count and fixed-point status in the success line.
+2. Added `inline_aggressive` MCP tool (`InlineAggressiveTool`). Required: `project_root`.
+   Optional: `dry_run`, `max_transformations`, `max_code_growth_chars`, `remove_declaration`.
+   Response includes applied count and fixed-point status prepended to the file listing.
+3. Added two new `Property` enum values: `MAX_TRANSFORMATIONS`, `MAX_CODE_GROWTH_CHARS`.
+4. Registered command in `Main.subcommands`; registered tool in `RefactoringServer.TOOLS`.
+5. CLI storyboard tests: `CliRefactoringStoryBook.inline_aggressive` (dry-run) and
+   `CliApplyStoryBook.inline_aggressive` (apply). Fixtures: `inline-aggressive-project/same-type`.
+6. MCP tests: `RefactoringServerToolTest.tool_inline_aggressive_returns_preview` and
+   `tool_inline_aggressive_applies`. Golden-master `RefactoringServerTest.list_refactorings_golden_master`
+   updated to reflect 32 tools.
+
+### Acceptance
+
+- CLI and MCP produce identical inlined sources for the same fixture project. ✓
+- Dry-run does not modify files. ✓
+- Full reactor passes (298 core + 86 CLI + 91 MCP = 475 tests). ✓
+
+### Commit
+
+`feat(cli,mcp): expose aggressive inlining`
+
+---
+
+## Test commands
+
+```bash
+export JAVA_HOME=/tmp/jdk21
+export PATH=/tmp/jdk21/bin:$PATH
+
+# Focused
+mvn -pl refactor-core -Dtest=InliningEngineTest,ProjectInliningEngineTest test
+
+# Full reactor
+mvn test
+```
+
+If JDK 21 is not present at `/tmp/jdk21`, install or point `JAVA_HOME` at a JDK 21
+before running the commands.
+
+---
+
+## Open decisions
+
+Resolve these before the phase that needs them:
+
+1. Cross-class static inlining: how to preserve class initialization triggers.
+2. Cross-type and generic explicit receiver support: capturing the receiver's
+   enclosing instance and substituting type variables.
+3. Method removal: opt-in flag versus always keeping declarations.
+4. Formatting: decided to keep JDT output and document mixed/compact formatting; no
+   formatter in Phase 1.
+5. Public operation name and whether an existing tool receives an `aggressive` mode.
+6. Batch strategy: resolved for project runs as one candidate per file per pass, then
+   re-parse once. Multiple candidates in one file still wait for later passes.
+7. Whether a final compile check requires a user-supplied classpath and how failure
+   is reported.
+
+---
+
+## Phase 7b — Cross-type explicit receiver inlining
+
+Status: **complete**.
+
+---
+
+## Phase 7c — Generic explicit receiver inlining
+
+Status: **complete**.
+
+`SemanticSafetyAnalyzer` gains `typeVariableUsageRejection(MethodDeclaration, ITypeBinding)`:
+visits all `SimpleName` nodes in the method declaration (return type, parameter types,
+body) and returns a rejection reason when any node resolves to a type variable binding
+whose name matches one of the declaring type's formal type parameters.
+
+**Same-type generic:** the blanket generic rejection is removed from
+`explicitReceiverRejection`. Type variables declared by the class are always in scope
+within the same-class caller, so no substitution is needed.
+
+**Cross-type generic:** `crossTypeExplicitReceiverRejection` replaces the blanket
+generic rejection with `typeVariableUsageRejection`. If the check passes (no type
+variable reference found), the call falls through to the existing accessibility and
+body-safety checks. If the check fails, the call is rejected with a targeted diagnostic
+identifying the type variable name.
+
+Three new tests in `InliningEngineTest`:
+- `same_type_generic_explicit_receiver_is_inlined` (success, same-type `Foo<T>`)
+- `cross_type_generic_explicit_receiver_without_type_var_is_inlined` (success, `Box<T>.size()` returns `int`)
+- `cross_type_generic_explicit_receiver_with_type_var_is_rejected` (rejection, `Box<T>.get()` returns `T`)
+
+Full reactor: 307 core + 86 CLI + 91 MCP tests pass.
+
+### Commit
+
+`feat(inlining): generic explicit receiver inlining (Phase 7c)`
+
+`SemanticSafetyAnalyzer` gains `crossTypeExplicitReceiverRejection`: when a call
+`other.method()` has an explicit receiver and the declaring type is not the caller's
+type, the new path runs instead of `crossTypeRejection`. The subtype requirement is
+dropped; the remaining checks are non-generic declaring type, non-static-nested
+declaring type, no `super`/qualified-`this` in the body, no local/anonymous class
+declarations in the body, accessible signature, and accessible body. The virtual
+dispatch check still runs (the method must be `private`, `final`, or on a `final`
+type). `explicitReceiverRejection` now handles same-type calls only (the `sameType`
+parameter was removed). Two new single-file tests: `cross_type_explicit_receiver_is_inlined`
+(success, using the existing `unsafe-explicit-receiver-cross-type` fixture) and
+`cross_type_explicit_receiver_with_private_body_is_rejected` (rejection when body
+references a private field). One new project-level test:
+`cross_type_explicit_receiver_is_inlined` using a new `cross-type-explicit-receiver`
+fixture with `Base.value()` returning `42` and `App.run()` calling `other.value()`.
+Full reactor: 305 core + 86 CLI + 91 MCP tests pass.
+
+### Commit
+
+`feat(inlining): cross-type explicit receiver inlining (Phase 7b)`
+
+---
+
+## Phase 8 — Type-Variable Substitution for Cross-Type Generic Explicit Receiver Inlining
+
+Status: **complete**.
+
+`SemanticSafetyAnalyzer` gains `typeVarSubstitutionRejection` (replaces
+`typeVariableUsageRejection` as the gate in `crossTypeExplicitReceiverRejection`):
+- Rejects raw generic types (empty type arguments).
+- Rejects wildcard and captured type arguments.
+- Rejects cases where the body uses a type variable AND any type argument is itself
+  parameterized or an array (body substitution is in-place SimpleName rename, which
+  only works for simple types).
+- Otherwise allows substitution.
+
+`InlineMethodTransformation` gains three helpers:
+- `buildTypeVarSubstitution(ITypeBinding)`: builds `Map<String, ITypeBinding>` from the
+  call-site binding's declaring class type parameters and type arguments.
+- `typeBindingToAstType(AST, ITypeBinding)`: converts an `ITypeBinding` to an AST `Type`
+  node (handles primitives, arrays, parameterized types, simple types). Replaces the old
+  `receiverType()` helper (which always used the erased qualified name).
+- `substituteTypeVariables(ASTNode, ASTNode, Map<String,ITypeBinding>)`: mirror-walks
+  original and copied body, renaming type-variable `SimpleName` nodes to their concrete
+  counterparts via `setIdentifier(substituted.getName())`.
+
+`InlineImports` gains an overload of `create` accepting `List<ITypeBinding> substitutedTypes`
+and a private `collectTypeBindingImports` helper that recursively adds `Request` entries
+for concrete types (skips primitives, type vars, wildcards, java.lang, same-package).
+
+Receiver type, result type, and parameter-temp declarations now use `typeBindingToAstType`
+instead of AST nodes copied from the declaration (which would carry the unsubstituted type
+variable name).
+
+New tests (single-file): `cross_type_generic_explicit_receiver_with_typed_return_is_inlined`
+(Box<String>.get() where T get()), `cross_type_generic_explicit_receiver_with_typed_param_is_inlined`
+(Box<String>.set(T value) where void set(T value)), and
+`cross_type_generic_explicit_receiver_with_wildcard_is_rejected` (Box<?>).
+
+Existing tests updated: `cross_type_generic_explicit_receiver_with_type_var_is_rejected`
+renamed to `cross_type_generic_explicit_receiver_with_typed_return_is_inlined` (now a
+success); approval files for `cross_type_generic_explicit_receiver_without_type_var_is_inlined`,
+`same_type_generic_explicit_receiver_is_inlined`, and `ProjectInliningEngineTest.cross_type_explicit_receiver_is_inlined`
+updated to reflect the cleaner receiver type (simple name from `typeBindingToAstType`
+instead of erased qualified name from old `receiverType()`).
+
+Full reactor: 310 core + 86 CLI + 91 MCP tests pass.
+
+### Commit
+
+`feat(inlining): type-variable substitution for cross-type generic calls (Phase 8)`
+
+---
+
+## Phase 9 — Complex-type-argument substitution
+
+Status: **complete**.
+
+`substituteTypeVariables` in `InlineMethodTransformation` now handles parameterized and
+array type arguments via structural node replacement:
+- When the substituted binding is `isParameterizedType()` or `isArray()`, the method
+  finds the parent `SimpleType` of the matched `SimpleName` in the copied body and
+  replaces it with the full type node produced by `typeBindingToAstType(ast, substituted)`.
+- Simple type arguments (e.g., `String`) continue to use the existing `setIdentifier` path.
+- `typeVarSubstitutionRejection` in `SemanticSafetyAnalyzer` now only rejects raw generic
+  types and wildcard/captured type arguments; the former guard that rejected complex type
+  arguments when the body used a type variable has been removed.
+- Dead helpers `typeVariableUsageRejection` and `bodyUsesTypeVariable` have been removed.
+- New test: `cross_type_generic_explicit_receiver_with_parameterized_type_arg_is_inlined`
+  — `Box<List<String>>` with `final T copy() { T result = item; return result; }` inlined
+  into `Foo.run`; the body type `T result` becomes `List<String> result`. Approval file
+  reviewed and committed.
+- Full reactor: 311 core + 86 CLI + 91 MCP tests pass.
+
+### Commit
+
+`feat(inlining): complex-type-argument substitution (Phase 9)`
+
+---
+
+## Phase 10 — Generic type-variable substitution for implicit-receiver cross-type calls
+
+Status: **complete**.
+
+The hard-block `"generic declaring types are not supported by cross-type inlining"` in
+`SemanticSafetyAnalyzer.crossTypeRejection` (the implicit-receiver / supertype-inherited
+call path) is replaced by the same soft `typeVarSubstitutionRejection` check used by
+the explicit-receiver path. When the caller is a subtype of a generic declaring type and
+all type arguments at the supertype binding are concrete (no wildcard, no capture, non-raw),
+the call proceeds to `InlineMethodTransformation`, which already builds a type-variable
+substitution map from `binding.getDeclaringClass()` and applies it to result type,
+parameter-temp types, and body `SimpleName` nodes. No changes to
+`InlineMethodTransformation` were needed; the transformation already handled this case
+generically once the safety gate allowed it through.
+
+New fixtures and tests:
+- Single-file success: `cross-type-generic-implicit-receiver` — `StringBox extends Box<String>`
+  calling inherited `final T get()`, T→String substituted in result type and body.
+- Single-file rejection: `cross-type-generic-implicit-receiver-raw` — `RawBox extends GenericBox`
+  (raw), rejected with "raw generic type" diagnostic.
+- Project-level success: `cross-type-generic-instance` — `com.example.app.StringBox extends
+  Box<String>`, inherited `get()` inlined, `item` field returns `"Hello"` at runtime.
+
+Full reactor: 313 core + 86 CLI + 91 MCP tests (490 total) pass.
+
+### Commit
+
+`feat(inlining): generic substitution for implicit-receiver cross-type calls (Phase 10)`
+
+---
+
+## Phase 11 — Additional safe call positions
+
+Status: **complete**.
+
+Three new call positions accepted by `InlineMethodTransformation`:
+
+1. **`if`-condition**: `findNestedCallSite` gains an `IfStatement` terminal case. When
+   the traversal chain ends at an if-statement's condition and the if-statement is
+   directly in a block, a `CallSite(ifStmt, false)` is returned. The prelude (result
+   variable + labeled block) is inserted before the if-statement; the condition
+   expression is replaced with the result variable.
+
+2. **Ternary condition**: `evaluationOrderViolation` gains a `ConditionalExpression`
+   case. The condition position (`child == ternary.getExpression()`) returns null
+   (accepted); the then and else branches return a "conditional expression branch" rejection
+   diagnostic. Getter/delegation fallbacks can still handle simple getter bodies in
+   then/else positions.
+
+3. **Constructor argument**: `evaluationOrderViolation` gains a `ClassInstanceCreation`
+   case identical in structure to the existing `MethodInvocation` case: the outer-class
+   expression (if any) must be pure, and all earlier constructor arguments must be
+   side-effect-free. If both conditions hold, the call is accepted for hoisting.
+
+New imports in `InlineMethodTransformation`: `ClassInstanceCreation`, `ConditionalExpression`,
+`IfStatement`.
+
+Four new single-file approval tests: `call_in_if_condition_is_inlined`,
+`call_as_ternary_condition_is_inlined`, `call_in_ternary_then_branch_is_rejected`,
+`call_in_constructor_argument_is_inlined`. All success paths compile and run correctly.
+
+Full reactor: 317 core + 86 CLI + 91 MCP tests (494 total) pass.
+
+### Commit
+
+`feat(inlining): additional safe call positions — if-condition, ternary, constructor argument (Phase 11)`
+
+---
+
+## Phase 12 — Additional safe call positions (throw, switch)
+
+Status: **complete**.
+
+`InlineMethodTransformation.findNestedCallSite` gains two new terminal statement cases:
+
+1. **`throw` expression**: when the traversal chain ends at a `ThrowStatement` and the
+   call (or its wrapping expression subtree) is the throw expression, and the throw
+   statement is directly in a `Block`, a `CallSite(throwStmt, false)` is returned. The
+   existing prelude-insertion and in-place call replacement mechanism hoists the inlined
+   body before the throw statement and replaces the call with the result variable; the
+   throw statement then throws the result.
+
+2. **`switch` selector**: when the traversal chain ends at a `SwitchStatement` and the
+   call (or its wrapping expression subtree) is the switch selector expression, and the
+   switch statement is directly in a `Block`, a `CallSite(switchStmt, false)` is
+   returned. The same mechanism hoists the body before the switch and replaces the
+   selector with the result variable.
+
+New imports: `ThrowStatement`, `SwitchStatement` added to `InlineMethodTransformation`.
+
+Two new single-file approval tests:
+- `call_in_throw_expression_is_inlined` — `compute()` returns an `IllegalArgumentException`,
+  thrown inside a try-catch; body hoisted inside the try block; compiles and runtime returns 5.
+- `call_as_switch_selector_is_inlined` — `compute()` returns `1`; body hoisted before
+  switch; `switch (1)` selects `case 1`; compiles and runtime returns 10.
+
+Full reactor: 319 core + 86 CLI + 91 MCP tests (496 total) pass.
+
+### Commit
+
+`feat(inlining): additional safe call positions — throw expression and switch selector (Phase 12)`
+
+---
+
+---
+
+## Phase 13 — Additional safe call positions (array dimension, enhanced-for iterable)
+
+Status: **complete**.
+
+`InlineMethodTransformation.evaluationOrderViolation` gains an `ArrayCreation` case:
+when the call is a dimension expression of an array creation, all earlier dimension
+expressions are checked for purity via `isPure`; if all earlier dimensions are pure the
+call is accepted (returns null); if any earlier dimension is impure the call is rejected
+with "earlier array dimension has side effects".
+
+`InlineMethodTransformation.findNestedCallSite` gains an `EnhancedForStatement`
+terminal case: when the traversal chain ends at an enhanced-for statement whose iterable
+expression is `child` and the for-statement is directly in a block, a
+`CallSite(forStmt, false)` is returned. The existing prelude-insertion and in-place
+replacement mechanism hoists the body before the for-statement and replaces the iterable
+with the result variable.
+
+New imports: `ArrayCreation`, `EnhancedForStatement` added to `InlineMethodTransformation`.
+
+Two new single-file approval tests:
+- `call_as_array_dimension_is_inlined` — `compute()` returns `3`; body hoisted before
+  the `int[] arr = new int[compute()]` declaration; array created with length 3;
+  compiles and runtime returns 3.
+- `call_as_enhanced_for_iterable_is_inlined` — `compute()` returns `int[]{1,2,3}`;
+  body hoisted before the enhanced-for statement; loop iterates over result; compiles
+  and runtime returns 6.
+
+Full reactor: 321 core + 86 CLI + 91 MCP tests (498 total) pass.
+
+### Commit
+
+`feat(inlining): additional safe call positions — array dimension and enhanced-for iterable (Phase 13)`
+
+---
+
+## Phase 14 — Additional safe call positions (array access index, for-loop initializer)
+
+Status: **complete**.
+
+`InlineMethodTransformation.evaluationOrderViolation` gains an `ArrayAccess` case:
+when the call is the index of an array access, the array expression is checked for
+purity; a pure array allows hoisting (return null); an impure array expression rejects
+with "array expression has side effects". When the call is the array expression itself
+(evaluated first), hoisting is accepted unconditionally.
+
+`InlineMethodTransformation.findNestedCallSite` gains a `ForStatement` terminal case:
+when the traversal chain ends at a `VariableDeclarationFragment` whose initializer is
+`child`, the VDF is the sole fragment of a `VariableDeclarationExpression`, that VDE is
+the sole initializer of a `ForStatement`, and the for-statement is directly in a block,
+a `CallSite(regularForStmt, false)` is returned. The existing prelude-insertion and
+in-place replacement mechanism hoists the body before the for-statement and replaces the
+call with the result variable, leaving the for-loop variable declaration intact.
+
+New imports: `ArrayAccess`, `ForStatement`, `VariableDeclarationExpression` added to
+`InlineMethodTransformation`.
+
+Three new single-file approval tests:
+- `call_as_array_index_is_inlined` — `compute()` returns `2`; body hoisted before the
+  `return` statement; `arr[__inline_result]` = `arr[2]` = 30; compiles and runtime returns 30.
+- `call_as_array_index_with_impure_array_is_rejected` — `compute()` is the index of
+  `makeArray()[compute()]`; `makeArray()` is a method call (impure array); rejected with
+  "array expression has side effects" diagnostic.
+- `call_in_for_loop_initializer_is_inlined` — `compute()` returns `2`; body hoisted
+  before the for-statement; `for (int i = __inline_result; i < 5; i++)` with i=2,3,4;
+  sum = 9; compiles and runtime returns 9.
+
+Full reactor: 324 core + 86 CLI + 91 MCP tests (501 total) pass.
+
+### Commit
+
+`feat(inlining): additional safe call positions — array access index and for-loop initializer (Phase 14)`
+
+---
+
+## Phase 15 — Additional safe call positions (instanceof operand, for-loop expression initializer)
+
+Status: **complete**.
+
+`InlineMethodTransformation.evaluationOrderViolation` gains an `InstanceofExpression` /
+`PatternInstanceofExpression` case that returns null — the left operand of an instanceof
+test is always evaluated first so no reordering issue exists; any position that was
+previously blocked by the fallthrough "nested call position not supported" for these parent
+types now continues up the traversal chain.
+
+`InlineMethodTransformation.locateCallSite` no longer unconditionally throws when an
+assignment-RHS call's containing assignment is not an `ExpressionStatement`; instead it
+falls through to `findNestedCallSite`, which can then accept the broader position.
+
+`findNestedCallSite` gains a `ForStatement` expression-initializer terminal case: when
+the traversal of the call path places `child` as the sole expression in
+`forStmt.initializers()` and the for-statement is directly in a block, a
+`CallSite(forStmt, false)` is returned. The existing prelude-insertion and in-place
+replacement mechanism hoists the body before the for-statement and replaces the call
+with the result variable. The for-statement retains its initializer expression (now
+referencing the result variable).
+
+New imports in `InlineMethodTransformation`: `InstanceofExpression`,
+`PatternInstanceofExpression`.
+
+Two new single-file approval tests:
+- `call_as_instanceof_left_operand_is_inlined` — `compute()` returns `"hello"`;
+  `return compute() instanceof String` inlines to result hoisted before return,
+  `return __inline_result instanceof String`; compiles and runtime returns `true`.
+- `call_in_for_loop_expression_initializer_is_inlined` — `compute()` returns `2`;
+  `for (i = compute(); i < 5; i++)` inlines to body hoisted before for-statement,
+  `for (i = __inline_result; ...)` with i=2,3,4; sum = 9; compiles and runtime returns 9.
+
+Full reactor: 326 core + 86 CLI + 91 MCP tests (503 total) pass.
+
+### Commit
+
+`feat(inlining): additional safe call positions — instanceof operand and for-loop expression initializer (Phase 15)`
+
+---
+
+## Phase 16 — Additional safe call positions (switch expression selector)
+
+Status: **complete**.
+
+`InlineMethodTransformation.evaluationOrderViolation` gains a `SwitchExpression` case:
+when the call is the governing expression (selector) of a `SwitchExpression` —
+i.e., `child == switchExpr.getExpression()` — the method returns null (accepted):
+the selector is always evaluated unconditionally before any arm is selected, so
+hoisting the inlined body before the enclosing statement preserves evaluation order.
+When the call is in any other position inside a `SwitchExpression` (e.g., inside an
+arm expression), the method returns a rejection diagnostic: "switch expression arm:
+arm may not be evaluated; hoisting would always evaluate it".
+
+New import in `InlineMethodTransformation`: `SwitchExpression`.
+
+One new single-file approval test:
+- `call_as_switch_expression_selector_is_inlined` — `compute()` returns `1`; body
+  hoisted before the `int result = switch (...)` declaration; `switch (__inline_result)`
+  selects `case 1 -> 10`; compiles and runtime returns 10.
+
+Full reactor: 327 core + 86 CLI + 91 MCP tests (504 total) pass.
+
+### Commit
+
+`feat(inlining): additional safe call positions — switch expression selector (Phase 16)`
+
+---
+
+## Phase 17 — Multi-fragment declarations and for-loop initializers
+
+Status: **complete**.
+
+`InlineMethodTransformation.findNestedCallSite` gains three extensions:
+
+1. **Multi-fragment `VariableDeclarationStatement`**: the `vds.fragments().size() == 1`
+   restriction is removed. When the call is the initializer of a later fragment, all
+   earlier fragment initializers are checked for purity via `isPure`; if all are pure
+   the call is accepted (body hoisted before the VDS, fragment initializer replaced
+   with result variable); if any earlier initializer is impure the call is rejected
+   with "earlier variable initializer has side effects".
+
+2. **Multi-fragment `VariableDeclarationExpression` in a `ForStatement` initializer**:
+   the `vde.fragments().size() == 1` restriction is removed. Same purity check on
+   earlier fragments; rejection diagnostic is "earlier for-loop variable initializer
+   has side effects".
+
+3. **Multiple expression initializers in a `ForStatement`**: the
+   `inits.size() == 1 && inits.contains(child)` restriction is replaced by
+   `inits.indexOf(child) >= 0` with a purity check on earlier initializers; rejection
+   diagnostic is "earlier for-loop initializer has side effects".
+
+Three new single-file approval tests:
+- `call_in_multi_fragment_local_declaration_is_inlined` (success, `int a = 0, b = compute()`)
+- `call_in_multi_fragment_local_declaration_with_impure_earlier_is_rejected` (rejection)
+- `call_in_for_loop_multi_fragment_vde_is_inlined` (success, `for (int i = 0, end = compute(); ...)`)
+
+Full reactor: 330 core + 86 CLI + 91 MCP tests (507 total) pass.
+
+### Commit
+
+`feat(inlining): multi-fragment declarations and for-loop initializers (Phase 17)`
+
+---
+
+## Definition of done for the next continuation
+
+- Phases 1–4, Phase 5a–5f, Phase 6 (CLI/MCP exposure), Phase 7a–7c, Phase 8, Phase 9,
+  Phase 10 (generic type-variable substitution for implicit-receiver cross-type calls),
+  Phase 11 (additional safe call positions: if-condition, ternary condition, constructor
+  argument), Phase 12 (additional safe call positions: throw expression, switch
+  selector), Phase 13 (additional safe call positions: array dimension expression,
+  enhanced-for iterable), Phase 14 (additional safe call positions: array access
+  index, for-loop variable-declaration initializer), Phase 15 (additional safe call
+  positions: instanceof/pattern-instanceof left operand, for-loop expression initializer),
+  Phase 16 (additional safe call positions: Java 14+ switch expression selector), and
+  Phase 17 (multi-fragment local declarations and for-loop initializers: removed
+  `fragments().size() == 1` and `inits.size() == 1` restrictions, added purity checks
+  on earlier fragments/initializers)
+  are complete.
+- Existing public APIs are unchanged.
+- New operations are opt-in.
+- Success paths compile and approvals were reviewed.
+- Rejections are explicit and tested.
+- Full reactor passes on JDK 21.
+- `INLINING.md` and `INLINING_PLAN.md` reflect the delivered state.
+- Remaining limitations: `while`/`for`/`do-while` condition positions are not supported
+  (re-evaluation per iteration requires loop restructuring, not just hoisting);
+  `assert` condition is not supported (condition is not evaluated when assertions are
+  disabled, so hoisting changes semantics); cross-type static calls on generic declaring
+  types are still conservatively rejected; superclass/interface/wrapper flattening
+  requires a separate design review; multi-dimensional array creation where an earlier
+  dimension is not pure is rejected (not supported); calls inside switch expression
+  arms are rejected (arm may not execute).
+- Next phase: superclass/interface/wrapper flattening (separate design review required),
+  or further safe call positions.

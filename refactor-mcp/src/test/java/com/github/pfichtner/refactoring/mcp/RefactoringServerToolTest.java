@@ -492,6 +492,20 @@ class RefactoringServerToolTest {
     }
 
     @Test
+    void tool_inline_aggressive_returns_preview() {
+        String text = call(InlineAggressiveTool.inlineAggressive(), Map.of(
+                "project_root", project("inline-aggressive-project/same-type")));
+        Approvals.verify(text);
+    }
+
+    @Test
+    void tool_inline_aggressive_applies(@org.junit.jupiter.api.io.TempDir Path tmp) throws Exception {
+        String root = copyToTemp(tmp, fixtureDir("projects/inline-aggressive-project/same-type"), ".");
+        String text = callApply(InlineAggressiveTool.inlineAggressive(), Map.of("project_root", root));
+        assertThat(text).startsWith("Applied ");
+    }
+
+    @Test
     void tool_pull_up_method_applies(@org.junit.jupiter.api.io.TempDir Path tmp) throws Exception {
         String root = copyToTemp(tmp, fixtureDir("projects/pull-up-method"), ".");
         String file = root + "/src/main/java/com/example/Dog.java";
