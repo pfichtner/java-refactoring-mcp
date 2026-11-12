@@ -405,20 +405,41 @@ class InliningEngineTest {
     }
 
     @Test
-    void nested_expression_call_is_rejected() throws Exception {
+    void nested_expression_in_return_is_inlined() throws Exception {
         String source = fixtures.load("inline-aggressive/unsupported-position/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "compute()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+        assertCompiles("Foo", result);
+
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(3);
+        assertThat(compileAndInvoke("Foo", result, "run")).isEqualTo(3);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: nested expression in return")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`compute()` at " + Fixtures.lineCol(source, offset),
+                        "pure literal `1` before the call; hoisting does not reorder any observable effect")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void non_pure_preceding_expression_is_rejected() throws Exception {
+        String source = fixtures.load("inline-aggressive/unsafe-nested-side-effect/input/Foo.java");
         int offset = Fixtures.offsetOf(source, "compute()");
 
         InlineRejectedException exception = assertThatExceptionOfType(InlineRejectedException.class)
                 .isThrownBy(() -> InliningEngine.inlineAt(source, "Foo.java", offset))
                 .actual();
-        assertThat(exception.getMessage()).contains("whole expression");
+        assertThat(exception.getMessage()).contains("side effects");
 
         Approvals.verify(
-            RefactoringStoryBoard.titled("Aggressive inline — rejected: nested expression position")
+            RefactoringStoryBoard.titled("Aggressive inline — rejected: non-pure preceding expression")
                 .javaSection("Input", source)
                 .refactoring("inline method", "`compute()` at " + Fixtures.lineCol(source, offset),
-                        "hoisting before the statement would reorder evaluation relative to `1 +`")
+                        "sideEffect() left of + is not pure; hoisting would reorder its side effect")
                 .diagnostic(exception.getMessage())
                 .build()
         );

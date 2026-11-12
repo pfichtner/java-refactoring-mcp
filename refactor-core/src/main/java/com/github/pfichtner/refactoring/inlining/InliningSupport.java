@@ -12,6 +12,7 @@ import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.BooleanLiteral;
 import org.eclipse.jdt.core.dom.BreakStatement;
+import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.CatchClause;
 import org.eclipse.jdt.core.dom.CharacterLiteral;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
@@ -29,6 +30,7 @@ import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.LabeledStatement;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
@@ -209,6 +211,41 @@ final class InliningSupport {
             return name.resolveBinding() instanceof IVariableBinding variable
                     && !variable.isField()
                     && !variable.isEnumConstant();
+        }
+        return false;
+    }
+
+    /**
+     * True when the expression evaluates without side effects: literals, unqualified
+     * {@code this}, local/parameter reads, and non-short-circuit composites whose
+     * sub-expressions are all themselves pure.
+     */
+    static boolean isPure(Expression expression) {
+        if (isPureArgument(expression)) return true;
+        if (expression instanceof InfixExpression infix) {
+            InfixExpression.Operator op = infix.getOperator();
+            if (op == InfixExpression.Operator.CONDITIONAL_AND
+                    || op == InfixExpression.Operator.CONDITIONAL_OR) {
+                return false;
+            }
+            if (!isPure(infix.getLeftOperand()) || !isPure(infix.getRightOperand())) return false;
+            @SuppressWarnings("unchecked")
+            List<Expression> extended = infix.extendedOperands();
+            for (Expression ext : extended) {
+                if (!isPure(ext)) return false;
+            }
+            return true;
+        }
+        if (expression instanceof CastExpression cast) {
+            return isPure(cast.getExpression());
+        }
+        if (expression instanceof PrefixExpression prefix) {
+            PrefixExpression.Operator op = prefix.getOperator();
+            if (op == PrefixExpression.Operator.INCREMENT
+                    || op == PrefixExpression.Operator.DECREMENT) {
+                return false;
+            }
+            return isPure(prefix.getOperand());
         }
         return false;
     }

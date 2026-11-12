@@ -387,6 +387,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Aggressive inline: explicit receiver captured | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.explicit_receiver_is_captured_once.approved.md) |
 | Aggressive inline: explicit receiver null check | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.explicit_receiver_null_check_is_preserved.approved.md) |
 | Aggressive inline: explicit receiver side effect once | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.explicit_receiver_side_effect_runs_once.approved.md) |
+| Aggressive inline: field assignment | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.field_assignment_is_accepted.approved.md) |
 | Aggressive inline: generated labels avoid existing names | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.generated_labels_and_names_do_not_collide.approved.md) |
 | Aggressive inline — rejected: generic explicit receiver | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.generic_explicit_receiver_is_rejected.approved.md) |
 | Aggressive inline: iterative chain until fixed point | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.inline_chain_reaches_fixed_point.approved.md) |
@@ -396,8 +397,9 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Aggressive inline: maxTransformations budget stops the chain | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.max_transformations_stops_chain.approved.md) |
 | Aggressive inline — rejected: method reference | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.method_reference_is_rejected.approved.md) |
 | Aggressive inline: mutual recursion stopped by budget | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.mutual_recursion_stops_at_budget.approved.md) |
-| Aggressive inline — rejected: nested expression position | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.nested_expression_call_is_rejected.approved.md) |
+| Aggressive inline: nested expression in return | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.nested_expression_in_return_is_inlined.approved.md) |
 | Aggressive inline — rejected: non-completing void body | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.non_completing_void_body_is_rejected.approved.md) |
+| Aggressive inline — rejected: non-pure preceding expression | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.non_pure_preceding_expression_is_rejected.approved.md) |
 | Aggressive inline — rejected: inner explicit receiver | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.non_static_nested_explicit_receiver_is_rejected.approved.md) |
 | Aggressive inline: overload and explicit this receiver | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.overload_and_this_receiver_are_resolved_by_binding.approved.md) |
 | Aggressive inline: pattern, for, and catch variables | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.pattern_for_and_catch_variables_are_renamed.approved.md) |

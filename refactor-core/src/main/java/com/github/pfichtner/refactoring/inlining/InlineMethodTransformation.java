@@ -2,6 +2,7 @@ package com.github.pfichtner.refactoring.inlining;
 
 import static com.github.pfichtner.refactoring.inlining.InliningSupport.canSubstituteArgument;
 import static com.github.pfichtner.refactoring.inlining.InliningSupport.enclosingMethod;
+import static com.github.pfichtner.refactoring.inlining.InliningSupport.isPure;
 import static com.github.pfichtner.refactoring.inlining.InliningSupport.isVoid;
 import static com.github.pfichtner.refactoring.inlining.InliningSupport.ownReturns;
 import static com.github.pfichtner.refactoring.inlining.InliningSupport.simpleNames;
@@ -17,9 +18,11 @@ import java.util.Set;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.BreakStatement;
+import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.ChildListPropertyDescriptor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ContinueStatement;
@@ -29,8 +32,11 @@ import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.LabeledStatement;
 import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.QualifiedName;
@@ -221,8 +227,151 @@ final class InlineMethodTransformation {
             }
             return new CallSite(statement, false);
         }
+        return findNestedCallSite(call);
+    }
+
+    /**
+     * Accepts a value-returning call nested inside a larger expression when every
+     * sub-expression evaluated before the call (in Java left-to-right order) is
+     * side-effect-free, so hoisting the body before the containing statement cannot
+     * reorder observable effects.
+     */
+    private static CallSite findNestedCallSite(MethodInvocation call) {
+        ASTNode child = call;
+        ASTNode parent = call.getParent();
+
+        while (parent != null) {
+            if (parent instanceof LambdaExpression
+                    || parent instanceof AnonymousClassDeclaration
+                    || parent instanceof MethodDeclaration) {
+                break;
+            }
+
+            if (parent instanceof Assignment assignment
+                    && child == assignment.getLeftHandSide()) {
+                break;
+            }
+
+            if (parent instanceof Expression expr) {
+                String reason = evaluationOrderViolation(child, expr);
+                if (reason != null) throw reject(reason);
+                child = parent;
+                parent = parent.getParent();
+                continue;
+            }
+
+            if (parent instanceof VariableDeclarationFragment fragment
+                    && fragment.getInitializer() == child
+                    && fragment.getParent() instanceof VariableDeclarationStatement vds
+                    && vds.fragments().size() == 1) {
+                if (!(vds.getParent() instanceof Block)) {
+                    throw reject("nested expression: containing declaration is not directly in a block");
+                }
+                return new CallSite(vds, false);
+            }
+
+            if (parent instanceof ReturnStatement ret && ret.getExpression() == child) {
+                if (!(ret.getParent() instanceof Block)) {
+                    throw reject("nested expression: containing return is not directly in a block");
+                }
+                return new CallSite(ret, false);
+            }
+
+            if (parent instanceof ExpressionStatement es && es.getExpression() == child) {
+                if (!(es.getParent() instanceof Block)) {
+                    throw reject("nested expression: containing statement is not directly in a block");
+                }
+                return new CallSite(es, false);
+            }
+
+            break;
+        }
+
         throw reject("call is not the whole expression of a supported statement "
                 + "(variable initializer, return, simple assignment, or expression statement)");
+    }
+
+    /**
+     * Returns a rejection reason if hoisting the body of the call before the
+     * containing statement would reorder an observable side effect that {@code child}
+     * (an expression on the path from the call to the statement) has relative to its
+     * parent expression.  Returns {@code null} when no reordering occurs.
+     */
+    private static String evaluationOrderViolation(ASTNode child, Expression parent) {
+        if (parent instanceof InfixExpression infix) {
+            if (child == infix.getRightOperand()) {
+                InfixExpression.Operator op = infix.getOperator();
+                if (op == InfixExpression.Operator.CONDITIONAL_AND
+                        || op == InfixExpression.Operator.CONDITIONAL_OR) {
+                    return "nested call in right operand of " + op
+                            + ": short-circuit may skip the call; hoisting would always evaluate it";
+                }
+                if (!isPure(infix.getLeftOperand())) {
+                    return "hoisting before statement would reorder evaluation: "
+                            + "left operand of `" + op + "` has side effects";
+                }
+            }
+            @SuppressWarnings("unchecked")
+            List<Expression> extended = infix.extendedOperands();
+            int extIdx = extended.indexOf(child);
+            if (extIdx >= 0) {
+                if (!isPure(infix.getLeftOperand()) || !isPure(infix.getRightOperand())) {
+                    return "hoisting before statement would reorder evaluation: infix operand has side effects";
+                }
+                for (int i = 0; i < extIdx; i++) {
+                    if (!isPure(extended.get(i))) {
+                        return "hoisting before statement would reorder evaluation: infix operand has side effects";
+                    }
+                }
+            }
+            return null;
+        }
+
+        if (parent instanceof MethodInvocation outer) {
+            if (child != outer.getExpression()) {
+                @SuppressWarnings("unchecked")
+                List<Expression> args = outer.arguments();
+                int argIdx = args.indexOf(child);
+                if (argIdx >= 0) {
+                    Expression receiver = outer.getExpression();
+                    if (receiver != null && !isPure(receiver)) {
+                        return "hoisting before statement would reorder evaluation: "
+                                + "receiver of outer call has side effects";
+                    }
+                    for (int i = 0; i < argIdx; i++) {
+                        if (!isPure(args.get(i))) {
+                            return "hoisting before statement would reorder evaluation: "
+                                    + "earlier argument of outer call has side effects";
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        if (parent instanceof Assignment assignment && child == assignment.getRightHandSide()) {
+            if (!isSideEffectFreeAssignmentTarget(assignment.getLeftHandSide())) {
+                return "nested expression in assignment RHS: left-hand side has side effects";
+            }
+            return null;
+        }
+
+        if (parent instanceof CastExpression
+                || parent instanceof ParenthesizedExpression) {
+            return null;
+        }
+
+        if (parent instanceof PrefixExpression prefix) {
+            PrefixExpression.Operator op = prefix.getOperator();
+            if (op == PrefixExpression.Operator.INCREMENT
+                    || op == PrefixExpression.Operator.DECREMENT) {
+                return "nested call under prefix " + op + ": not supported";
+            }
+            return null;
+        }
+
+        return "nested call position not supported (call is in "
+                + parent.getClass().getSimpleName() + ")";
     }
 
 
