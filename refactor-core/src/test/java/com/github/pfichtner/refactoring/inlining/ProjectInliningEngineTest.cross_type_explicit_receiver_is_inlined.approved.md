@@ -39,7 +39,7 @@ import com.example.base.Base;
 public class App {
     public int run() {
         Base other = new Base();
-        com.example.base.Base __inline_receiver = other;
+        Base __inline_receiver = other;
 		java.util.Objects.requireNonNull(__inline_receiver);
 		int __inline_result;
 		__inline_label: {

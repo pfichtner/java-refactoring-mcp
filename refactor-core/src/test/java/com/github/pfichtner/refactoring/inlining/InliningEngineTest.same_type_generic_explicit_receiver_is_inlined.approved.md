@@ -26,7 +26,7 @@ public class Foo<T> {
     private int value = 1;
 
     public int run(Foo<T> other) {
-        Foo __inline_receiver = other;
+        Foo<T> __inline_receiver = other;
 		java.util.Objects.requireNonNull(__inline_receiver);
 		int __inline_result;
 		__inline_label: {

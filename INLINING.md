@@ -34,7 +34,19 @@ cross-type generic explicit receivers are allowed when the method body and signa
 do not reference any type variable of the declaring type, as checked by
 SemanticSafetyAnalyzer.typeVariableUsageRejection; type substitution for cross-type
 generic calls where the body uses a type variable is still rejected with a targeted
-diagnostic)
+diagnostic), and Phase 8 type-variable substitution for cross-type generic explicit
+receiver inlining (SemanticSafetyAnalyzer.typeVarSubstitutionRejection replaces the
+blanket type-variable rejection gate: when all class-level type arguments at the call
+site are concrete (no wildcard, no capture, non-raw), substitution proceeds; if the
+body references a type variable and any type argument is itself parameterized or an
+array the call is still rejected with a targeted diagnostic; InlineMethodTransformation
+builds a substitution map from binding.getDeclaringClass().getTypeArguments() /
+getTypeParameters(), uses typeBindingToAstType to generate the receiver, result, and
+parameter-temp type declarations from the binding's already-substituted ITypeBinding,
+and runs a mirror-walk substituteTypeVariables pass to rename type-variable SimpleName
+nodes in the copied body to their concrete counterparts; InlineImports.create gains
+an overload accepting List<ITypeBinding> substitutedTypes so imports for concrete type
+arguments are added alongside the existing body/signature imports)
 are complete. No existing public API was changed.
 
 Central question:
@@ -304,7 +316,10 @@ is preserved. Cross-object locking requires alias analysis and is out of scope.
 | Nested expression call position | Reject |
 | Same-type explicit receiver, non-static nested | Accept (capture once + null check; type variables in scope) |
 | Cross-type explicit receiver, non-static nested, accessible body, body/signature does not reference type variable | Accept (capture once + null check + receiver substitution) |
-| Cross-type explicit receiver, body/signature references a type variable of the declaring type | Reject with type-variable diagnostic |
+| Cross-type explicit receiver, all type args concrete (no wildcard/capture/raw), body uses no complex-type-arg type variable | Accept (type substitution applied to receiver, result, params, and body) |
+| Cross-type explicit receiver, body references type variable and a type arg is parameterized or array | Reject with complex-type-argument diagnostic |
+| Cross-type explicit receiver, wildcard or captured type argument | Reject with wildcard/capture diagnostic |
+| Cross-type explicit receiver, raw generic type (no type arguments at call site) | Reject with raw-type diagnostic |
 | Non-static nested cross-type explicit receiver | Reject |
 | Virtual dispatch possible | Reject |
 | Checked exception declared | Reject |

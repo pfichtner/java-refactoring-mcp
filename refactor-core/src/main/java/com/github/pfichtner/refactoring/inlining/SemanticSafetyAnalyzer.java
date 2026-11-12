@@ -170,8 +170,8 @@ final class SemanticSafetyAnalyzer {
             MethodDeclaration decl, ITypeBinding callType, ITypeBinding declaringType) {
 
         if (declaringType.getTypeDeclaration().getTypeParameters().length > 0) {
-            String typeVarReason = typeVariableUsageRejection(decl, declaringType);
-            if (typeVarReason != null) return typeVarReason;
+            String subReason = typeVarSubstitutionRejection(decl, declaringType);
+            if (subReason != null) return subReason;
         }
         if (!declaringType.isTopLevel() && !isStatic(declaringType.getModifiers())) {
             return "explicit receiver inlining does not support non-static nested declaring types";
@@ -184,6 +184,53 @@ final class SemanticSafetyAnalyzer {
         String signature = inaccessibleSignature(decl, callType);
         if (signature != null) return signature;
         return inaccessibleBody(decl.getBody(), callType);
+    }
+
+    private static String typeVarSubstitutionRejection(
+            MethodDeclaration decl, ITypeBinding declaringType) {
+        ITypeBinding[] typeParams = declaringType.getTypeDeclaration().getTypeParameters();
+        ITypeBinding[] typeArgs = declaringType.getTypeArguments();
+        if (typeArgs.length != typeParams.length) {
+            return "cross-type generic explicit receiver: raw generic type,"
+                    + " type substitution not possible";
+        }
+        for (ITypeBinding typeArg : typeArgs) {
+            if (typeArg.isWildcardType() || typeArg.isCapture()) {
+                return "cross-type generic explicit receiver: wildcard or captured type argument;"
+                        + " type substitution not possible";
+            }
+        }
+        Set<String> typeVarNames = new HashSet<>();
+        for (ITypeBinding tv : typeParams) {
+            typeVarNames.add(tv.getName());
+        }
+        if (bodyUsesTypeVariable(decl.getBody(), typeVarNames)) {
+            for (ITypeBinding typeArg : typeArgs) {
+                if (typeArg.isParameterizedType() || typeArg.isArray()) {
+                    return "cross-type generic explicit receiver: complex type argument"
+                            + " not yet supported when body references type variable";
+                }
+            }
+        }
+        return null;
+    }
+
+    private static boolean bodyUsesTypeVariable(Block body, Set<String> typeVarNames) {
+        boolean[] found = {false};
+        body.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(SimpleName name) {
+                if (found[0]) return false;
+                IBinding b = name.resolveBinding();
+                if (b instanceof ITypeBinding tb
+                        && tb.isTypeVariable()
+                        && typeVarNames.contains(tb.getName())) {
+                    found[0] = true;
+                }
+                return !found[0];
+            }
+        });
+        return found[0];
     }
 
     private static String explicitReceiverRejection(

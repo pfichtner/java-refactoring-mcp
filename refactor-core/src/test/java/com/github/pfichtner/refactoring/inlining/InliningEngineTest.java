@@ -421,22 +421,60 @@ class InliningEngineTest {
     }
 
     @Test
-    void cross_type_generic_explicit_receiver_with_type_var_is_rejected() throws Exception {
+    void cross_type_generic_explicit_receiver_with_typed_return_is_inlined() throws Exception {
         String source = fixtures.load(
                 "inline-aggressive/unsafe-explicit-receiver-generic-typevar/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "box.get()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+        assertCompiles("Foo", result);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: cross-type generic explicit receiver with typed return")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`box.get()` at " + Fixtures.lineCol(source, offset),
+                        "type variable T substituted with String; receiver captured once")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void cross_type_generic_explicit_receiver_with_wildcard_is_rejected() throws Exception {
+        String source = fixtures.load(
+                "inline-aggressive/explicit-receiver-generic-cross-type-wildcard/input/Foo.java");
         int offset = Fixtures.offsetOf(source, "box.get()");
 
         InlineRejectedException exception = assertThatExceptionOfType(InlineRejectedException.class)
                 .isThrownBy(() -> InliningEngine.inlineAt(source, "Foo.java", offset))
                 .actual();
-        assertThat(exception.getMessage()).contains("type variable");
+        assertThat(exception.getMessage()).contains("wildcard");
 
         Approvals.verify(
-            RefactoringStoryBoard.titled("Aggressive inline — rejected: cross-type generic explicit receiver uses type variable")
+            RefactoringStoryBoard.titled("Aggressive inline — rejected: cross-type generic explicit receiver with wildcard type argument")
                 .javaSection("Input", source)
                 .refactoring("inline method", "`box.get()` at " + Fixtures.lineCol(source, offset),
-                        "method return type references type variable T of the declaring type")
+                        "wildcard type argument cannot be substituted")
                 .diagnostic(exception.getMessage())
+                .build()
+        );
+    }
+
+    @Test
+    void cross_type_generic_explicit_receiver_with_typed_param_is_inlined() throws Exception {
+        String source = fixtures.load(
+                "inline-aggressive/explicit-receiver-generic-typed-param/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "box.set(value)");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+        assertCompiles("Foo", result);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: cross-type generic explicit receiver with typed parameter")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`box.set(value)` at " + Fixtures.lineCol(source, offset),
+                        "type variable T substituted with String; receiver captured once")
+                .javaSection("Output", result)
                 .build()
         );
     }

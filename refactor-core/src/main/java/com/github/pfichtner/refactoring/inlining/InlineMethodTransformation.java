@@ -8,6 +8,11 @@ import static com.github.pfichtner.refactoring.inlining.InliningSupport.ownRetur
 import static com.github.pfichtner.refactoring.inlining.InliningSupport.simpleNames;
 import static org.eclipse.jdt.core.dom.Modifier.isStatic;
 
+import org.eclipse.jdt.core.dom.ArrayType;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.ParameterizedType;
+import org.eclipse.jdt.core.dom.PrimitiveType;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -89,6 +94,8 @@ final class InlineMethodTransformation {
         Set<String> generatedAvoid = new HashSet<>(callerNames);
         generatedAvoid.addAll(identifiers(decl.getBody()));
 
+        Map<String, ITypeBinding> typeVarSubst = buildTypeVarSubstitution(binding.getDeclaringClass());
+
         Expression receiver = call.getExpression();
         boolean instanceMethod = !isStatic(binding.getModifiers());
         String receiverName = instanceMethod && receiver != null
@@ -112,7 +119,7 @@ final class InlineMethodTransformation {
         List<Statement> prelude = new ArrayList<>();
         if (receiverName != null) {
             prelude.add(variableDeclaration(ast, receiverName,
-                    receiverType(ast, binding.getDeclaringClass()), receiver));
+                    typeBindingToAstType(ast, binding.getDeclaringClass()), receiver));
         }
         for (int i = 0; i < params.size(); i++) {
             SingleVariableDeclaration param = params.get(i);
@@ -127,7 +134,10 @@ final class InlineMethodTransformation {
             } else {
                 String tempName = fresh("__inline_" + paramBinding.getName(), generatedAvoid);
                 parameterTemps.put(key, tempName);
-                prelude.add(variableDeclaration(ast, tempName, param.getType(), argument));
+                Type paramType = typeVarSubst.isEmpty()
+                        ? param.getType()
+                        : typeBindingToAstType(ast, binding.getParameterTypes()[i]);
+                prelude.add(variableDeclaration(ast, tempName, paramType, argument));
             }
         }
         if (receiverName != null) {
@@ -138,6 +148,9 @@ final class InlineMethodTransformation {
         renameLabels(bodyCopy, labelRenames);
         substituteNames(ast, decl.getBody(), bodyCopy,
                 parameterTemps, parameterArguments, localRenames, receiverName);
+        if (!typeVarSubst.isEmpty()) {
+            substituteTypeVariables(decl.getBody(), bodyCopy, typeVarSubst);
+        }
 
         List<ReturnStatement> returns = ownReturns(bodyCopy);
         String resultName = null;
@@ -160,7 +173,10 @@ final class InlineMethodTransformation {
 
         List<Statement> replacement = new ArrayList<>(prelude);
         if (resultName != null) {
-            replacement.add(variableDeclaration(ast, resultName, decl.getReturnType2(), null));
+            Type resultType = typeVarSubst.isEmpty()
+                    ? decl.getReturnType2()
+                    : typeBindingToAstType(ast, binding.getReturnType());
+            replacement.add(variableDeclaration(ast, resultName, resultType, null));
         }
         replacement.add(inlinedBody);
 
@@ -181,7 +197,8 @@ final class InlineMethodTransformation {
 
         IMethodBinding callerBinding = caller.resolveBinding();
         ITypeBinding callerType = callerBinding == null ? null : callerBinding.getDeclaringClass();
-        InlineImports.create(cu, decl, callerType).insertInto(rewrite, cu);
+        InlineImports.create(cu, decl, callerType, new ArrayList<>(typeVarSubst.values()))
+                .insertInto(rewrite, cu);
         return applyRewrite(cu, source, rewrite);
     }
 
@@ -612,8 +629,51 @@ final class InlineMethodTransformation {
         return result;
     }
 
-    private static Type receiverType(AST ast, ITypeBinding declaringType) {
-        return ast.newSimpleType(ast.newName(declaringType.getErasure().getQualifiedName()));
+    private static Map<String, ITypeBinding> buildTypeVarSubstitution(ITypeBinding declaringType) {
+        ITypeBinding[] typeParams = declaringType.getTypeDeclaration().getTypeParameters();
+        ITypeBinding[] typeArgs = declaringType.getTypeArguments();
+        if (typeParams.length == 0 || typeArgs.length != typeParams.length) {
+            return Map.of();
+        }
+        Map<String, ITypeBinding> map = new HashMap<>();
+        for (int i = 0; i < typeParams.length; i++) {
+            map.put(typeParams[i].getName(), typeArgs[i]);
+        }
+        return map;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Type typeBindingToAstType(AST ast, ITypeBinding binding) {
+        if (binding.isPrimitive()) {
+            return ast.newPrimitiveType(PrimitiveType.toCode(binding.getName()));
+        }
+        if (binding.isArray()) {
+            return ast.newArrayType(typeBindingToAstType(ast, binding.getElementType()));
+        }
+        if (binding.isParameterizedType()) {
+            ParameterizedType pt = ast.newParameterizedType(
+                    ast.newSimpleType(ast.newSimpleName(binding.getErasure().getName())));
+            for (ITypeBinding arg : binding.getTypeArguments()) {
+                pt.typeArguments().add(typeBindingToAstType(ast, arg));
+            }
+            return pt;
+        }
+        return ast.newSimpleType(ast.newSimpleName(binding.getName()));
+    }
+
+    private static void substituteTypeVariables(
+            ASTNode originalBody, ASTNode copiedBody, Map<String, ITypeBinding> typeVarSubst) {
+        List<SimpleName> originalNames = simpleNames(originalBody);
+        List<SimpleName> copiedNames = simpleNames(copiedBody);
+        for (int i = 0; i < originalNames.size(); i++) {
+            IBinding b = originalNames.get(i).resolveBinding();
+            if (b instanceof ITypeBinding tb && tb.isTypeVariable()) {
+                ITypeBinding substituted = typeVarSubst.get(tb.getName());
+                if (substituted != null) {
+                    copiedNames.get(i).setIdentifier(substituted.getName());
+                }
+            }
+        }
     }
 
     @SuppressWarnings("unchecked")

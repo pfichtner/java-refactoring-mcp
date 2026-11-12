@@ -410,22 +410,72 @@ Full reactor: 305 core + 86 CLI + 91 MCP tests pass.
 
 ---
 
+## Phase 8 — Type-Variable Substitution for Cross-Type Generic Explicit Receiver Inlining
+
+Status: **complete**.
+
+`SemanticSafetyAnalyzer` gains `typeVarSubstitutionRejection` (replaces
+`typeVariableUsageRejection` as the gate in `crossTypeExplicitReceiverRejection`):
+- Rejects raw generic types (empty type arguments).
+- Rejects wildcard and captured type arguments.
+- Rejects cases where the body uses a type variable AND any type argument is itself
+  parameterized or an array (body substitution is in-place SimpleName rename, which
+  only works for simple types).
+- Otherwise allows substitution.
+
+`InlineMethodTransformation` gains three helpers:
+- `buildTypeVarSubstitution(ITypeBinding)`: builds `Map<String, ITypeBinding>` from the
+  call-site binding's declaring class type parameters and type arguments.
+- `typeBindingToAstType(AST, ITypeBinding)`: converts an `ITypeBinding` to an AST `Type`
+  node (handles primitives, arrays, parameterized types, simple types). Replaces the old
+  `receiverType()` helper (which always used the erased qualified name).
+- `substituteTypeVariables(ASTNode, ASTNode, Map<String,ITypeBinding>)`: mirror-walks
+  original and copied body, renaming type-variable `SimpleName` nodes to their concrete
+  counterparts via `setIdentifier(substituted.getName())`.
+
+`InlineImports` gains an overload of `create` accepting `List<ITypeBinding> substitutedTypes`
+and a private `collectTypeBindingImports` helper that recursively adds `Request` entries
+for concrete types (skips primitives, type vars, wildcards, java.lang, same-package).
+
+Receiver type, result type, and parameter-temp declarations now use `typeBindingToAstType`
+instead of AST nodes copied from the declaration (which would carry the unsubstituted type
+variable name).
+
+New tests (single-file): `cross_type_generic_explicit_receiver_with_typed_return_is_inlined`
+(Box<String>.get() where T get()), `cross_type_generic_explicit_receiver_with_typed_param_is_inlined`
+(Box<String>.set(T value) where void set(T value)), and
+`cross_type_generic_explicit_receiver_with_wildcard_is_rejected` (Box<?>).
+
+Existing tests updated: `cross_type_generic_explicit_receiver_with_type_var_is_rejected`
+renamed to `cross_type_generic_explicit_receiver_with_typed_return_is_inlined` (now a
+success); approval files for `cross_type_generic_explicit_receiver_without_type_var_is_inlined`,
+`same_type_generic_explicit_receiver_is_inlined`, and `ProjectInliningEngineTest.cross_type_explicit_receiver_is_inlined`
+updated to reflect the cleaner receiver type (simple name from `typeBindingToAstType`
+instead of erased qualified name from old `receiverType()`).
+
+Full reactor: 310 core + 86 CLI + 91 MCP tests pass.
+
+### Commit
+
+`feat(inlining): type-variable substitution for cross-type generic calls (Phase 8)`
+
+---
+
 ## Definition of done for the next continuation
 
-- Phases 1–4, Phase 5a–5f, Phase 6 (CLI/MCP exposure), Phase 7a (cross-type static
-  inlining with class-initialization analysis), Phase 7b (cross-type explicit
-  receiver inlining), and Phase 7c (generic explicit receiver inlining) are complete.
+- Phases 1–4, Phase 5a–5f, Phase 6 (CLI/MCP exposure), Phase 7a–7c, and Phase 8
+  (type-variable substitution for cross-type generic explicit receiver inlining) are complete.
 - Existing public APIs are unchanged.
 - New operations are opt-in.
 - Success paths compile and approvals were reviewed.
 - Rejections are explicit and tested.
 - Full reactor passes on JDK 21.
 - `INLINING.md` and `INLINING_PLAN.md` reflect the delivered state.
-- Open decisions: same-type and cross-type generic explicit receivers are now supported
-  when the method body/signature does not reference a type variable. Full type
-  substitution (replacing `T` with the actual type argument at the call site) is not
-  yet implemented; cross-type generic calls where the body uses `T` are rejected.
-- Next phase: type-variable substitution for cross-type generic calls (replace each
-  type variable in body/signature with the actual type argument from the call-site
-  receiver binding), or superclass/interface/wrapper flattening (separate design
-  review required).
+- Remaining limitations: body substitution only works for simple (non-parameterized,
+  non-array) type arguments when the body uses the type variable; complex type arguments
+  are rejected in that case. The `crossTypeRejection` path (non-explicit-receiver
+  supertype-inherited calls) still rejects all generic declaring types.
+- Next phase: lift the complex-body-substitution limitation (replace `SimpleType(T)` with
+  full parameterized/array type node instead of just renaming the SimpleName identifier),
+  or extend generic substitution to the `crossTypeRejection` path, or superclass/interface/
+  wrapper flattening (separate design review required).

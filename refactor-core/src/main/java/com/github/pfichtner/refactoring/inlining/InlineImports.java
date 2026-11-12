@@ -51,6 +51,12 @@ final class InlineImports {
 
     static InlineImports create(
             CompilationUnit callerCu, MethodDeclaration decl, ITypeBinding callerType) {
+        return create(callerCu, decl, callerType, List.of());
+    }
+
+    static InlineImports create(
+            CompilationUnit callerCu, MethodDeclaration decl,
+            ITypeBinding callerType, List<ITypeBinding> substitutedTypes) {
 
         Map<String, Request> requests = new HashMap<>();
         ASTVisitor collector = new ASTVisitor() {
@@ -69,6 +75,9 @@ final class InlineImports {
         }
         if (decl.getReturnType2() != null) {
             decl.getReturnType2().accept(collector);
+        }
+        for (ITypeBinding substituted : substitutedTypes) {
+            collectTypeBindingImports(substituted, requests, callerType);
         }
         return new InlineImports(build(callerCu, callerType, requests.values().stream()
                 .sorted(Comparator.comparing(Request::isStatic)
@@ -118,6 +127,31 @@ final class InlineImports {
                     name.getIdentifier(), packageName(declaring), false);
             merge(requests, request);
         }
+    }
+
+    private static void collectTypeBindingImports(
+            ITypeBinding type, Map<String, Request> requests, ITypeBinding callerType) {
+        if (type == null || type.isPrimitive() || type.isTypeVariable()
+                || type.isWildcardType() || type.isCapture() || type.isNullType()) {
+            return;
+        }
+        if (type.isArray()) {
+            collectTypeBindingImports(type.getElementType(), requests, callerType);
+            return;
+        }
+        if (type.isParameterizedType()) {
+            collectTypeBindingImports(type.getTypeDeclaration(), requests, callerType);
+            for (ITypeBinding arg : type.getTypeArguments()) {
+                collectTypeBindingImports(arg, requests, callerType);
+            }
+            return;
+        }
+        ITypeBinding declaration = usableType(type);
+        if (declaration == null) return;
+        Request request = new Request(false, false, declaration.getQualifiedName(),
+                declaration.getName(), packageName(declaration),
+                declaration.getDeclaringClass() != null);
+        merge(requests, request);
     }
 
     private static void merge(Map<String, Request> requests, Request request) {

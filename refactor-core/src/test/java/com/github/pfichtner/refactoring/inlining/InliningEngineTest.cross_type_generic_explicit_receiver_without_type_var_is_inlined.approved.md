@@ -30,7 +30,7 @@ class Box<T> {
 
 public class Foo {
     public int run(Box<String> box) {
-        Box __inline_receiver = box;
+        Box<String> __inline_receiver = box;
 		java.util.Objects.requireNonNull(__inline_receiver);
 		int __inline_result;
 		__inline_label: {
