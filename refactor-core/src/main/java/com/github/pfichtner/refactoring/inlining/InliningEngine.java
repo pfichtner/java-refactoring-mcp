@@ -24,6 +24,7 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
@@ -137,6 +138,25 @@ public final class InliningEngine {
                 }
             }
 
+            // If no method was inlined this pass, try compile-time constant field references.
+            if (!progress) {
+                for (Name constantRef : ConstantInliningTransformation.collectCandidates(cu)) {
+                    String next = ConstantInliningTransformation.tryInline(cu, current, constantRef);
+                    if (next == null || next.equals(current)) continue;
+                    int growth = next.length() - source.length();
+                    if (growth > config.maxCodeGrowthChars()) {
+                        budgetBlocked = true;
+                        continue;
+                    }
+                    current = next;
+                    applied.add(new InliningResult.Applied(
+                            ConstantInliningTransformation.fieldName(constantRef),
+                            constantRef.getStartPosition()));
+                    progress = true;
+                    break;
+                }
+            }
+
             if (!progress) {
                 fixedPoint = !budgetBlocked;
                 break;
@@ -231,6 +251,26 @@ public final class InliningEngine {
                         break;
                     } catch (InlineRejectedException e) {
                         addProjectRejection(rejected, rejectedKeys, file, methodName, offset, e.getMessage());
+                    }
+                }
+
+                // If no method was inlined in this file, try constant field references.
+                if (!appliedInFile) {
+                    for (Name constantRef : ConstantInliningTransformation.collectCandidates(cu)) {
+                        String next = ConstantInliningTransformation.tryInline(cu, source, constantRef);
+                        if (next == null || next.equals(source)) continue;
+                        int growth = totalLength(current, file, next) - originalLength;
+                        if (growth > config.maxCodeGrowthChars()) {
+                            budgetBlocked = true;
+                            continue;
+                        }
+                        current.put(file, next);
+                        applied.add(new ProjectInliningResult.Applied(file,
+                                ConstantInliningTransformation.fieldName(constantRef),
+                                constantRef.getStartPosition()));
+                        progress = true;
+                        appliedInFile = true;
+                        break;
                     }
                 }
 

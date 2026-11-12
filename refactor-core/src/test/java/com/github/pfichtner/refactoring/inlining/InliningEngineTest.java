@@ -898,6 +898,95 @@ class InliningEngineTest {
         );
     }
 
+    @Test
+    void constant_int_field_is_inlined() throws Exception {
+        String source = fixtures.load("inline-aggressive/constant-int/input/Foo.java");
+
+        InliningResult result = InliningEngine.inlineAll(source, "Foo.java");
+
+        assertThat(result.transformationCount()).isEqualTo(1);
+        assertThat(result.fixedPoint()).isTrue();
+        assertCompiles("Foo", result.source());
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(100);
+        assertThat(compileAndInvoke("Foo", result.source(), "run")).isEqualTo(100);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: static final int constant")
+                .javaSection("Input", source)
+                .refactoring("inline all", "`LIMIT`",
+                        "static final int constant replaced by its literal value")
+                .javaSection("Output", result.source())
+                .build()
+        );
+    }
+
+    @Test
+    void constant_string_field_is_inlined() throws Exception {
+        String source = fixtures.load("inline-aggressive/constant-string/input/Foo.java");
+
+        InliningResult result = InliningEngine.inlineAll(source, "Foo.java");
+
+        assertThat(result.transformationCount()).isEqualTo(1);
+        assertThat(result.fixedPoint()).isTrue();
+        assertCompiles("Foo", result.source());
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo("hello world");
+        assertThat(compileAndInvoke("Foo", result.source(), "run")).isEqualTo("hello world");
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: static final String constant")
+                .javaSection("Input", source)
+                .refactoring("inline all", "`PREFIX`",
+                        "static final String constant replaced by its literal value")
+                .javaSection("Output", result.source())
+                .build()
+        );
+    }
+
+    @Test
+    void constant_boolean_field_is_inlined() throws Exception {
+        String source = fixtures.load("inline-aggressive/constant-boolean/input/Foo.java");
+
+        InliningResult result = InliningEngine.inlineAll(source, "Foo.java");
+
+        assertThat(result.transformationCount()).isEqualTo(1);
+        assertThat(result.fixedPoint()).isTrue();
+        assertCompiles("Foo", result.source());
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(true);
+        assertThat(compileAndInvoke("Foo", result.source(), "run")).isEqualTo(true);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: static final boolean constant")
+                .javaSection("Input", source)
+                .refactoring("inline all", "`ENABLED`",
+                        "static final boolean constant replaced by its literal value")
+                .javaSection("Output", result.source())
+                .build()
+        );
+    }
+
+    @Test
+    void constant_inlined_after_method_inline() throws Exception {
+        String source = fixtures.load("inline-aggressive/constant-after-method-inline/input/Foo.java");
+
+        InliningResult result = InliningEngine.inlineAll(source, "Foo.java");
+
+        // 1 method + 2 constants (LIMIT appears in both compute()'s body and the inlined body in run())
+        assertThat(result.transformationCount()).isEqualTo(3);
+        assertThat(result.fixedPoint()).isTrue();
+        assertCompiles("Foo", result.source());
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(100);
+        assertThat(compileAndInvoke("Foo", result.source(), "run")).isEqualTo(100);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: constant inlined after method inline")
+                .javaSection("Input", source)
+                .refactoring("inline all", "`compute`, then `LIMIT` twice",
+                        "method inlined first; constant then replaced in run() and compute()")
+                .javaSection("Output", result.source())
+                .build()
+        );
+    }
+
     // -------------------------------------------------------------------------
     // Compilation helpers
     // -------------------------------------------------------------------------

@@ -213,8 +213,16 @@ Implement one item at a time, each with its own safety analyzer and fixtures:
    infix, argument after an impure earlier arg, assignment RHS with side-effecting LHS.
    Three new fixtures (`getter-impure-body-nested`, `getter-nested-argument`,
    `getter-assignment-rhs`) and four new/updated tests in `InliningEngineTest`.
-2. Constant and final-field inlining.
-3. Parameter inlining at a single call site.
+2. Compile-time constant inlining. **Status: complete.**
+   `ConstantInliningTransformation` replaces references to `static final` fields with a
+   non-null `IVariableBinding.getConstantValue()` with the corresponding literal AST
+   node (`boolean`, `char`, `String`, integral and floating-point types; skips NaN and
+   Infinity). Negative values use `PrefixExpression(MINUS, NumberLiteral)`. The engine's
+   `inlineAll` and `inlineProject` loops try constant candidates after method candidates
+   find no progress, so a constant reference inlined in one pass may expose a new method
+   candidate in the next. Four approval tests: `constant-int`, `constant-string`,
+   `constant-boolean`, and `constant-after-method-inline`.
+3. Final-field inlining (non-static `final` instance fields).
 4. Constructor inlining for simple constructors only.
 5. Delegation elimination as a composed transform.
 6. Lambda and anonymous-class flattening.
@@ -294,12 +302,11 @@ Resolve these before the phase that needs them:
 
 ## Definition of done for the next continuation
 
-- Phases 1–4 and Phase 5a (getter inlining) are complete.
+- Phases 1–4, Phase 5a (getter inlining), and Phase 5b (constant inlining) are complete.
 - Existing public APIs are unchanged.
 - New operations are opt-in.
 - Success paths compile and approvals were reviewed.
 - Rejections are explicit and tested.
 - Full reactor passes on JDK 21.
 - `INLINING.md` and `INLINING_PLAN.md` reflect the delivered state.
-- Next phase: Phase 5b (constant and final-field inlining: getters, constants, final
-  fields, parameter inlining, constructor inlining).
+- Next phase: Phase 5c (final-field, parameter, and constructor inlining).

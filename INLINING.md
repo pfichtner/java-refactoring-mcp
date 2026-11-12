@@ -4,11 +4,12 @@ Status: Phase 1 hardening, Phase 2 project-wide same-type and cross-type instanc
 inlining, Phase 3a pure argument substitution, Phase 3b explicit receiver capture,
 Phase 3c call-position widening (side-effect-free assignment LHS and nested
 expressions with pure preceding sub-expressions), Phase 4 call-graph analysis
-(mutual recursion detection, opt-in unused-declaration removal), and Phase 5a getter
-inlining (direct expression substitution for single-return pure-body methods) are
-complete. Cross-type static inlining, class-initialization analysis, and CLI/MCP
-wiring remain deferred. The engine is an isolated prototype, not yet wired into
-CLI/MCP. No existing public API was changed.
+(mutual recursion detection, opt-in unused-declaration removal), Phase 5a getter
+inlining (direct expression substitution for single-return pure-body methods), and
+Phase 5b compile-time constant inlining (replacing static final field references
+with their literal values) are complete. Cross-type static inlining,
+class-initialization analysis, and CLI/MCP wiring remain deferred. The engine is an
+isolated prototype, not yet wired into CLI/MCP. No existing public API was changed.
 
 Central question:
 
@@ -430,6 +431,17 @@ over "we ran out of budget".
   order. `InliningEngine.tryTransform` tries hoisting first and falls back to getter
   inlining on `InlineRejectedException`. `InliningSupport` gains `isGetterBody`,
   `isGetterExpressionPure`, and `thisExpressions` helpers.
+- Phase 5b constant inlining: `ConstantInliningTransformation` replaces references to
+  `static final` fields whose `IVariableBinding.getConstantValue()` is non-null with
+  the corresponding literal AST node. Handles `boolean`, `char`, `String`, `byte`,
+  `short`, `int`, `long`, `float`, and `double`; skips `NaN` and `Infinity`. Negative
+  values are represented as a `PrefixExpression(MINUS, NumberLiteral)`, using
+  `BigInteger` for `Long.MIN_VALUE` safety. `InliningEngine.inlineAll` and
+  `inlineProject` both run the constant loop after the method-invocation loop finds no
+  progress: a constant reference inlined in one pass may expose a new method-inlining
+  candidate in the next. Field declaration sites and name components inside a
+  `QualifiedName` are excluded from candidates. Four new approval tests cover
+  `int`, `String`, `boolean`, and chained method+constant inlining.
 
 ### 5.2 Algorithm
 
@@ -602,10 +614,9 @@ Known edge cases to test before promotion:
 
 - Cross-type static method inlining with class initialization analysis.
 - Explicit receiver inlining for cross-type and generic declaring types.
-- Getter, constant, final-field, parameter, and temporary inlining.
+- Final-field, parameter, and temporary inlining.
 - Broader purity analysis (method calls, field reads, arithmetic) and additional call
   positions.
-- Call-graph-based recursion detection and removal of unused declarations.
 - Formatter integration and compile verification.
 
 **Requires substantial research**
@@ -641,9 +652,8 @@ Known edge cases to test before promotion:
 7. **Adapters**: expose an opt-in aggressive operation through CLI and MCP once the
    engine API and diagnostics are stable.
 
-Phase 4 (call graph and cleanup) is now complete: mutual-recursion is detected by
-analysis rather than budget, and opt-in removal of declarations whose all call sites
-have been inlined is implemented. Dispatch analysis for virtual methods is not
-implemented; virtual calls remain rejected. Cross-type static inlining still waits for
-exact class-initialization analysis. The next implementation step is Phase 5
-(expression and structural inlining: getters, constants, final fields, parameters).
+Phase 4 (call graph and cleanup) is complete, Phase 5a (getter inlining) is complete,
+and Phase 5b (compile-time constant inlining) is complete. Dispatch analysis for
+virtual methods is not implemented; virtual calls remain rejected. Cross-type static
+inlining still waits for exact class-initialization analysis. The next implementation
+step is Phase 5c (parameter and final-field inlining).

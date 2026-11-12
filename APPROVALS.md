@@ -381,6 +381,10 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Aggressive inline — rejected: side-effecting assignment LHS | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.assignment_with_side_effecting_lhs_is_rejected.approved.md) |
 | Aggressive inline: captured locals renamed consistently | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.captured_locals_are_renamed_consistently.approved.md) |
 | Aggressive inline — rejected: checked exception | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.checked_exception_method_is_rejected.approved.md) |
+| Aggressive inline: static final boolean constant | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.constant_boolean_field_is_inlined.approved.md) |
+| Aggressive inline: constant inlined after method inline | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.constant_inlined_after_method_inline.approved.md) |
+| Aggressive inline: static final int constant | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.constant_int_field_is_inlined.approved.md) |
+| Aggressive inline: static final String constant | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.constant_string_field_is_inlined.approved.md) |
 | Aggressive inline — rejected: constructor call | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.constructor_call_is_rejected.approved.md) |
 | Aggressive inline — rejected: cross-type explicit receiver | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.cross_type_explicit_receiver_is_rejected.approved.md) |
 | Aggressive inline — rejected: direct recursion | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.direct_recursion_is_rejected.approved.md) |
