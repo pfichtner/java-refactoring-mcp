@@ -576,6 +576,25 @@ class InliningEngineTest {
     }
 
     @Test
+    void field_assignment_is_accepted() throws Exception {
+        String source = fixtures.load("inline-aggressive/assignment-field/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "compute()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+
+        assertThat(compileAndInvoke("Foo", result, "run")).isEqualTo(7);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: field assignment")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`compute()` at " + Fixtures.lineCol(source, offset),
+                        "assignment right-hand side with a side-effect-free `this.field` left-hand side")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
     void type_qualified_static_call_is_accepted() throws Exception {
         String source = fixtures.load("inline-aggressive/static-qualified/input/Foo.java");
         int offset = Fixtures.offsetOf(source, "Foo.compute(2)");
@@ -662,7 +681,7 @@ class InliningEngineTest {
         InlineRejectedException exception = assertThatExceptionOfType(InlineRejectedException.class)
                 .isThrownBy(() -> InliningEngine.inlineAt(source, "Foo.java", offset))
                 .actual();
-        assertThat(exception.getMessage()).contains("left-hand side must be a simple name");
+        assertThat(exception.getMessage()).contains("side effects");
 
         Approvals.verify(
             RefactoringStoryBoard.titled("Aggressive inline — rejected: side-effecting assignment LHS")

@@ -212,9 +212,9 @@ final class InlineMethodTransformation {
         }
         if (parent instanceof Assignment assignment
                 && assignment.getRightHandSide() == call) {
-            if (!(assignment.getLeftHandSide() instanceof SimpleName)) {
-                throw reject("assignment left-hand side must be a simple name; "
-                        + "receiver or index side effects would be reordered");
+            if (!isSideEffectFreeAssignmentTarget(assignment.getLeftHandSide())) {
+                throw reject("assignment left-hand side has side effects or may be affected by hoisting; "
+                        + "receiver or index evaluation would be reordered");
             }
             if (!(assignment.getParent() instanceof ExpressionStatement statement)) {
                 throw reject("assignment call must be a standalone expression statement");
@@ -223,6 +223,16 @@ final class InlineMethodTransformation {
         }
         throw reject("call is not the whole expression of a supported statement "
                 + "(variable initializer, return, simple assignment, or expression statement)");
+    }
+
+
+    private static boolean isSideEffectFreeAssignmentTarget(Expression lhs) {
+        if (lhs instanceof SimpleName) return true;
+        if (lhs instanceof FieldAccess access) {
+            return access.getExpression() instanceof ThisExpression thisExpression
+                    && thisExpression.getQualifier() == null;
+        }
+        return false;
     }
 
     // -------------------------------------------------------------------------

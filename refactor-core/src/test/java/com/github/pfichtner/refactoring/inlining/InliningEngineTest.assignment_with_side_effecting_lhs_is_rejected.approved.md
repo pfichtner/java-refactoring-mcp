@@ -26,5 +26,5 @@ array index evaluation would be reordered relative to the inlined body
 
 ### Diagnostic:
 ```
-assignment left-hand side must be a simple name; receiver or index side effects would be reordered
+assignment left-hand side has side effects or may be affected by hoisting; receiver or index evaluation would be reordered
 ```

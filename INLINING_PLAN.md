@@ -131,7 +131,7 @@ step.
 
 ## Phase 3 — Data-flow and expression positions
 
-Status: Phase 3b complete. Commit: `feat(inlining): capture explicit receivers`.
+Status: Phase 3b complete. Initial Phase 3c step complete (side-effect-free assignment LHS).
 
 ### Phase 3a — Pure argument substitution (complete)
 
@@ -152,9 +152,9 @@ Status: Phase 3b complete. Commit: `feat(inlining): capture explicit receivers`.
 4. Added side-effect-once, null-receiver, private-member, cross-type, generic, and
    non-static nested fixtures.
 
-### Phase 3c — Additional call positions (next)
+### Phase 3c — Additional call positions (in progress)
 
-1. Assignment RHS with a side-effect-free LHS.
+1. Assignment RHS with a side-effect-free LHS. (done: simple name and unqualified `this.field`)
 2. Nested expressions with pure arguments and a safe insertion point.
 3. Return expressions already handled by the spike.
 4. Definite-assignment and exception-flow checks for the new positions.
@@ -282,7 +282,7 @@ Resolve these before the phase that needs them:
 
 ## Definition of done for the next continuation
 
-- Phase 1, Phase 2, Phase 3a, and Phase 3b are complete.
+- Phase 1, Phase 2, Phase 3a, Phase 3b, and initial Phase 3c widening are complete.
 - Existing public APIs are unchanged.
 - New operations are opt-in.
 - Success paths compile and approvals were reviewed.

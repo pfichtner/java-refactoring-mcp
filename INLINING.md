@@ -1,8 +1,9 @@
 # Aggressive Java Inlining — Investigation and Technical Spike
 
 Status: Phase 1 hardening, Phase 2 project-wide same-type and cross-type instance
-inlining, Phase 3a pure argument substitution, and Phase 3b explicit receiver capture
-are complete. Additional call positions, cross-type static inlining,
+inlining, Phase 3a pure argument substitution, Phase 3b explicit receiver capture,
+and initial Phase 3c call-position widening (side-effect-free assignment LHS) are
+complete. Nested-expression positions, cross-type static inlining,
 class-initialization analysis, and CLI/MCP wiring remain deferred. The engine is an
 isolated prototype, not yet wired into CLI/MCP. No existing public API was changed.
 
@@ -386,7 +387,7 @@ over "we ran out of budget".
 - Side-effecting argument used multiple times (captured once).
 - Pure argument used once is copied to its use instead of captured; multi-use, written,
   loop-contained, and lambda-captured arguments keep the temporary.
-- Simple-name assignment right-hand side.
+- Simple-name or unqualified `this.field` assignment left-hand side.
 - Iterative chain `first → second → third` until fixed point.
 - Project-wide same-type inlining across files, with one candidate per file per pass
   and a fixed point after all call sites are gone.
@@ -514,8 +515,8 @@ Implemented but intentionally narrow:
 - Single-CU runs handle one named type. Project runs add guarded cross-type instance
   calls, but only when the callee is inherited from a caller supertype; arbitrary
   cross-type callers/callees are still rejected.
-- Calls must be the whole expression of a variable initializer, return, simple
-  assignment, or expression statement.
+- Calls must be the whole expression of a variable initializer, return, assignment
+  with a side-effect-free left-hand side, or expression statement.
 - No direct expression substitution; all value calls are hoisted.
 - No declaration removal or unused-method cleanup.
 - Cross-type static inlining and the class-initialization check are deferred.
@@ -608,5 +609,6 @@ Known edge cases to test before promotion:
    engine API and diagnostics are stable.
 
 The next implementation step is the remainder of the data-flow phase: additional call
-positions with evaluation-order checks. Cross-type static inlining still waits for exact
+positions (nested expressions with pure arguments and a safe insertion point) with
+evaluation-order checks. Cross-type static inlining still waits for exact
 class-initialization analysis.
