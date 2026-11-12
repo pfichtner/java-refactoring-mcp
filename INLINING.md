@@ -133,6 +133,18 @@ existing prelude-insertion and in-place replacement mechanism unchanged; three n
 single-file approval tests: `call_as_array_index_is_inlined`,
 `call_as_array_index_with_impure_array_is_rejected`, and
 `call_in_for_loop_initializer_is_inlined`)
+and Phase 17 multi-fragment declarations and for-loop initializers (lifting the
+`fragments().size() == 1` restriction from both `VariableDeclarationStatement` and
+`VariableDeclarationExpression` cases in `InlineMethodTransformation.findNestedCallSite`,
+and lifting the `inits.size() == 1` restriction from the `ForStatement` expression-initializer
+case; all three extensions add purity checks on earlier fragments or initializers —
+when every earlier fragment initializer (or earlier for-loop expression initializer)
+is pure, the call is accepted and the inlined body is hoisted before the enclosing
+statement; if any earlier fragment or initializer is impure the call is rejected with
+a targeted diagnostic; three new single-file approval tests:
+`call_in_multi_fragment_local_declaration_is_inlined` (success, `int a = 0, b = compute()`),
+`call_in_multi_fragment_local_declaration_with_impure_earlier_is_rejected` (rejection),
+and `call_in_for_loop_multi_fragment_vde_is_inlined` (success, `for (int i = 0, end = compute(); ...)`)
 are complete. No existing public API was changed.
 
 Central question:
@@ -418,6 +430,12 @@ is preserved. Cross-object locking requires alias analysis and is out of scope.
 | `InstanceofExpression` / `PatternInstanceofExpression` left operand: call is the tested expression | Accept (left operand evaluated first; body hoisted before enclosing statement, operand replaced with result variable) |
 | `SwitchExpression` selector: call is the governing expression of a Java 14+ switch expression | Accept (selector always evaluated unconditionally; body hoisted before enclosing statement, selector replaced with result variable) |
 | `SwitchExpression` arm: call is inside an arm expression of a switch expression | Reject with "switch expression arm" diagnostic |
+| Multi-fragment `VariableDeclarationStatement`: call is the initializer of a later fragment, all earlier fragment initializers are pure | Accept (body hoisted before declaration, initializer replaced with result variable) |
+| Multi-fragment `VariableDeclarationStatement`: an earlier fragment initializer has side effects | Reject with "earlier variable initializer has side effects" diagnostic |
+| Multi-fragment `VariableDeclarationExpression` in a `ForStatement` initializer: call is the initializer of a later fragment, all earlier fragment initializers are pure | Accept (body hoisted before for-statement, initializer replaced with result variable) |
+| Multi-fragment `VariableDeclarationExpression` in a `ForStatement` initializer: an earlier fragment initializer has side effects | Reject with "earlier for-loop variable initializer has side effects" diagnostic |
+| `ForStatement` with multiple expression initializers: call is a later expression initializer, all earlier ones are pure | Accept (body hoisted before for-statement, initializer replaced with result variable) |
+| `ForStatement` with multiple expression initializers: an earlier expression initializer has side effects | Reject with "earlier for-loop initializer has side effects" diagnostic |
 | Same-type explicit receiver, non-static nested | Accept (capture once + null check; type variables in scope) |
 | Cross-type explicit receiver, non-static nested, accessible body, body/signature does not reference type variable | Accept (capture once + null check + receiver substitution) |
 | Cross-type explicit receiver, all type args concrete (no wildcard/capture/raw), body uses no complex-type-arg type variable | Accept (type substitution applied to receiver, result, params, and body) |
@@ -716,7 +734,7 @@ conflicts instead of guessing.
 
 `refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.java`
 
-- 84 approval/semantic tests (1 new for Phase 16 switch expression selector).
+- 87 approval/semantic tests (3 new for Phase 17 multi-fragment declarations).
 - Successful outputs are compiled with the JDK compiler.
 - Runtime tests compile and invoke original and transformed classes, covering
   side-effecting arguments, pure single-use substitution, written/loop/lambda argument

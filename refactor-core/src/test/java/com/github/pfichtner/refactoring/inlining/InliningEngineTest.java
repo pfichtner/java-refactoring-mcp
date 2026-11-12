@@ -1778,6 +1778,72 @@ class InliningEngineTest {
     }
 
     // -------------------------------------------------------------------------
+    // Phase 17 — Multi-fragment declarations and for-loop initializers
+    // -------------------------------------------------------------------------
+
+    @Test
+    void call_in_multi_fragment_local_declaration_is_inlined() throws Exception {
+        String source = fixtures.load("inline-aggressive/multi-fragment-local-declaration/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "compute()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+        assertCompiles("Foo", result);
+
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(5);
+        assertThat(compileAndInvoke("Foo", result, "run")).isEqualTo(5);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: call in multi-fragment local declaration")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`compute()` at " + Fixtures.lineCol(source, offset),
+                    "multi-fragment local declaration; body hoisted before declaration, initializer replaced with result")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void call_in_multi_fragment_local_declaration_with_impure_earlier_is_rejected() throws Exception {
+        String source = fixtures.load("inline-aggressive/multi-fragment-local-declaration-impure/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "compute()");
+
+        InlineRejectedException exception = assertThatExceptionOfType(InlineRejectedException.class)
+                .isThrownBy(() -> InliningEngine.inlineAt(source, "Foo.java", offset))
+                .actual();
+        assertThat(exception.getMessage()).contains("earlier variable initializer has side effects");
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline — rejected: call in multi-fragment declaration with impure earlier")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`compute()` at " + Fixtures.lineCol(source, offset),
+                    "earlier variable initializer has side effects")
+                .diagnostic(exception.getMessage())
+                .build()
+        );
+    }
+
+    @Test
+    void call_in_for_loop_multi_fragment_vde_is_inlined() throws Exception {
+        String source = fixtures.load("inline-aggressive/for-loop-multi-fragment-vde/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "compute()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+        assertCompiles("Foo", result);
+
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(10);
+        assertThat(compileAndInvoke("Foo", result, "run")).isEqualTo(10);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: call in for-loop multi-fragment VDE")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`compute()` at " + Fixtures.lineCol(source, offset),
+                    "for-loop multi-fragment VDE; body hoisted before for-statement, initializer replaced with result")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    // -------------------------------------------------------------------------
     // Compilation helpers
     // -------------------------------------------------------------------------
 

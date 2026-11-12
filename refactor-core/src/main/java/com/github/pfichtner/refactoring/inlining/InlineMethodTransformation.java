@@ -294,10 +294,19 @@ final class InlineMethodTransformation {
 
             if (parent instanceof VariableDeclarationFragment fragment
                     && fragment.getInitializer() == child
-                    && fragment.getParent() instanceof VariableDeclarationStatement vds
-                    && vds.fragments().size() == 1) {
+                    && fragment.getParent() instanceof VariableDeclarationStatement vds) {
                 if (!(vds.getParent() instanceof Block)) {
                     throw reject("nested expression: containing declaration is not directly in a block");
+                }
+                @SuppressWarnings("unchecked")
+                List<VariableDeclarationFragment> frags = vds.fragments();
+                int fragIdx = frags.indexOf(fragment);
+                for (int i = 0; i < fragIdx; i++) {
+                    Expression earlierInit = frags.get(i).getInitializer();
+                    if (earlierInit != null && !isPure(earlierInit)) {
+                        throw reject("hoisting before statement would reorder evaluation: "
+                                + "earlier variable initializer has side effects");
+                    }
                 }
                 return new CallSite(vds, false);
             }
@@ -347,18 +356,33 @@ final class InlineMethodTransformation {
             if (parent instanceof VariableDeclarationFragment fragment
                     && fragment.getInitializer() == child
                     && fragment.getParent() instanceof VariableDeclarationExpression vde
-                    && vde.fragments().size() == 1
                     && vde.getParent() instanceof ForStatement regularForStmt
                     && regularForStmt.initializers().size() == 1
                     && regularForStmt.getParent() instanceof Block) {
+                @SuppressWarnings("unchecked")
+                List<VariableDeclarationFragment> frags = vde.fragments();
+                int fragIdx = frags.indexOf(fragment);
+                for (int i = 0; i < fragIdx; i++) {
+                    Expression earlierInit = frags.get(i).getInitializer();
+                    if (earlierInit != null && !isPure(earlierInit)) {
+                        throw reject("hoisting before statement would reorder evaluation: "
+                                + "earlier for-loop variable initializer has side effects");
+                    }
+                }
                 return new CallSite(regularForStmt, false);
             }
 
             if (parent instanceof ForStatement forStmt) {
                 @SuppressWarnings("unchecked")
-                java.util.List<?> inits = forStmt.initializers();
-                if (inits.size() == 1 && inits.contains(child)
-                        && forStmt.getParent() instanceof Block) {
+                List<Expression> inits = forStmt.initializers();
+                int initIdx = inits.indexOf(child);
+                if (initIdx >= 0 && forStmt.getParent() instanceof Block) {
+                    for (int i = 0; i < initIdx; i++) {
+                        if (!isPure(inits.get(i))) {
+                            throw reject("hoisting before statement would reorder evaluation: "
+                                    + "earlier for-loop initializer has side effects");
+                        }
+                    }
                     return new CallSite(forStmt, false);
                 }
             }
@@ -369,7 +393,8 @@ final class InlineMethodTransformation {
         throw reject("call is not the whole expression of a supported statement "
                 + "(variable initializer, return, simple assignment, expression statement, "
                 + "if condition, throw expression, switch selector, enhanced-for iterable, "
-                + "array index, for-loop initializer, or for-loop expression initializer)");
+                + "array index, for-loop initializer, for-loop expression initializer, "
+                + "or multi-fragment declaration)");
     }
 
     /**

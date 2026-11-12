@@ -736,6 +736,42 @@ Full reactor: 327 core + 86 CLI + 91 MCP tests (504 total) pass.
 
 ---
 
+## Phase 17 — Multi-fragment declarations and for-loop initializers
+
+Status: **complete**.
+
+`InlineMethodTransformation.findNestedCallSite` gains three extensions:
+
+1. **Multi-fragment `VariableDeclarationStatement`**: the `vds.fragments().size() == 1`
+   restriction is removed. When the call is the initializer of a later fragment, all
+   earlier fragment initializers are checked for purity via `isPure`; if all are pure
+   the call is accepted (body hoisted before the VDS, fragment initializer replaced
+   with result variable); if any earlier initializer is impure the call is rejected
+   with "earlier variable initializer has side effects".
+
+2. **Multi-fragment `VariableDeclarationExpression` in a `ForStatement` initializer**:
+   the `vde.fragments().size() == 1` restriction is removed. Same purity check on
+   earlier fragments; rejection diagnostic is "earlier for-loop variable initializer
+   has side effects".
+
+3. **Multiple expression initializers in a `ForStatement`**: the
+   `inits.size() == 1 && inits.contains(child)` restriction is replaced by
+   `inits.indexOf(child) >= 0` with a purity check on earlier initializers; rejection
+   diagnostic is "earlier for-loop initializer has side effects".
+
+Three new single-file approval tests:
+- `call_in_multi_fragment_local_declaration_is_inlined` (success, `int a = 0, b = compute()`)
+- `call_in_multi_fragment_local_declaration_with_impure_earlier_is_rejected` (rejection)
+- `call_in_for_loop_multi_fragment_vde_is_inlined` (success, `for (int i = 0, end = compute(); ...)`)
+
+Full reactor: 330 core + 86 CLI + 91 MCP tests (507 total) pass.
+
+### Commit
+
+`feat(inlining): multi-fragment declarations and for-loop initializers (Phase 17)`
+
+---
+
 ## Definition of done for the next continuation
 
 - Phases 1–4, Phase 5a–5f, Phase 6 (CLI/MCP exposure), Phase 7a–7c, Phase 8, Phase 9,
@@ -746,7 +782,10 @@ Full reactor: 327 core + 86 CLI + 91 MCP tests (504 total) pass.
   enhanced-for iterable), Phase 14 (additional safe call positions: array access
   index, for-loop variable-declaration initializer), Phase 15 (additional safe call
   positions: instanceof/pattern-instanceof left operand, for-loop expression initializer),
-  and Phase 16 (additional safe call positions: Java 14+ switch expression selector)
+  Phase 16 (additional safe call positions: Java 14+ switch expression selector), and
+  Phase 17 (multi-fragment local declarations and for-loop initializers: removed
+  `fragments().size() == 1` and `inits.size() == 1` restrictions, added purity checks
+  on earlier fragments/initializers)
   are complete.
 - Existing public APIs are unchanged.
 - New operations are opt-in.
@@ -757,11 +796,10 @@ Full reactor: 327 core + 86 CLI + 91 MCP tests (504 total) pass.
 - Remaining limitations: `while`/`for`/`do-while` condition positions are not supported
   (re-evaluation per iteration requires loop restructuring, not just hoisting);
   `assert` condition is not supported (condition is not evaluated when assertions are
-  disabled, so hoisting changes semantics); for-loop with multiple expression initializers
-  (e.g., `for (i = compute(), j = other(); ...)`) is not supported (sole-initializer
-  restriction); cross-type static calls on generic declaring types are still conservatively
-  rejected; superclass/interface/wrapper flattening requires a separate design review;
-  multi-dimensional array creation where an earlier dimension is not pure is rejected
-  (not supported); calls inside switch expression arms are rejected (arm may not execute).
+  disabled, so hoisting changes semantics); cross-type static calls on generic declaring
+  types are still conservatively rejected; superclass/interface/wrapper flattening
+  requires a separate design review; multi-dimensional array creation where an earlier
+  dimension is not pure is rejected (not supported); calls inside switch expression
+  arms are rejected (arm may not execute).
 - Next phase: superclass/interface/wrapper flattening (separate design review required),
-  or further safe call positions (for-loop with multiple expression initializers, etc.).
+  or further safe call positions.
