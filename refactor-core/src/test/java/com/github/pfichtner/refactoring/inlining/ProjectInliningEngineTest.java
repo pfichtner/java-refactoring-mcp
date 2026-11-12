@@ -81,6 +81,31 @@ class ProjectInliningEngineTest {
     }
 
     @Test
+    void cross_type_explicit_receiver_is_inlined() throws Exception {
+        MavenProject project = project("cross-type-explicit-receiver");
+        Map<String, String> inputs = inputs("cross-type-explicit-receiver");
+
+        ProjectInliningResult result = InliningEngine.inlineProject(project);
+
+        assertThat(result.changedFiles()).hasSize(1);
+        assertThat(result.transformationCount()).isEqualTo(1);
+        assertThat(result.fixedPoint()).isTrue();
+
+        Map<String, String> sources = merged(inputs, result.changedFiles());
+        Path classes = compileProject(sources);
+        assertThat(invoke(classes, "com.example.app.App", "run")).isEqualTo(42);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Project inline: cross-type explicit receiver")
+                .inputProject(inputs)
+                .refactoring("inline project", "`other.value()`",
+                        "explicit receiver captured once; body from non-subtype callee inlined into caller")
+                .outputProject(result.changedFiles())
+                .build()
+        );
+    }
+
+    @Test
     void cross_type_static_import_is_added_to_caller() throws Exception {
         MavenProject project = project("cross-type-static-import");
         Map<String, String> inputs = inputs("cross-type-static-import");

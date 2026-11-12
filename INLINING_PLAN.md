@@ -352,17 +352,44 @@ Resolve these before the phase that needs them:
 
 ---
 
+## Phase 7b — Cross-type explicit receiver inlining
+
+Status: **complete**.
+
+`SemanticSafetyAnalyzer` gains `crossTypeExplicitReceiverRejection`: when a call
+`other.method()` has an explicit receiver and the declaring type is not the caller's
+type, the new path runs instead of `crossTypeRejection`. The subtype requirement is
+dropped; the remaining checks are non-generic declaring type, non-static-nested
+declaring type, no `super`/qualified-`this` in the body, no local/anonymous class
+declarations in the body, accessible signature, and accessible body. The virtual
+dispatch check still runs (the method must be `private`, `final`, or on a `final`
+type). `explicitReceiverRejection` now handles same-type calls only (the `sameType`
+parameter was removed). Two new single-file tests: `cross_type_explicit_receiver_is_inlined`
+(success, using the existing `unsafe-explicit-receiver-cross-type` fixture) and
+`cross_type_explicit_receiver_with_private_body_is_rejected` (rejection when body
+references a private field). One new project-level test:
+`cross_type_explicit_receiver_is_inlined` using a new `cross-type-explicit-receiver`
+fixture with `Base.value()` returning `42` and `App.run()` calling `other.value()`.
+Full reactor: 305 core + 86 CLI + 91 MCP tests pass.
+
+### Commit
+
+`feat(inlining): cross-type explicit receiver inlining (Phase 7b)`
+
+---
+
 ## Definition of done for the next continuation
 
-- Phases 1–4, Phase 5a–5f, Phase 6 (CLI/MCP exposure), and Phase 7a (cross-type
-  static inlining with class-initialization analysis) are complete.
+- Phases 1–4, Phase 5a–5f, Phase 6 (CLI/MCP exposure), Phase 7a (cross-type static
+  inlining with class-initialization analysis), and Phase 7b (cross-type explicit
+  receiver inlining) are complete.
 - Existing public APIs are unchanged.
 - New operations are opt-in.
 - Success paths compile and approvals were reviewed.
 - Rejections are explicit and tested.
-- Full reactor passes on JDK 21 (303 core + 86 CLI + 91 MCP = 480 tests).
+- Full reactor passes on JDK 21.
 - `INLINING.md` and `INLINING_PLAN.md` reflect the delivered state.
-- Open decisions resolved: cross-class static inlining now has a concrete
-  class-initialization analysis instead of a blanket deferral.
-- Next phase: Phase 7b (cross-type and generic explicit receiver support) or
-  superclass/interface/wrapper flattening (requires separate design review).
+- Open decisions: cross-type and generic explicit receiver support is complete for
+  non-generic declaring types; generic explicit receivers remain rejected.
+- Next phase: superclass/interface/wrapper flattening (requires separate design review)
+  or generic explicit receiver support (requires type-variable substitution).

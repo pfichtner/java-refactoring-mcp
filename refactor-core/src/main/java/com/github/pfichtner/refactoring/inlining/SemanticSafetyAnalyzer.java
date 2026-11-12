@@ -95,17 +95,22 @@ final class SemanticSafetyAnalyzer {
         }
         boolean sameType = declaringType.getTypeDeclaration().getKey()
                 .equals(callType.getTypeDeclaration().getKey());
-        if (!sameType) {
-            String crossType = crossTypeRejection(decl, binding, callType, declaringType);
-            if (crossType != null) return crossType;
-        }
-
         Expression receiver = call.getExpression();
         boolean explicitReceiver = receiver != null && !(receiver instanceof ThisExpression);
         boolean staticMethod = isStatic(modifiers);
+        if (!sameType) {
+            if (explicitReceiver && !staticMethod) {
+                String crossExplicit = crossTypeExplicitReceiverRejection(decl, callType, declaringType);
+                if (crossExplicit != null) return crossExplicit;
+            } else {
+                String crossType = crossTypeRejection(decl, binding, callType, declaringType);
+                if (crossType != null) return crossType;
+            }
+        }
+
         if (!staticMethod) {
-            if (explicitReceiver) {
-                String explicit = explicitReceiverRejection(sameType, decl, declaringType);
+            if (explicitReceiver && sameType) {
+                String explicit = explicitReceiverRejection(decl, declaringType);
                 if (explicit != null) return explicit;
             }
             if (!isPrivate(modifiers) && !isFinal(modifiers)
@@ -159,12 +164,28 @@ final class SemanticSafetyAnalyzer {
         return inaccessibleBody(decl.getBody(), callType);
     }
 
-    private static String explicitReceiverRejection(
-            boolean sameType, MethodDeclaration decl, ITypeBinding declaringType) {
+    private static String crossTypeExplicitReceiverRejection(
+            MethodDeclaration decl, ITypeBinding callType, ITypeBinding declaringType) {
 
-        if (!sameType) {
-            return "cross-type explicit receiver inlining is not supported";
+        if (declaringType.getTypeDeclaration().getTypeParameters().length > 0) {
+            return "generic declaring types are not supported for explicit receivers";
         }
+        if (!declaringType.isTopLevel() && !isStatic(declaringType.getModifiers())) {
+            return "explicit receiver inlining does not support non-static nested declaring types";
+        }
+        String lexical = explicitReceiverLexicalUsage(decl.getBody());
+        if (lexical != null) return lexical;
+        if (hasNestedTypeDeclaration(decl.getBody())) {
+            return "explicit receiver inlining does not support local or anonymous classes in the body";
+        }
+        String signature = inaccessibleSignature(decl, callType);
+        if (signature != null) return signature;
+        return inaccessibleBody(decl.getBody(), callType);
+    }
+
+    private static String explicitReceiverRejection(
+            MethodDeclaration decl, ITypeBinding declaringType) {
+
         if (declaringType.getTypeDeclaration().getTypeParameters().length > 0) {
             return "generic declaring types are not supported for explicit receivers";
         }

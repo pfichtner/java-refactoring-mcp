@@ -18,11 +18,16 @@ flattening (replacing anonymous functional-interface implementations with lambda
 expressions, using expression-form lambda bodies when possible), Phase 6
 CLI/MCP exposure (inline-aggressive CLI command and inline_aggressive MCP tool
 wiring the engine into both adapters with dry-run, budget options, and
-remove-unused-declarations support), and Phase 7a cross-type static method inlining
+remove-unused-declarations support), Phase 7a cross-type static method inlining
 with class-initialization analysis (SemanticSafetyAnalyzer.classInitializationRejection
 inspects the declaring TypeDeclaration for static initializer blocks and non-constant
 static field initializers; if none are found the static call is allowed and falls
-through to accessibility checks, otherwise rejected with a targeted diagnostic)
+through to accessibility checks, otherwise rejected with a targeted diagnostic), and
+Phase 7b cross-type explicit receiver inlining (crossTypeExplicitReceiverRejection
+handles other.method() calls where the caller is not a subtype of the declaring
+type; the subtype requirement is dropped; accessibility, super/qualified-this, generic
+type, and non-static-nested-type checks still apply; body is copied with the same
+receiver-capture-and-rewrite mechanism as same-type explicit receiver inlining)
 are complete. No existing public API was changed.
 
 Central question:
@@ -128,7 +133,7 @@ renaming, argument temporaries, and return rewriting.
 | Private method, same type | Yes (single return or void) | Yes | Realistic; implementation proves it |
 | Static method, same type | Partly | Yes (implicit/type-qualified) | Realistic |
 | Instance method, same type, non-virtual | Partly | Yes if private/final or type is final; explicit receivers captured once | Must reject virtual dispatch otherwise; explicit receivers restricted to non-generic, non-static nested types |
-| Cross-class method | No | Yes for guarded instance calls | Accepted only on a caller supertype, non-generic, no `super`/qualified `this`, all copied types/members accessible; imports are added. Static calls stay rejected pending class-initialization analysis |
+| Cross-class method | No | Yes for guarded instance calls | Accepted on a caller supertype (no explicit receiver) or with any explicit receiver (Phase 7b); non-generic, no `super`/qualified `this`, all copied types/members accessible; imports are added. Static calls guarded by class-initialization analysis. |
 | Multiple returns | No | Yes (result temp + labeled break) | Realistic for statement-root call sites |
 | Local variables | No scoping/renaming | Yes (copy + collision rename) | Realistic |
 | Checked exceptions | Not analysed | Rejected | Feasible with call-site catch/`throws` analysis |
@@ -291,7 +296,8 @@ is preserved. Cross-object locking requires alias analysis and is out of scope.
 | Value-returning, side-effecting arguments | Accept (capture once) |
 | Nested expression call position | Reject |
 | Same-type explicit receiver, non-generic, non-static nested | Accept (capture once + null check) |
-| Cross-type, generic, or non-static nested explicit receiver | Reject |
+| Cross-type explicit receiver, non-generic, non-static nested, accessible body | Accept (capture once + null check + receiver substitution) |
+| Generic or non-static nested cross-type explicit receiver | Reject |
 | Virtual dispatch possible | Reject |
 | Checked exception declared | Reject |
 | Generic method, varargs | Reject |
@@ -429,6 +435,14 @@ over "we ran out of budget".
   (`classInitializationRejection`). Calls to types with static initializers are
   rejected with a targeted diagnostic. Enum and annotation declaring types are
   rejected conservatively.
+- Project-wide and single-file cross-type explicit receiver inlining
+  (`crossTypeExplicitReceiverRejection`): `other.method()` where the caller is not
+  a subtype of the declaring type is now accepted when the method is final/non-virtual,
+  the declaring type is non-generic and non-static-nested, the body uses no
+  `super`/qualified-`this`/local/anonymous-class, and all signature and body members
+  are accessible from the caller. The receiver is captured once, null-checked, and
+  used to qualify unqualified `this`, instance fields, and instance method calls in
+  the copied body, identical to the same-type explicit receiver path.
 - Budget stops for `maxTransformations` and `maxCodeGrowthChars`, including mutual
   recursion and project-wide growth.
 - Explicit rejection of synchronized methods, cross-type/generic/non-static-nested

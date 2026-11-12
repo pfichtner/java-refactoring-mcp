@@ -322,21 +322,40 @@ class InliningEngineTest {
     }
 
     @Test
-    void cross_type_explicit_receiver_is_rejected() throws Exception {
+    void cross_type_explicit_receiver_is_inlined() throws Exception {
         String source = fixtures.load(
                 "inline-aggressive/unsafe-explicit-receiver-cross-type/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "other.read()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+        assertCompiles("Foo", result);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: cross-type explicit receiver")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`other.read()` at " + Fixtures.lineCol(source, offset),
+                        "receiver captured once; body from non-subtype callee inlined with receiver substitution")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void cross_type_explicit_receiver_with_private_body_is_rejected() throws Exception {
+        String source = fixtures.load(
+                "inline-aggressive/unsafe-explicit-receiver-cross-type-private/input/Foo.java");
         int offset = Fixtures.offsetOf(source, "other.read()");
 
         InlineRejectedException exception = assertThatExceptionOfType(InlineRejectedException.class)
                 .isThrownBy(() -> InliningEngine.inlineAt(source, "Foo.java", offset))
                 .actual();
-        assertThat(exception.getMessage()).contains("cross-type explicit receiver");
+        assertThat(exception.getMessage()).contains("private");
 
         Approvals.verify(
-            RefactoringStoryBoard.titled("Aggressive inline — rejected: cross-type explicit receiver")
+            RefactoringStoryBoard.titled("Aggressive inline — rejected: cross-type explicit receiver body has private field")
                 .javaSection("Input", source)
                 .refactoring("inline method", "`other.read()` at " + Fixtures.lineCol(source, offset),
-                        "receiver rewriting for the cross-type case is not implemented")
+                        "body references a private field inaccessible from the caller")
                 .diagnostic(exception.getMessage())
                 .build()
         );
