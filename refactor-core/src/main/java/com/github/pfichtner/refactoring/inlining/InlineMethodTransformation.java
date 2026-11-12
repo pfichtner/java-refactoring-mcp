@@ -29,11 +29,14 @@ import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.BreakStatement;
 import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.ChildListPropertyDescriptor;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.ConditionalExpression;
 import org.eclipse.jdt.core.dom.ContinueStatement;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.FieldAccess;
+import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
@@ -302,11 +305,18 @@ final class InlineMethodTransformation {
                 return new CallSite(es, false);
             }
 
+            if (parent instanceof IfStatement ifStmt && ifStmt.getExpression() == child) {
+                if (!(ifStmt.getParent() instanceof Block)) {
+                    throw reject("nested expression: containing if-statement is not directly in a block");
+                }
+                return new CallSite(ifStmt, false);
+            }
+
             break;
         }
 
         throw reject("call is not the whole expression of a supported statement "
-                + "(variable initializer, return, simple assignment, or expression statement)");
+                + "(variable initializer, return, simple assignment, expression statement, or if condition)");
     }
 
     /**
@@ -384,6 +394,35 @@ final class InlineMethodTransformation {
             if (op == PrefixExpression.Operator.INCREMENT
                     || op == PrefixExpression.Operator.DECREMENT) {
                 return "nested call under prefix " + op + ": not supported";
+            }
+            return null;
+        }
+
+        if (parent instanceof ConditionalExpression ternary) {
+            if (child == ternary.getThenExpression() || child == ternary.getElseExpression()) {
+                return "nested call in conditional expression branch: "
+                        + "branch may not be evaluated; hoisting would always evaluate it";
+            }
+            // child is the condition: always evaluated, safe to hoist
+            return null;
+        }
+
+        if (parent instanceof ClassInstanceCreation creation) {
+            Expression outer = creation.getExpression();
+            if (outer != null && !isPure(outer)) {
+                return "hoisting before statement would reorder evaluation: "
+                        + "outer instance of constructor call has side effects";
+            }
+            @SuppressWarnings("unchecked")
+            List<Expression> args = creation.arguments();
+            int argIdx = args.indexOf(child);
+            if (argIdx >= 0) {
+                for (int i = 0; i < argIdx; i++) {
+                    if (!isPure(args.get(i))) {
+                        return "hoisting before statement would reorder evaluation: "
+                                + "earlier argument of constructor call has side effects";
+                    }
+                }
             }
             return null;
         }

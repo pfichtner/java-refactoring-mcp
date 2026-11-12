@@ -1462,6 +1462,93 @@ class InliningEngineTest {
     }
 
     // -------------------------------------------------------------------------
+    // Phase 11 — Additional safe call positions
+    // -------------------------------------------------------------------------
+
+    @Test
+    void call_in_if_condition_is_inlined() throws Exception {
+        String source = fixtures.load("inline-aggressive/if-condition/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "compute()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+        assertCompiles("Foo", result);
+
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(1);
+        assertThat(compileAndInvoke("Foo", result, "run")).isEqualTo(1);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: call in if-condition")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`compute()` at " + Fixtures.lineCol(source, offset),
+                        "if-condition position; body hoisted before if-statement, condition replaced with result")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void call_as_ternary_condition_is_inlined() throws Exception {
+        String source = fixtures.load("inline-aggressive/ternary-condition/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "compute()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+        assertCompiles("Foo", result);
+
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(1);
+        assertThat(compileAndInvoke("Foo", result, "run")).isEqualTo(1);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: call as ternary condition")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`compute()` at " + Fixtures.lineCol(source, offset),
+                        "ternary condition always evaluated; body hoisted before enclosing statement")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void call_in_ternary_then_branch_is_rejected() throws Exception {
+        String source = fixtures.load("inline-aggressive/unsafe-ternary-branch/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "compute()");
+
+        InlineRejectedException exception = assertThatExceptionOfType(InlineRejectedException.class)
+                .isThrownBy(() -> InliningEngine.inlineAt(source, "Foo.java", offset))
+                .actual();
+        assertThat(exception.getMessage()).contains("conditional expression branch");
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline — rejected: call in ternary then-branch")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`compute()` at " + Fixtures.lineCol(source, offset),
+                        "then-branch may not be evaluated; hoisting before statement would always evaluate it")
+                .diagnostic(exception.getMessage())
+                .build()
+        );
+    }
+
+    @Test
+    void call_in_constructor_argument_is_inlined() throws Exception {
+        String source = fixtures.load("inline-aggressive/constructor-argument/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "capacity()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+        assertCompiles("Foo", result);
+
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(1);
+        assertThat(compileAndInvoke("Foo", result, "run")).isEqualTo(1);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: call in constructor argument")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`capacity()` at " + Fixtures.lineCol(source, offset),
+                        "constructor argument; no preceding side-effecting argument; body hoisted before enclosing statement")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    // -------------------------------------------------------------------------
     // Compilation helpers
     // -------------------------------------------------------------------------
 

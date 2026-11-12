@@ -67,6 +67,17 @@ with the existing "raw generic type" diagnostic; two new single-file tests cover
 success and raw-rejection cases; a new project-level test covers cross-package
 inheritance where `Box<String>.get()` is inlined into a `StringBox` subclass with
 T→String substitution)
+and Phase 11 additional safe call positions (`if`-condition, ternary condition,
+constructor argument; `InlineMethodTransformation.findNestedCallSite` gains an
+`IfStatement` terminal case that returns a `CallSite` with the if-statement as anchor
+when the call is the if-condition and the if-statement is directly in a block;
+`InlineMethodTransformation.evaluationOrderViolation` gains `ConditionalExpression`
+handling — condition position accepted, then/else branches rejected with a targeted
+diagnostic — and `ClassInstanceCreation` handling — argument positions accepted when
+all earlier constructor arguments are side-effect-free and the outer-class expression,
+if any, is pure; four new single-file approval tests: success cases
+`call_in_if_condition_is_inlined`, `call_as_ternary_condition_is_inlined`, and
+`call_in_constructor_argument_is_inlined`; rejection `call_in_ternary_then_branch_is_rejected`)
 are complete. No existing public API was changed.
 
 Central question:
@@ -333,7 +344,12 @@ is preserved. Cross-object locking requires alias analysis and is out of scope.
 | Private/final/static, same type, whole-statement call | Accept |
 | Multiple returns, locals, language constructs inside body | Accept |
 | Value-returning, side-effecting arguments | Accept (capture once) |
-| Nested expression call position | Reject |
+| Nested expression call position | Reject (unless condition of `if`, condition of ternary, or argument of constructor — see below) |
+| `if`-condition: call is the condition of an if-statement in a block | Accept (body hoisted before if-statement, condition replaced with result variable) |
+| Ternary condition: call is the condition of `cond ? t : e` | Accept (body hoisted before enclosing statement, condition replaced with result variable) |
+| Ternary then/else branch: call may not be evaluated | Reject with branch-not-evaluated diagnostic |
+| Constructor argument: call is argument of `new Foo(...)`, preceding arguments side-effect-free | Accept (body hoisted before enclosing statement, argument replaced with result variable) |
+| Constructor argument: outer-class expression or preceding argument has side effects | Reject with reorder diagnostic |
 | Same-type explicit receiver, non-static nested | Accept (capture once + null check; type variables in scope) |
 | Cross-type explicit receiver, non-static nested, accessible body, body/signature does not reference type variable | Accept (capture once + null check + receiver substitution) |
 | Cross-type explicit receiver, all type args concrete (no wildcard/capture/raw), body uses no complex-type-arg type variable | Accept (type substitution applied to receiver, result, params, and body) |
@@ -632,7 +648,7 @@ conflicts instead of guessing.
 
 `refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.java`
 
-- 70 approval/semantic tests (2 new for Phase 10 implicit-receiver generic cross-type).
+- 74 approval/semantic tests (4 new for Phase 11 additional call positions).
 - Successful outputs are compiled with the JDK compiler.
 - Runtime tests compile and invoke original and transformed classes, covering
   side-effecting arguments, pure single-use substitution, written/loop/lambda argument
@@ -665,7 +681,7 @@ Fixtures live under
 `refactor-core/src/test/resources/fixtures/inline-aggressive/` and
 `refactor-core/src/test/resources/fixtures/projects/inline-aggressive-project/`.
 
-The full Maven test suite passes: 313 core + 86 CLI + 91 MCP tests (490 total).
+The full Maven test suite passes: 317 core + 86 CLI + 91 MCP tests (494 total).
 
 ### 5.4 What the spike proves
 

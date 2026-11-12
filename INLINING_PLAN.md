@@ -518,19 +518,60 @@ Full reactor: 313 core + 86 CLI + 91 MCP tests (490 total) pass.
 
 ---
 
+## Phase 11 — Additional safe call positions
+
+Status: **complete**.
+
+Three new call positions accepted by `InlineMethodTransformation`:
+
+1. **`if`-condition**: `findNestedCallSite` gains an `IfStatement` terminal case. When
+   the traversal chain ends at an if-statement's condition and the if-statement is
+   directly in a block, a `CallSite(ifStmt, false)` is returned. The prelude (result
+   variable + labeled block) is inserted before the if-statement; the condition
+   expression is replaced with the result variable.
+
+2. **Ternary condition**: `evaluationOrderViolation` gains a `ConditionalExpression`
+   case. The condition position (`child == ternary.getExpression()`) returns null
+   (accepted); the then and else branches return a "conditional expression branch" rejection
+   diagnostic. Getter/delegation fallbacks can still handle simple getter bodies in
+   then/else positions.
+
+3. **Constructor argument**: `evaluationOrderViolation` gains a `ClassInstanceCreation`
+   case identical in structure to the existing `MethodInvocation` case: the outer-class
+   expression (if any) must be pure, and all earlier constructor arguments must be
+   side-effect-free. If both conditions hold, the call is accepted for hoisting.
+
+New imports in `InlineMethodTransformation`: `ClassInstanceCreation`, `ConditionalExpression`,
+`IfStatement`.
+
+Four new single-file approval tests: `call_in_if_condition_is_inlined`,
+`call_as_ternary_condition_is_inlined`, `call_in_ternary_then_branch_is_rejected`,
+`call_in_constructor_argument_is_inlined`. All success paths compile and run correctly.
+
+Full reactor: 317 core + 86 CLI + 91 MCP tests (494 total) pass.
+
+### Commit
+
+`feat(inlining): additional safe call positions — if-condition, ternary, constructor argument (Phase 11)`
+
+---
+
 ## Definition of done for the next continuation
 
 - Phases 1–4, Phase 5a–5f, Phase 6 (CLI/MCP exposure), Phase 7a–7c, Phase 8, Phase 9,
-  and Phase 10 (generic type-variable substitution for implicit-receiver cross-type calls)
-  are complete.
+  Phase 10 (generic type-variable substitution for implicit-receiver cross-type calls),
+  and Phase 11 (additional safe call positions: if-condition, ternary condition,
+  constructor argument) are complete.
 - Existing public APIs are unchanged.
 - New operations are opt-in.
 - Success paths compile and approvals were reviewed.
 - Rejections are explicit and tested.
 - Full reactor passes on JDK 21.
 - `INLINING.md` and `INLINING_PLAN.md` reflect the delivered state.
-- Remaining limitations: cross-type static calls on generic declaring types are still
-  conservatively rejected; superclass/interface/wrapper flattening requires a separate
-  design review.
+- Remaining limitations: `while`/`for`/`do-while` condition positions are not supported
+  (re-evaluation per iteration requires loop restructuring, not just hoisting);
+  cross-type static calls on generic declaring types are still conservatively rejected;
+  superclass/interface/wrapper flattening requires a separate design review.
 - Next phase: superclass/interface/wrapper flattening (separate design review required),
-  or additional safe call positions for existing transformations.
+  or further safe call positions (`while` condition via loop restructuring, array
+  dimension expression, throw argument, etc.).
