@@ -5,11 +5,14 @@ inlining, Phase 3a pure argument substitution, Phase 3b explicit receiver captur
 Phase 3c call-position widening (side-effect-free assignment LHS and nested
 expressions with pure preceding sub-expressions), Phase 4 call-graph analysis
 (mutual recursion detection, opt-in unused-declaration removal), Phase 5a getter
-inlining (direct expression substitution for single-return pure-body methods), and
+inlining (direct expression substitution for single-return pure-body methods),
 Phase 5b compile-time constant inlining (replacing static final field references
-with their literal values) are complete. Cross-type static inlining,
-class-initialization analysis, and CLI/MCP wiring remain deferred. The engine is an
-isolated prototype, not yet wired into CLI/MCP. No existing public API was changed.
+with their literal values), and Phase 5c private final instance-field inlining
+(replacing references to private final non-static fields whose declaration
+initializer is a pure expression with that initializer) are complete. Cross-type
+static inlining, class-initialization analysis, and CLI/MCP wiring remain deferred.
+The engine is an isolated prototype, not yet wired into CLI/MCP. No existing public
+API was changed.
 
 Central question:
 
@@ -442,6 +445,17 @@ over "we ran out of budget".
   candidate in the next. Field declaration sites and name components inside a
   `QualifiedName` are excluded from candidates. Four new approval tests cover
   `int`, `String`, `boolean`, and chained method+constant inlining.
+- Phase 5c final-field inlining: `FinalFieldInliningTransformation` replaces references
+  to `private final` non-static instance fields whose declaration initializer is a pure
+  expression (literals and constant-arithmetic expressions, as determined by
+  `InliningSupport.isPure`) with that initializer expression. Atomic initializers (single
+  literal or name) are substituted directly; compound initializers are wrapped in a
+  `ParenthesizedExpression` to preserve operator precedence. Both unqualified simple-name
+  access and `this.field` (`FieldAccess`) sites are handled. `InliningEngine.inlineAll`
+  and `inlineProject` run the final-field loop after the constant loop, so a field
+  reference inlined in one pass may expose new method or constant candidates in the next.
+  Four approval tests cover `int`, `String`, `this`-qualified access, and compound
+  arithmetic initializers.
 
 ### 5.2 Algorithm
 
@@ -653,7 +667,8 @@ Known edge cases to test before promotion:
    engine API and diagnostics are stable.
 
 Phase 4 (call graph and cleanup) is complete, Phase 5a (getter inlining) is complete,
-and Phase 5b (compile-time constant inlining) is complete. Dispatch analysis for
-virtual methods is not implemented; virtual calls remain rejected. Cross-type static
-inlining still waits for exact class-initialization analysis. The next implementation
-step is Phase 5c (parameter and final-field inlining).
+Phase 5b (compile-time constant inlining) is complete, and Phase 5c (private final
+instance-field inlining) is complete. Dispatch analysis for virtual methods is not
+implemented; virtual calls remain rejected. Cross-type static inlining still waits for
+exact class-initialization analysis. The next implementation step is Phase 5d
+(constructor inlining for simple constructors).

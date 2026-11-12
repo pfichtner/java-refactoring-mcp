@@ -392,6 +392,10 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Aggressive inline: explicit receiver null check | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.explicit_receiver_null_check_is_preserved.approved.md) |
 | Aggressive inline: explicit receiver side effect once | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.explicit_receiver_side_effect_runs_once.approved.md) |
 | Aggressive inline: field assignment | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.field_assignment_is_accepted.approved.md) |
+| Aggressive inline: private final field via this reference | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.final_field_accessed_via_this_is_inlined.approved.md) |
+| Aggressive inline: private final int field | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.final_field_int_is_inlined.approved.md) |
+| Aggressive inline: private final String field | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.final_field_string_is_inlined.approved.md) |
+| Aggressive inline: private final field with arithmetic initializer | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.final_field_with_arithmetic_initializer_is_inlined.approved.md) |
 | Aggressive inline: generated labels avoid existing names | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.generated_labels_and_names_do_not_collide.approved.md) |
 | Aggressive inline — rejected: generic explicit receiver | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.generic_explicit_receiver_is_rejected.approved.md) |
 | Aggressive inline: pure getter substituted at right of impure infix | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.getter_body_substituted_at_right_of_impure_infix.approved.md) |

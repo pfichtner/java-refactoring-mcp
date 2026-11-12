@@ -21,6 +21,7 @@ import java.util.Set;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
@@ -157,6 +158,25 @@ public final class InliningEngine {
                 }
             }
 
+            // If neither methods nor static constants made progress, try private final instance fields.
+            if (!progress) {
+                for (Expression fieldRef : FinalFieldInliningTransformation.collectCandidates(cu)) {
+                    String next = FinalFieldInliningTransformation.tryInline(cu, current, fieldRef);
+                    if (next == null || next.equals(current)) continue;
+                    int growth = next.length() - source.length();
+                    if (growth > config.maxCodeGrowthChars()) {
+                        budgetBlocked = true;
+                        continue;
+                    }
+                    current = next;
+                    applied.add(new InliningResult.Applied(
+                            FinalFieldInliningTransformation.fieldName(fieldRef),
+                            fieldRef.getStartPosition()));
+                    progress = true;
+                    break;
+                }
+            }
+
             if (!progress) {
                 fixedPoint = !budgetBlocked;
                 break;
@@ -268,6 +288,26 @@ public final class InliningEngine {
                         applied.add(new ProjectInliningResult.Applied(file,
                                 ConstantInliningTransformation.fieldName(constantRef),
                                 constantRef.getStartPosition()));
+                        progress = true;
+                        appliedInFile = true;
+                        break;
+                    }
+                }
+
+                // If neither methods nor static constants made progress in this file, try final fields.
+                if (!appliedInFile) {
+                    for (Expression fieldRef : FinalFieldInliningTransformation.collectCandidates(cu)) {
+                        String next = FinalFieldInliningTransformation.tryInline(cu, source, fieldRef);
+                        if (next == null || next.equals(source)) continue;
+                        int growth = totalLength(current, file, next) - originalLength;
+                        if (growth > config.maxCodeGrowthChars()) {
+                            budgetBlocked = true;
+                            continue;
+                        }
+                        current.put(file, next);
+                        applied.add(new ProjectInliningResult.Applied(file,
+                                FinalFieldInliningTransformation.fieldName(fieldRef),
+                                fieldRef.getStartPosition()));
                         progress = true;
                         appliedInFile = true;
                         break;

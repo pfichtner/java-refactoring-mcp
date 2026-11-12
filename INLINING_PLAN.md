@@ -222,7 +222,12 @@ Implement one item at a time, each with its own safety analyzer and fixtures:
    find no progress, so a constant reference inlined in one pass may expose a new method
    candidate in the next. Four approval tests: `constant-int`, `constant-string`,
    `constant-boolean`, and `constant-after-method-inline`.
-3. Final-field inlining (non-static `final` instance fields).
+3. Final-field inlining (non-static `final` instance fields). **Status: complete.**
+   `FinalFieldInliningTransformation` replaces references to `private final` non-static
+   fields whose declaration initializer is `isPure` (literals and constant arithmetic)
+   with that initializer. Atomic initializers substitute directly; compound initializers
+   are wrapped in `ParenthesizedExpression`. Both unqualified and `this.field` access
+   are handled. The engine runs the final-field loop after the constant loop.
 4. Constructor inlining for simple constructors only.
 5. Delegation elimination as a composed transform.
 6. Lambda and anonymous-class flattening.
@@ -302,11 +307,12 @@ Resolve these before the phase that needs them:
 
 ## Definition of done for the next continuation
 
-- Phases 1–4, Phase 5a (getter inlining), and Phase 5b (constant inlining) are complete.
+- Phases 1–4, Phase 5a (getter inlining), Phase 5b (constant inlining), and Phase 5c
+  (private final instance-field inlining) are complete.
 - Existing public APIs are unchanged.
 - New operations are opt-in.
 - Success paths compile and approvals were reviewed.
 - Rejections are explicit and tested.
-- Full reactor passes on JDK 21.
+- Full reactor passes on JDK 21 (467 tests).
 - `INLINING.md` and `INLINING_PLAN.md` reflect the delivered state.
-- Next phase: Phase 5c (final-field, parameter, and constructor inlining).
+- Next phase: Phase 5d (constructor inlining for simple constructors).

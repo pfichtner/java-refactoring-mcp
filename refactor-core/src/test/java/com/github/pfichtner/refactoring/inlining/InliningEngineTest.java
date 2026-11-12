@@ -987,6 +987,94 @@ class InliningEngineTest {
         );
     }
 
+    @Test
+    void final_field_int_is_inlined() throws Exception {
+        String source = fixtures.load("inline-aggressive/final-field-int/input/Foo.java");
+
+        InliningResult result = InliningEngine.inlineAll(source, "Foo.java");
+
+        assertThat(result.transformationCount()).isEqualTo(1);
+        assertThat(result.fixedPoint()).isTrue();
+        assertCompiles("Foo", result.source());
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(42);
+        assertThat(compileAndInvoke("Foo", result.source(), "run")).isEqualTo(42);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: private final int field")
+                .javaSection("Input", source)
+                .refactoring("inline all", "`VALUE`",
+                        "private final int field replaced by its literal initializer")
+                .javaSection("Output", result.source())
+                .build()
+        );
+    }
+
+    @Test
+    void final_field_string_is_inlined() throws Exception {
+        String source = fixtures.load("inline-aggressive/final-field-string/input/Foo.java");
+
+        InliningResult result = InliningEngine.inlineAll(source, "Foo.java");
+
+        assertThat(result.transformationCount()).isEqualTo(1);
+        assertThat(result.fixedPoint()).isTrue();
+        assertCompiles("Foo", result.source());
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo("hello world");
+        assertThat(compileAndInvoke("Foo", result.source(), "run")).isEqualTo("hello world");
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: private final String field")
+                .javaSection("Input", source)
+                .refactoring("inline all", "`PREFIX`",
+                        "private final String field replaced by its literal initializer")
+                .javaSection("Output", result.source())
+                .build()
+        );
+    }
+
+    @Test
+    void final_field_accessed_via_this_is_inlined() throws Exception {
+        String source = fixtures.load("inline-aggressive/final-field-this-access/input/Foo.java");
+
+        InliningResult result = InliningEngine.inlineAll(source, "Foo.java");
+
+        assertThat(result.transformationCount()).isEqualTo(1);
+        assertThat(result.fixedPoint()).isTrue();
+        assertCompiles("Foo", result.source());
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(42);
+        assertThat(compileAndInvoke("Foo", result.source(), "run")).isEqualTo(42);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: private final field via this reference")
+                .javaSection("Input", source)
+                .refactoring("inline all", "`this.VALUE`",
+                        "explicit this.field access replaced by the literal initializer")
+                .javaSection("Output", result.source())
+                .build()
+        );
+    }
+
+    @Test
+    void final_field_with_arithmetic_initializer_is_inlined() throws Exception {
+        String source = fixtures.load("inline-aggressive/final-field-arithmetic/input/Foo.java");
+
+        InliningResult result = InliningEngine.inlineAll(source, "Foo.java");
+
+        assertThat(result.transformationCount()).isEqualTo(1);
+        assertThat(result.fixedPoint()).isTrue();
+        assertCompiles("Foo", result.source());
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(70);
+        assertThat(compileAndInvoke("Foo", result.source(), "run")).isEqualTo(70);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: private final field with arithmetic initializer")
+                .javaSection("Input", source)
+                .refactoring("inline all", "`BASE`",
+                        "compound initializer wrapped in parens to preserve operator precedence")
+                .javaSection("Output", result.source())
+                .build()
+        );
+    }
+
     // -------------------------------------------------------------------------
     // Compilation helpers
     // -------------------------------------------------------------------------
