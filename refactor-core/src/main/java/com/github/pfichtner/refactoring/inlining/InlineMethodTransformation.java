@@ -47,9 +47,11 @@ import org.eclipse.jdt.core.dom.ThrowStatement;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.InstanceofExpression;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.LabeledStatement;
 import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.PatternInstanceofExpression;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
@@ -250,10 +252,11 @@ final class InlineMethodTransformation {
                 throw reject("assignment left-hand side has side effects or may be affected by hoisting; "
                         + "receiver or index evaluation would be reordered");
             }
-            if (!(assignment.getParent() instanceof ExpressionStatement statement)) {
-                throw reject("assignment call must be a standalone expression statement");
+            if (assignment.getParent() instanceof ExpressionStatement statement) {
+                return new CallSite(statement, false);
             }
-            return new CallSite(statement, false);
+            // parent is not an ExpressionStatement (e.g. for-loop initializer): fall through to
+            // findNestedCallSite so the broader position logic can accept it.
         }
         return findNestedCallSite(call);
     }
@@ -350,13 +353,22 @@ final class InlineMethodTransformation {
                 return new CallSite(regularForStmt, false);
             }
 
+            if (parent instanceof ForStatement forStmt) {
+                @SuppressWarnings("unchecked")
+                java.util.List<?> inits = forStmt.initializers();
+                if (inits.size() == 1 && inits.contains(child)
+                        && forStmt.getParent() instanceof Block) {
+                    return new CallSite(forStmt, false);
+                }
+            }
+
             break;
         }
 
         throw reject("call is not the whole expression of a supported statement "
                 + "(variable initializer, return, simple assignment, expression statement, "
                 + "if condition, throw expression, switch selector, enhanced-for iterable, "
-                + "array index, or for-loop initializer)");
+                + "array index, for-loop initializer, or for-loop expression initializer)");
     }
 
     /**
@@ -488,6 +500,10 @@ final class InlineMethodTransformation {
                         + "array expression has side effects";
             }
             return null;
+        }
+
+        if (parent instanceof InstanceofExpression || parent instanceof PatternInstanceofExpression) {
+            return null; // left operand is evaluated first; no reordering issue
         }
 
         return "nested call position not supported (call is in "

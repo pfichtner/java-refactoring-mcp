@@ -1707,6 +1707,52 @@ class InliningEngineTest {
     }
 
     // -------------------------------------------------------------------------
+    // Phase 15 — Additional safe call positions (instanceof operand, for-loop expression initializer)
+    // -------------------------------------------------------------------------
+
+    @Test
+    void call_as_instanceof_left_operand_is_inlined() throws Exception {
+        String source = fixtures.load("inline-aggressive/instanceof-left-operand/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "compute()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+        assertCompiles("Foo", result);
+
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(true);
+        assertThat(compileAndInvoke("Foo", result, "run")).isEqualTo(true);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: call as instanceof left operand")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`compute()` at " + Fixtures.lineCol(source, offset),
+                        "instanceof left operand; body hoisted before enclosing statement, operand replaced with result")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void call_in_for_loop_expression_initializer_is_inlined() throws Exception {
+        String source = fixtures.load("inline-aggressive/for-loop-expression-initializer/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "compute()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+        assertCompiles("Foo", result);
+
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(9);
+        assertThat(compileAndInvoke("Foo", result, "run")).isEqualTo(9);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: call in for-loop expression initializer")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`compute()` at " + Fixtures.lineCol(source, offset),
+                        "for-loop expression initializer; body hoisted before for-statement, initializer replaced with result")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    // -------------------------------------------------------------------------
     // Compilation helpers
     // -------------------------------------------------------------------------
 

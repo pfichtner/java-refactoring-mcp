@@ -667,6 +667,47 @@ Full reactor: 324 core + 86 CLI + 91 MCP tests (501 total) pass.
 
 ---
 
+## Phase 15 — Additional safe call positions (instanceof operand, for-loop expression initializer)
+
+Status: **complete**.
+
+`InlineMethodTransformation.evaluationOrderViolation` gains an `InstanceofExpression` /
+`PatternInstanceofExpression` case that returns null — the left operand of an instanceof
+test is always evaluated first so no reordering issue exists; any position that was
+previously blocked by the fallthrough "nested call position not supported" for these parent
+types now continues up the traversal chain.
+
+`InlineMethodTransformation.locateCallSite` no longer unconditionally throws when an
+assignment-RHS call's containing assignment is not an `ExpressionStatement`; instead it
+falls through to `findNestedCallSite`, which can then accept the broader position.
+
+`findNestedCallSite` gains a `ForStatement` expression-initializer terminal case: when
+the traversal of the call path places `child` as the sole expression in
+`forStmt.initializers()` and the for-statement is directly in a block, a
+`CallSite(forStmt, false)` is returned. The existing prelude-insertion and in-place
+replacement mechanism hoists the body before the for-statement and replaces the call
+with the result variable. The for-statement retains its initializer expression (now
+referencing the result variable).
+
+New imports in `InlineMethodTransformation`: `InstanceofExpression`,
+`PatternInstanceofExpression`.
+
+Two new single-file approval tests:
+- `call_as_instanceof_left_operand_is_inlined` — `compute()` returns `"hello"`;
+  `return compute() instanceof String` inlines to result hoisted before return,
+  `return __inline_result instanceof String`; compiles and runtime returns `true`.
+- `call_in_for_loop_expression_initializer_is_inlined` — `compute()` returns `2`;
+  `for (i = compute(); i < 5; i++)` inlines to body hoisted before for-statement,
+  `for (i = __inline_result; ...)` with i=2,3,4; sum = 9; compiles and runtime returns 9.
+
+Full reactor: 326 core + 86 CLI + 91 MCP tests (503 total) pass.
+
+### Commit
+
+`feat(inlining): additional safe call positions — instanceof operand and for-loop expression initializer (Phase 15)`
+
+---
+
 ## Definition of done for the next continuation
 
 - Phases 1–4, Phase 5a–5f, Phase 6 (CLI/MCP exposure), Phase 7a–7c, Phase 8, Phase 9,
@@ -674,8 +715,10 @@ Full reactor: 324 core + 86 CLI + 91 MCP tests (501 total) pass.
   Phase 11 (additional safe call positions: if-condition, ternary condition, constructor
   argument), Phase 12 (additional safe call positions: throw expression, switch
   selector), Phase 13 (additional safe call positions: array dimension expression,
-  enhanced-for iterable), and Phase 14 (additional safe call positions: array access
-  index, for-loop variable-declaration initializer) are complete.
+  enhanced-for iterable), Phase 14 (additional safe call positions: array access
+  index, for-loop variable-declaration initializer), and Phase 15 (additional safe call
+  positions: instanceof/pattern-instanceof left operand, for-loop expression initializer)
+  are complete.
 - Existing public APIs are unchanged.
 - New operations are opt-in.
 - Success paths compile and approvals were reviewed.
@@ -685,12 +728,12 @@ Full reactor: 324 core + 86 CLI + 91 MCP tests (501 total) pass.
 - Remaining limitations: `while`/`for`/`do-while` condition positions are not supported
   (re-evaluation per iteration requires loop restructuring, not just hoisting);
   `assert` condition is not supported (condition is not evaluated when assertions are
-  disabled, so hoisting changes semantics); for-loop expression initializer (e.g.,
-  `for (i = compute(); ...)`) is not supported (would require a new ForStatement terminal
-  that handles expression initializer lists); cross-type static calls on generic declaring
-  types are still conservatively rejected; superclass/interface/wrapper flattening
-  requires a separate design review; multi-dimensional array creation where an earlier
-  dimension is not pure is rejected (not supported).
+  disabled, so hoisting changes semantics); for-loop with multiple expression initializers
+  (e.g., `for (i = compute(), j = other(); ...)`) is not supported (sole-initializer
+  restriction); cross-type static calls on generic declaring types are still conservatively
+  rejected; superclass/interface/wrapper flattening requires a separate design review;
+  multi-dimensional array creation where an earlier dimension is not pure is rejected
+  (not supported).
 - Next phase: superclass/interface/wrapper flattening (separate design review required),
-  or further safe call positions (for-loop expression initializer, return-expression
-  array index, etc.).
+  or further safe call positions (for-loop with multiple expression initializers,
+  `SwitchExpression` selector, etc.).

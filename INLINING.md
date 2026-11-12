@@ -98,6 +98,19 @@ as anchor when the call is the iterable expression and the for-statement is dire
 a block; both positions reuse the existing prelude-insertion and in-place replacement
 mechanism unchanged; two new single-file approval tests:
 `call_as_array_dimension_is_inlined` and `call_as_enhanced_for_iterable_is_inlined`)
+and Phase 15 additional safe call positions (`InstanceofExpression` and
+`PatternInstanceofExpression` left operand, and `ForStatement` expression initializer;
+`InlineMethodTransformation.evaluationOrderViolation` gains an `InstanceofExpression` /
+`PatternInstanceofExpression` case that returns null — the left operand is always
+evaluated first so no reordering issue exists; `InlineMethodTransformation.locateCallSite`
+no longer throws when an assignment-RHS call's containing assignment is not an
+`ExpressionStatement` — it falls through to `findNestedCallSite` so positions such as
+for-loop initializers can be handled; `findNestedCallSite` gains a `ForStatement`
+expression-initializer terminal case that returns a `CallSite` with the for-statement
+as anchor when the call's traversal path places it in a sole expression of
+`forStmt.initializers()` and the for-statement is directly in a block; two new
+single-file approval tests: `call_as_instanceof_left_operand_is_inlined` and
+`call_in_for_loop_expression_initializer_is_inlined`)
 and Phase 14 additional safe call positions (`ArrayAccess` index expression and
 `ForStatement` variable-declaration initializer;
 `InlineMethodTransformation.evaluationOrderViolation` gains an `ArrayAccess` case —
@@ -394,6 +407,8 @@ is preserved. Cross-object locking requires alias analysis and is out of scope.
 | `ArrayAccess` index: call is the index of an array access, array expression has side effects | Reject with array-expression-side-effects diagnostic |
 | `ArrayAccess` array: call is the array expression of an array access (evaluated first) | Accept (body hoisted before enclosing statement, array replaced with result variable) |
 | `ForStatement` initializer: call is the initializer of a single-fragment VDE that is the sole `ForStatement` initializer, for-statement is directly in a block | Accept (body hoisted before for-statement, initializer replaced with result variable) |
+| `ForStatement` expression initializer: call's traversal path places it in the sole expression of `forStmt.initializers()`, for-statement is directly in a block | Accept (body hoisted before for-statement, expression replaced with result variable) |
+| `InstanceofExpression` / `PatternInstanceofExpression` left operand: call is the tested expression | Accept (left operand evaluated first; body hoisted before enclosing statement, operand replaced with result variable) |
 | Same-type explicit receiver, non-static nested | Accept (capture once + null check; type variables in scope) |
 | Cross-type explicit receiver, non-static nested, accessible body, body/signature does not reference type variable | Accept (capture once + null check + receiver substitution) |
 | Cross-type explicit receiver, all type args concrete (no wildcard/capture/raw), body uses no complex-type-arg type variable | Accept (type substitution applied to receiver, result, params, and body) |
@@ -692,7 +707,7 @@ conflicts instead of guessing.
 
 `refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.java`
 
-- 78 approval/semantic tests (2 new for Phase 13 additional call positions).
+- 81 approval/semantic tests (2 new for Phase 15 additional call positions).
 - Successful outputs are compiled with the JDK compiler.
 - Runtime tests compile and invoke original and transformed classes, covering
   side-effecting arguments, pure single-use substitution, written/loop/lambda argument
@@ -725,7 +740,7 @@ Fixtures live under
 `refactor-core/src/test/resources/fixtures/inline-aggressive/` and
 `refactor-core/src/test/resources/fixtures/projects/inline-aggressive-project/`.
 
-The full Maven test suite passes: 324 core + 86 CLI + 91 MCP tests (501 total).
+The full Maven test suite passes: 326 core + 86 CLI + 91 MCP tests (503 total).
 
 ### 5.4 What the spike proves
 
