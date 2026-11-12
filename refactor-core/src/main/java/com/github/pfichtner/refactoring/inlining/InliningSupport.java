@@ -279,6 +279,28 @@ final class InliningSupport {
     }
 
     /**
+     * True when the method body is a single statement that is a {@link MethodInvocation}:
+     * either {@code return inner(args);} or the void form {@code inner(args);}.
+     * Such a method is a pure forwarder — delegation elimination can substitute the inner
+     * call in-place at any call-site position, including nested expressions.
+     */
+    static boolean isDelegatingBody(MethodDeclaration decl) {
+        Block body = decl.getBody();
+        if (body == null) return false;
+        @SuppressWarnings("unchecked")
+        List<Statement> stmts = body.statements();
+        if (stmts.size() != 1) return false;
+        Statement stmt = stmts.get(0);
+        if (stmt instanceof ReturnStatement ret) {
+            return ret.getExpression() instanceof MethodInvocation;
+        }
+        if (stmt instanceof ExpressionStatement es) {
+            return es.getExpression() instanceof MethodInvocation;
+        }
+        return false;
+    }
+
+    /**
      * True when the method body is a single {@code return} of a getter-pure expression.
      * Getter-pure extends {@link #isPure} by also allowing field reads.
      */

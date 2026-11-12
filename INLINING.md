@@ -9,9 +9,11 @@ inlining (direct expression substitution for single-return pure-body methods),
 Phase 5b compile-time constant inlining (replacing static final field references
 with their literal values), Phase 5c private final instance-field inlining
 (replacing references to private final non-static fields whose declaration
-initializer is a pure expression with that initializer), and Phase 5d delegating
+initializer is a pure expression with that initializer), Phase 5d delegating
 constructor inlining (replacing this(args) constructor-delegation calls with the
-body of the target constructor) are complete. Cross-type static inlining,
+body of the target constructor), and Phase 5e delegation elimination (replacing
+calls to single-delegated-call methods with the inner call in-place, working at
+any position including nested expressions) are complete. Cross-type static inlining,
 class-initialization analysis, and CLI/MCP wiring remain deferred. The engine is
 an isolated prototype, not yet wired into CLI/MCP. No existing public API was
 changed.
@@ -470,6 +472,20 @@ over "we ran out of budget".
   collect `ConstructorInvocation` candidates as a tier between method-call inlining and
   constant inlining. Six approval tests: three successes (`no-args`, `params`, `early-return`
   plus the `inlineAll` variant) and two rejections (`super()`, chained `this()`).
+- Phase 5e delegation elimination: `DelegationEliminationTransformation` replaces calls
+  to methods whose body is a single delegated call (`return inner(args)` or `inner(args);`)
+  with the inner call, substituting outer parameters with the outer call's arguments.
+  Unlike hoisting, the substitution is in-place and works at any call-site position,
+  including nested expressions where hoisting would be rejected due to an impure preceding
+  subexpression. Restrictions: inner receiver must be absent or unqualified `this`; inner
+  method must be declared in the same type (guaranteeing accessibility from any outer
+  call site); inner args must be simple parameter references, pure literals, or
+  accessible field references; non-pure outer args must map to inner args used exactly
+  once. `InliningEngine.tryTransform` tries delegation as the third fallback after
+  hoisting and getter inlining both fail. `InliningSupport` gains `isDelegatingBody`.
+  Two approval tests: `inlineAt` showing delegation substitution at a nested position
+  that hoisting cannot reach, and `inlineAll` showing the full cascade (delegation then
+  getter inlining) across multiple passes.
 
 ### 5.2 Algorithm
 
@@ -681,9 +697,10 @@ Known edge cases to test before promotion:
    engine API and diagnostics are stable.
 
 Phase 4 (call graph and cleanup) is complete, Phase 5a (getter inlining) is complete,
-Phase 5b (compile-time constant inlining) is complete, and Phase 5c (private final
-instance-field inlining) is complete. Dispatch analysis for virtual methods is not
-implemented; virtual calls remain rejected. Cross-type static inlining still waits for
-exact class-initialization analysis. Phase 5d (delegating constructor inlining)
-is complete. The next implementation step is Phase 5e (delegation elimination as a
-composed transform).
+Phase 5b (compile-time constant inlining) is complete, Phase 5c (private final
+instance-field inlining) is complete, Phase 5d (delegating constructor inlining) is
+complete, and Phase 5e (delegation elimination as a composed transform) is complete.
+Dispatch analysis for virtual methods is not implemented; virtual calls remain rejected.
+Cross-type static inlining still waits for exact class-initialization analysis. The next
+implementation steps are Phase 5f (lambda and anonymous-class flattening) and Phase 6
+(CLI/MCP exposure).

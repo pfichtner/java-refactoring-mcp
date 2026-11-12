@@ -462,8 +462,10 @@ public final class InliningEngine {
 
     /**
      * Tries the hoisting transformation first. When that rejects the call site position,
-     * falls back to getter inlining (direct expression substitution), which works at any
-     * position. If the getter fallback does not apply, re-throws the hoisting rejection.
+     * falls back to getter inlining (direct expression substitution for pure-body methods),
+     * then to delegation elimination (call substitution for single-delegated-call bodies),
+     * both of which work at any position. If no fallback applies, re-throws the hoisting
+     * rejection.
      */
     private static String tryTransform(
             CompilationUnit cu, String source,
@@ -473,6 +475,9 @@ public final class InliningEngine {
         } catch (InlineRejectedException hoistRejection) {
             String getterResult = GetterInliningTransformation.tryApply(cu, source, call, decl, binding);
             if (getterResult != null) return getterResult;
+            String delegationResult =
+                    DelegationEliminationTransformation.tryApply(cu, source, call, decl, binding);
+            if (delegationResult != null) return delegationResult;
             throw hoistRejection;
         }
     }

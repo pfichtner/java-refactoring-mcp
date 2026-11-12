@@ -775,6 +775,43 @@ class InliningEngineTest {
     }
 
     @Test
+    void delegation_substituted_at_nested_position_via_inlineAt() throws Exception {
+        String source = fixtures.load("inline-aggressive/delegation-nested/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "doubled(n)");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+        assertCompiles("Foo", result);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: delegation substituted at nested position (inlineAt)")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`doubled(n)` at " + Fixtures.lineCol(source, offset),
+                        "delegation body `return twice(n)` substituted in-place; hoisting is impossible"
+                        + " because the left operand `nonInlineable(n)` is a method call")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void delegation_chain_fully_resolved_via_inlineAll() throws Exception {
+        String source = fixtures.load("inline-aggressive/delegation-nested/input/Foo.java");
+
+        InliningResult result = InliningEngine.inlineAll(source, "Foo.java");
+        assertCompiles("Foo", result.source());
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: delegation chain fully resolved (inlineAll)")
+                .javaSection("Input", source)
+                .refactoring("inline all", "`doubled` → delegation substitution; `twice` → getter substitution",
+                        "two passes collapse the delegation chain: delegation replaces `doubled(n)` with"
+                        + " `twice(n)`, then getter inlining replaces `twice(n)` with `n * 2`")
+                .javaSection("Output", result.source())
+                .build()
+        );
+    }
+
+    @Test
     void direct_recursion_is_rejected() throws Exception {
         String source = fixtures.load("inline-aggressive/recursion-direct/input/Foo.java");
         int offset = Fixtures.offsetOf(source, "countdown(value - 1)");
