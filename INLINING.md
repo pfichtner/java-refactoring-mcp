@@ -27,7 +27,14 @@ Phase 7b cross-type explicit receiver inlining (crossTypeExplicitReceiverRejecti
 handles other.method() calls where the caller is not a subtype of the declaring
 type; the subtype requirement is dropped; accessibility, super/qualified-this, generic
 type, and non-static-nested-type checks still apply; body is copied with the same
-receiver-capture-and-rewrite mechanism as same-type explicit receiver inlining)
+receiver-capture-and-rewrite mechanism as same-type explicit receiver inlining), and
+Phase 7c generic explicit receiver inlining (same-type generic explicit receivers are
+now allowed because the class-level type variables remain in scope within the caller;
+cross-type generic explicit receivers are allowed when the method body and signature
+do not reference any type variable of the declaring type, as checked by
+SemanticSafetyAnalyzer.typeVariableUsageRejection; type substitution for cross-type
+generic calls where the body uses a type variable is still rejected with a targeted
+diagnostic)
 are complete. No existing public API was changed.
 
 Central question:
@@ -295,9 +302,10 @@ is preserved. Cross-object locking requires alias analysis and is out of scope.
 | Multiple returns, locals, language constructs inside body | Accept |
 | Value-returning, side-effecting arguments | Accept (capture once) |
 | Nested expression call position | Reject |
-| Same-type explicit receiver, non-generic, non-static nested | Accept (capture once + null check) |
-| Cross-type explicit receiver, non-generic, non-static nested, accessible body | Accept (capture once + null check + receiver substitution) |
-| Generic or non-static nested cross-type explicit receiver | Reject |
+| Same-type explicit receiver, non-static nested | Accept (capture once + null check; type variables in scope) |
+| Cross-type explicit receiver, non-static nested, accessible body, body/signature does not reference type variable | Accept (capture once + null check + receiver substitution) |
+| Cross-type explicit receiver, body/signature references a type variable of the declaring type | Reject with type-variable diagnostic |
+| Non-static nested cross-type explicit receiver | Reject |
 | Virtual dispatch possible | Reject |
 | Checked exception declared | Reject |
 | Generic method, varargs | Reject |
@@ -438,11 +446,22 @@ over "we ran out of budget".
 - Project-wide and single-file cross-type explicit receiver inlining
   (`crossTypeExplicitReceiverRejection`): `other.method()` where the caller is not
   a subtype of the declaring type is now accepted when the method is final/non-virtual,
-  the declaring type is non-generic and non-static-nested, the body uses no
+  the declaring type is non-static-nested, the body uses no
   `super`/qualified-`this`/local/anonymous-class, and all signature and body members
   are accessible from the caller. The receiver is captured once, null-checked, and
   used to qualify unqualified `this`, instance fields, and instance method calls in
   the copied body, identical to the same-type explicit receiver path.
+- Same-type explicit receiver inlining on generic declaring types is now allowed:
+  the class-level type variables remain in scope in the same-class caller, so no
+  substitution is needed. The blanket generic rejection has been removed from
+  `explicitReceiverRejection`.
+- Cross-type explicit receiver inlining on generic declaring types is now selectively
+  allowed by `SemanticSafetyAnalyzer.typeVariableUsageRejection`: if the method body
+  and signature (return type, parameter types) do not reference any of the declaring
+  type's type variable names, the inlining proceeds as for a non-generic type. If a
+  type variable is referenced, the call is rejected with a targeted diagnostic
+  identifying the variable name. Full type substitution (replacing `T` with the actual
+  type argument at the call site) is a separate future milestone.
 - Budget stops for `maxTransformations` and `maxCodeGrowthChars`, including mutual
   recursion and project-wide growth.
 - Explicit rejection of synchronized methods, cross-type/generic/non-static-nested
@@ -575,7 +594,7 @@ conflicts instead of guessing.
 
 `refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.java`
 
-- 39 approval/semantic tests.
+- 42 approval/semantic tests (3 new for Phase 7c generic explicit receiver).
 - Successful outputs are compiled with the JDK compiler.
 - Runtime tests compile and invoke original and transformed classes, covering
   side-effecting arguments, pure single-use substitution, written/loop/lambda argument
@@ -608,7 +627,7 @@ Fixtures live under
 `refactor-core/src/test/resources/fixtures/inline-aggressive/` and
 `refactor-core/src/test/resources/fixtures/projects/inline-aggressive-project/`.
 
-The full Maven test suite passes: 277 core + 84 CLI + 89 MCP + 13 demo tests (463 total).
+The full Maven test suite passes: 307 core + 86 CLI + 91 MCP tests (484 total).
 
 ### 5.4 What the spike proves
 
@@ -663,8 +682,12 @@ Implemented but intentionally narrow:
   loops, lambdas, and local/anonymous classes. The parameter must not be written in the
   callee.
 - Method-level generics and varargs are rejected.
-- Explicit receivers are limited to same-type calls on non-generic, non-static nested
-  declaring types; cross-type and generic receivers are rejected.
+- Same-type explicit receiver inlining now supports generic declaring types (type
+  variables are in scope within the same-class caller). Cross-type explicit receiver
+  inlining on generic types is allowed when the method body and signature do not
+  reference any type variable of the declaring type. Cross-type calls where the body
+  or signature uses a type variable are still rejected (type substitution not yet
+  implemented).
 - `synchronized` methods and checked exceptions are rejected.
 - Formatting is not normalised; inserted code can mix tabs and spaces, and modified
   copied bodies may fall back to compact JDT formatting. The approved output is the

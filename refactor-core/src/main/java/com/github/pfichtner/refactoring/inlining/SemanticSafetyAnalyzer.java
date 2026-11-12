@@ -11,7 +11,9 @@ import static org.eclipse.jdt.core.dom.Modifier.isPublic;
 import static org.eclipse.jdt.core.dom.Modifier.isStatic;
 import static org.eclipse.jdt.core.dom.Modifier.isSynchronized;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
@@ -168,7 +170,8 @@ final class SemanticSafetyAnalyzer {
             MethodDeclaration decl, ITypeBinding callType, ITypeBinding declaringType) {
 
         if (declaringType.getTypeDeclaration().getTypeParameters().length > 0) {
-            return "generic declaring types are not supported for explicit receivers";
+            String typeVarReason = typeVariableUsageRejection(decl, declaringType);
+            if (typeVarReason != null) return typeVarReason;
         }
         if (!declaringType.isTopLevel() && !isStatic(declaringType.getModifiers())) {
             return "explicit receiver inlining does not support non-static nested declaring types";
@@ -186,9 +189,6 @@ final class SemanticSafetyAnalyzer {
     private static String explicitReceiverRejection(
             MethodDeclaration decl, ITypeBinding declaringType) {
 
-        if (declaringType.getTypeDeclaration().getTypeParameters().length > 0) {
-            return "generic declaring types are not supported for explicit receivers";
-        }
         if (!declaringType.isTopLevel() && !isStatic(declaringType.getModifiers())) {
             return "explicit receiver inlining does not support non-static nested declaring types";
         }
@@ -392,6 +392,40 @@ final class SemanticSafetyAnalyzer {
             return false;
         }
         return true;
+    }
+
+    /**
+     * Returns a rejection reason when the method body or signature references a type variable
+     * declared by the declaring type. Used to guard cross-type generic explicit receiver inlining:
+     * the type variable is not in scope at the cross-type call site, so substitution would be needed.
+     * Returns {@code null} when no type variable reference is found (safe to proceed).
+     */
+    private static String typeVariableUsageRejection(
+            MethodDeclaration decl, ITypeBinding declaringType) {
+
+        Set<String> typeVarNames = new HashSet<>();
+        for (ITypeBinding tv : declaringType.getTypeDeclaration().getTypeParameters()) {
+            typeVarNames.add(tv.getName());
+        }
+        if (typeVarNames.isEmpty()) return null;
+
+        String[] reason = {null};
+        decl.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(SimpleName name) {
+                if (reason[0] != null) return false;
+                IBinding b = name.resolveBinding();
+                if (b instanceof ITypeBinding tb
+                        && tb.isTypeVariable()
+                        && typeVarNames.contains(tb.getName())) {
+                    reason[0] = "cross-type generic explicit receiver: method references type variable '"
+                            + tb.getName() + "' of the generic declaring type;"
+                            + " type substitution is not supported";
+                }
+                return reason[0] == null;
+            }
+        });
+        return reason[0];
     }
 
     private static boolean samePackage(ITypeBinding a, ITypeBinding b) {

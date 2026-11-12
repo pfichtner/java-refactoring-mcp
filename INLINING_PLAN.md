@@ -356,6 +356,38 @@ Resolve these before the phase that needs them:
 
 Status: **complete**.
 
+---
+
+## Phase 7c — Generic explicit receiver inlining
+
+Status: **complete**.
+
+`SemanticSafetyAnalyzer` gains `typeVariableUsageRejection(MethodDeclaration, ITypeBinding)`:
+visits all `SimpleName` nodes in the method declaration (return type, parameter types,
+body) and returns a rejection reason when any node resolves to a type variable binding
+whose name matches one of the declaring type's formal type parameters.
+
+**Same-type generic:** the blanket generic rejection is removed from
+`explicitReceiverRejection`. Type variables declared by the class are always in scope
+within the same-class caller, so no substitution is needed.
+
+**Cross-type generic:** `crossTypeExplicitReceiverRejection` replaces the blanket
+generic rejection with `typeVariableUsageRejection`. If the check passes (no type
+variable reference found), the call falls through to the existing accessibility and
+body-safety checks. If the check fails, the call is rejected with a targeted diagnostic
+identifying the type variable name.
+
+Three new tests in `InliningEngineTest`:
+- `same_type_generic_explicit_receiver_is_inlined` (success, same-type `Foo<T>`)
+- `cross_type_generic_explicit_receiver_without_type_var_is_inlined` (success, `Box<T>.size()` returns `int`)
+- `cross_type_generic_explicit_receiver_with_type_var_is_rejected` (rejection, `Box<T>.get()` returns `T`)
+
+Full reactor: 307 core + 86 CLI + 91 MCP tests pass.
+
+### Commit
+
+`feat(inlining): generic explicit receiver inlining (Phase 7c)`
+
 `SemanticSafetyAnalyzer` gains `crossTypeExplicitReceiverRejection`: when a call
 `other.method()` has an explicit receiver and the declaring type is not the caller's
 type, the new path runs instead of `crossTypeRejection`. The subtype requirement is
@@ -381,15 +413,19 @@ Full reactor: 305 core + 86 CLI + 91 MCP tests pass.
 ## Definition of done for the next continuation
 
 - Phases 1–4, Phase 5a–5f, Phase 6 (CLI/MCP exposure), Phase 7a (cross-type static
-  inlining with class-initialization analysis), and Phase 7b (cross-type explicit
-  receiver inlining) are complete.
+  inlining with class-initialization analysis), Phase 7b (cross-type explicit
+  receiver inlining), and Phase 7c (generic explicit receiver inlining) are complete.
 - Existing public APIs are unchanged.
 - New operations are opt-in.
 - Success paths compile and approvals were reviewed.
 - Rejections are explicit and tested.
 - Full reactor passes on JDK 21.
 - `INLINING.md` and `INLINING_PLAN.md` reflect the delivered state.
-- Open decisions: cross-type and generic explicit receiver support is complete for
-  non-generic declaring types; generic explicit receivers remain rejected.
-- Next phase: superclass/interface/wrapper flattening (requires separate design review)
-  or generic explicit receiver support (requires type-variable substitution).
+- Open decisions: same-type and cross-type generic explicit receivers are now supported
+  when the method body/signature does not reference a type variable. Full type
+  substitution (replacing `T` with the actual type argument at the call site) is not
+  yet implemented; cross-type generic calls where the body uses `T` are rejected.
+- Next phase: type-variable substitution for cross-type generic calls (replace each
+  type variable in body/signature with the actual type argument from the call-site
+  receiver binding), or superclass/interface/wrapper flattening (separate design
+  review required).

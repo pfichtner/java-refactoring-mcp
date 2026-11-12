@@ -383,21 +383,59 @@ class InliningEngineTest {
     }
 
     @Test
-    void generic_explicit_receiver_is_rejected() throws Exception {
+    void same_type_generic_explicit_receiver_is_inlined() throws Exception {
         String source = fixtures.load(
                 "inline-aggressive/unsafe-explicit-receiver-generic/input/Foo.java");
         int offset = Fixtures.offsetOf(source, "other.read()");
 
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+        assertCompiles("Foo", result);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: same-type generic explicit receiver")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`other.read()` at " + Fixtures.lineCol(source, offset),
+                        "type variable T is in scope for same-type caller; receiver captured once")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void cross_type_generic_explicit_receiver_without_type_var_is_inlined() throws Exception {
+        String source = fixtures.load(
+                "inline-aggressive/explicit-receiver-generic-cross-type/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "box.size()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+        assertCompiles("Foo", result);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: cross-type generic explicit receiver without type variable")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`box.size()` at " + Fixtures.lineCol(source, offset),
+                        "method body does not reference type variable; receiver captured once")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void cross_type_generic_explicit_receiver_with_type_var_is_rejected() throws Exception {
+        String source = fixtures.load(
+                "inline-aggressive/unsafe-explicit-receiver-generic-typevar/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "box.get()");
+
         InlineRejectedException exception = assertThatExceptionOfType(InlineRejectedException.class)
                 .isThrownBy(() -> InliningEngine.inlineAt(source, "Foo.java", offset))
                 .actual();
-        assertThat(exception.getMessage()).contains("generic declaring types");
+        assertThat(exception.getMessage()).contains("type variable");
 
         Approvals.verify(
-            RefactoringStoryBoard.titled("Aggressive inline — rejected: generic explicit receiver")
+            RefactoringStoryBoard.titled("Aggressive inline — rejected: cross-type generic explicit receiver uses type variable")
                 .javaSection("Input", source)
-                .refactoring("inline method", "`other.read()` at " + Fixtures.lineCol(source, offset),
-                        "capturing a receiver of a generic declaring type is not implemented")
+                .refactoring("inline method", "`box.get()` at " + Fixtures.lineCol(source, offset),
+                        "method return type references type variable T of the declaring type")
                 .diagnostic(exception.getMessage())
                 .build()
         );
