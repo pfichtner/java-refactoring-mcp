@@ -556,12 +556,48 @@ Full reactor: 317 core + 86 CLI + 91 MCP tests (494 total) pass.
 
 ---
 
+## Phase 12 — Additional safe call positions (throw, switch)
+
+Status: **complete**.
+
+`InlineMethodTransformation.findNestedCallSite` gains two new terminal statement cases:
+
+1. **`throw` expression**: when the traversal chain ends at a `ThrowStatement` and the
+   call (or its wrapping expression subtree) is the throw expression, and the throw
+   statement is directly in a `Block`, a `CallSite(throwStmt, false)` is returned. The
+   existing prelude-insertion and in-place call replacement mechanism hoists the inlined
+   body before the throw statement and replaces the call with the result variable; the
+   throw statement then throws the result.
+
+2. **`switch` selector**: when the traversal chain ends at a `SwitchStatement` and the
+   call (or its wrapping expression subtree) is the switch selector expression, and the
+   switch statement is directly in a `Block`, a `CallSite(switchStmt, false)` is
+   returned. The same mechanism hoists the body before the switch and replaces the
+   selector with the result variable.
+
+New imports: `ThrowStatement`, `SwitchStatement` added to `InlineMethodTransformation`.
+
+Two new single-file approval tests:
+- `call_in_throw_expression_is_inlined` — `compute()` returns an `IllegalArgumentException`,
+  thrown inside a try-catch; body hoisted inside the try block; compiles and runtime returns 5.
+- `call_as_switch_selector_is_inlined` — `compute()` returns `1`; body hoisted before
+  switch; `switch (1)` selects `case 1`; compiles and runtime returns 10.
+
+Full reactor: 319 core + 86 CLI + 91 MCP tests (496 total) pass.
+
+### Commit
+
+`feat(inlining): additional safe call positions — throw expression and switch selector (Phase 12)`
+
+---
+
 ## Definition of done for the next continuation
 
 - Phases 1–4, Phase 5a–5f, Phase 6 (CLI/MCP exposure), Phase 7a–7c, Phase 8, Phase 9,
   Phase 10 (generic type-variable substitution for implicit-receiver cross-type calls),
-  and Phase 11 (additional safe call positions: if-condition, ternary condition,
-  constructor argument) are complete.
+  Phase 11 (additional safe call positions: if-condition, ternary condition, constructor
+  argument), and Phase 12 (additional safe call positions: throw expression, switch
+  selector) are complete.
 - Existing public APIs are unchanged.
 - New operations are opt-in.
 - Success paths compile and approvals were reviewed.
@@ -570,8 +606,10 @@ Full reactor: 317 core + 86 CLI + 91 MCP tests (494 total) pass.
 - `INLINING.md` and `INLINING_PLAN.md` reflect the delivered state.
 - Remaining limitations: `while`/`for`/`do-while` condition positions are not supported
   (re-evaluation per iteration requires loop restructuring, not just hoisting);
-  cross-type static calls on generic declaring types are still conservatively rejected;
-  superclass/interface/wrapper flattening requires a separate design review.
+  `assert` condition is not supported (condition is not evaluated when assertions are
+  disabled, so hoisting changes semantics); cross-type static calls on generic declaring
+  types are still conservatively rejected; superclass/interface/wrapper flattening
+  requires a separate design review.
 - Next phase: superclass/interface/wrapper flattening (separate design review required),
   or further safe call positions (`while` condition via loop restructuring, array
-  dimension expression, throw argument, etc.).
+  dimension expression, etc.).

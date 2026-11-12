@@ -37,6 +37,8 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.SwitchStatement;
+import org.eclipse.jdt.core.dom.ThrowStatement;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
@@ -312,11 +314,26 @@ final class InlineMethodTransformation {
                 return new CallSite(ifStmt, false);
             }
 
+            if (parent instanceof ThrowStatement throwStmt && throwStmt.getExpression() == child) {
+                if (!(throwStmt.getParent() instanceof Block)) {
+                    throw reject("nested expression: containing throw statement is not directly in a block");
+                }
+                return new CallSite(throwStmt, false);
+            }
+
+            if (parent instanceof SwitchStatement switchStmt && switchStmt.getExpression() == child) {
+                if (!(switchStmt.getParent() instanceof Block)) {
+                    throw reject("nested expression: containing switch statement is not directly in a block");
+                }
+                return new CallSite(switchStmt, false);
+            }
+
             break;
         }
 
         throw reject("call is not the whole expression of a supported statement "
-                + "(variable initializer, return, simple assignment, expression statement, or if condition)");
+                + "(variable initializer, return, simple assignment, expression statement, "
+                + "if condition, throw expression, or switch selector)");
     }
 
     /**

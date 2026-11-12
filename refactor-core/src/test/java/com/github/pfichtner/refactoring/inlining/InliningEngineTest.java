@@ -1549,6 +1549,52 @@ class InliningEngineTest {
     }
 
     // -------------------------------------------------------------------------
+    // Phase 12 — Additional safe call positions (throw, switch)
+    // -------------------------------------------------------------------------
+
+    @Test
+    void call_in_throw_expression_is_inlined() throws Exception {
+        String source = fixtures.load("inline-aggressive/throw-expression/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "compute()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+        assertCompiles("Foo", result);
+
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(5);
+        assertThat(compileAndInvoke("Foo", result, "run")).isEqualTo(5);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: call in throw expression")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`compute()` at " + Fixtures.lineCol(source, offset),
+                        "throw expression; body hoisted before throw statement, expression replaced with result")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void call_as_switch_selector_is_inlined() throws Exception {
+        String source = fixtures.load("inline-aggressive/switch-selector/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "compute()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+        assertCompiles("Foo", result);
+
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(10);
+        assertThat(compileAndInvoke("Foo", result, "run")).isEqualTo(10);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: call as switch selector")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`compute()` at " + Fixtures.lineCol(source, offset),
+                        "switch selector; body hoisted before switch statement, selector replaced with result")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    // -------------------------------------------------------------------------
     // Compilation helpers
     // -------------------------------------------------------------------------
 

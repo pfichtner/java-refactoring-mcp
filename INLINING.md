@@ -78,6 +78,15 @@ all earlier constructor arguments are side-effect-free and the outer-class expre
 if any, is pure; four new single-file approval tests: success cases
 `call_in_if_condition_is_inlined`, `call_as_ternary_condition_is_inlined`, and
 `call_in_constructor_argument_is_inlined`; rejection `call_in_ternary_then_branch_is_rejected`)
+and Phase 12 additional safe call positions (`throw` expression and `switch` selector;
+`InlineMethodTransformation.findNestedCallSite` gains two new terminal cases: a
+`ThrowStatement` case that returns a `CallSite` with the throw-statement as anchor when
+the call is the throw expression and the throw-statement is directly in a block; and a
+`SwitchStatement` case that returns a `CallSite` with the switch-statement as anchor
+when the call is the switch selector and the switch-statement is directly in a block;
+both cases use `replaceWholeStatement=false` so the existing prelude-insertion and
+in-place call replacement mechanism is reused unchanged; two new single-file approval
+tests: `call_in_throw_expression_is_inlined` and `call_as_switch_selector_is_inlined`)
 are complete. No existing public API was changed.
 
 Central question:
@@ -350,6 +359,8 @@ is preserved. Cross-object locking requires alias analysis and is out of scope.
 | Ternary then/else branch: call may not be evaluated | Reject with branch-not-evaluated diagnostic |
 | Constructor argument: call is argument of `new Foo(...)`, preceding arguments side-effect-free | Accept (body hoisted before enclosing statement, argument replaced with result variable) |
 | Constructor argument: outer-class expression or preceding argument has side effects | Reject with reorder diagnostic |
+| `throw` expression: call is the expression of a throw-statement directly in a block | Accept (body hoisted before throw-statement, expression replaced with result variable) |
+| `switch` selector: call is the selector of a switch-statement directly in a block | Accept (body hoisted before switch-statement, selector replaced with result variable) |
 | Same-type explicit receiver, non-static nested | Accept (capture once + null check; type variables in scope) |
 | Cross-type explicit receiver, non-static nested, accessible body, body/signature does not reference type variable | Accept (capture once + null check + receiver substitution) |
 | Cross-type explicit receiver, all type args concrete (no wildcard/capture/raw), body uses no complex-type-arg type variable | Accept (type substitution applied to receiver, result, params, and body) |
@@ -648,7 +659,7 @@ conflicts instead of guessing.
 
 `refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.java`
 
-- 74 approval/semantic tests (4 new for Phase 11 additional call positions).
+- 76 approval/semantic tests (2 new for Phase 12 additional call positions).
 - Successful outputs are compiled with the JDK compiler.
 - Runtime tests compile and invoke original and transformed classes, covering
   side-effecting arguments, pure single-use substitution, written/loop/lambda argument
@@ -681,7 +692,7 @@ Fixtures live under
 `refactor-core/src/test/resources/fixtures/inline-aggressive/` and
 `refactor-core/src/test/resources/fixtures/projects/inline-aggressive-project/`.
 
-The full Maven test suite passes: 317 core + 86 CLI + 91 MCP tests (494 total).
+The full Maven test suite passes: 319 core + 86 CLI + 91 MCP tests (496 total).
 
 ### 5.4 What the spike proves
 
