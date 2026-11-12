@@ -2,10 +2,11 @@
 
 Status: Phase 1 hardening, Phase 2 project-wide same-type and cross-type instance
 inlining, Phase 3a pure argument substitution, Phase 3b explicit receiver capture,
-and initial Phase 3c call-position widening (side-effect-free assignment LHS) are
-complete. Nested-expression positions, cross-type static inlining,
-class-initialization analysis, and CLI/MCP wiring remain deferred. The engine is an
-isolated prototype, not yet wired into CLI/MCP. No existing public API was changed.
+and Phase 3c call-position widening (side-effect-free assignment LHS and nested
+expressions with pure preceding sub-expressions) are complete. Cross-type static
+inlining, class-initialization analysis, and CLI/MCP wiring remain deferred. The
+engine is an isolated prototype, not yet wired into CLI/MCP. No existing public API
+was changed.
 
 Central question:
 
@@ -388,6 +389,11 @@ over "we ran out of budget".
 - Pure argument used once is copied to its use instead of captured; multi-use, written,
   loop-contained, and lambda-captured arguments keep the temporary.
 - Simple-name or unqualified `this.field` assignment left-hand side.
+- Value-returning calls nested in return statements, variable initializers, and
+  expression statements when every sub-expression evaluated before the call (infix left
+  operands, outer method receiver and earlier arguments, assignment LHS) is
+  side-effect-free; `&&`/`||` on the right side, `++`/`--` prefixes, and
+  lambda/anonymous-class boundaries are rejected with diagnostics.
 - Iterative chain `first → second → third` until fixed point.
 - Project-wide same-type inlining across files, with one candidate per file per pass
   and a fixed point after all call sites are gone.
@@ -608,7 +614,8 @@ Known edge cases to test before promotion:
 7. **Adapters**: expose an opt-in aggressive operation through CLI and MCP once the
    engine API and diagnostics are stable.
 
-The next implementation step is the remainder of the data-flow phase: additional call
-positions (nested expressions with pure arguments and a safe insertion point) with
-evaluation-order checks. Cross-type static inlining still waits for exact
-class-initialization analysis.
+Phase 3c (nested expression positions) is now complete. The next implementation step
+is Phase 4 (call graph): mutual-recursion detection by analysis rather than budget,
+dispatch analysis for the non-private/final/static remainder, and opt-in removal of
+declarations whose all call sites have been inlined. Cross-type static inlining still
+waits for exact class-initialization analysis.

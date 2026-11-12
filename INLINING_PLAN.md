@@ -152,10 +152,10 @@ Status: Phase 3b complete. Initial Phase 3c step complete (side-effect-free assi
 4. Added side-effect-once, null-receiver, private-member, cross-type, generic, and
    non-static nested fixtures.
 
-### Phase 3c — Additional call positions (in progress)
+### Phase 3c — Additional call positions (complete for key positions)
 
 1. Assignment RHS with a side-effect-free LHS. (done: simple name and unqualified `this.field`)
-2. Nested expressions with pure arguments and a safe insertion point.
+2. Nested expressions with pure preceding sub-expressions and a safe insertion point. (done)
 3. Return expressions already handled by the spike.
 4. Definite-assignment and exception-flow checks for the new positions.
 
@@ -282,7 +282,8 @@ Resolve these before the phase that needs them:
 
 ## Definition of done for the next continuation
 
-- Phase 1, Phase 2, Phase 3a, Phase 3b, and initial Phase 3c widening are complete.
+- Phase 1, Phase 2, Phase 3a, Phase 3b, and Phase 3c (nested expressions with pure preceding
+  sub-expressions) are complete.
 - Existing public APIs are unchanged.
 - New operations are opt-in.
 - Success paths compile and approvals were reviewed.
