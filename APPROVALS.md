@@ -414,6 +414,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Aggressive inline: finally runs before return | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.try_finally_runs_before_return.approved.md) |
 | Aggressive inline: type-qualified static call | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.type_qualified_static_call_is_accepted.approved.md) |
 | Aggressive inline — rejected: synchronized method | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.unsafe_synchronized_method_is_rejected.approved.md) |
+| Aggressive inline: unused declaration removed after inlining | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.unused_declarations_are_removed_after_inlining.approved.md) |
 
 ### Introduce indirection
 | Test case | Approval |

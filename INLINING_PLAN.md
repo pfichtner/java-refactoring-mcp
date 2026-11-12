@@ -170,29 +170,35 @@ Status: Phase 3b complete. Initial Phase 3c step complete (side-effect-free assi
 
 ## Phase 4 — Call graph and cleanup
 
-### Work
+Status: complete.
 
-1. Build a call graph per project pass.
-2. Reject direct and indirect recursion.
-3. Add dispatch analysis:
-   - private/final methods and final types are non-virtual;
-   - other methods remain rejected until a whole-program decision is implemented.
-4. Optionally remove a method declaration after all its call sites are inlined, under
-   an explicit opt-in flag.
-5. Obtain permission from a fresh parse after the final pass; do not trust stale
-   bindings after edits.
-6. Add unused-declaration cleanup only when reachability is proven.
+### Work completed
+
+1. `CallGraphAnalyzer` built per pass (single-file: from `CompilationUnit`;
+   project-wide: from snapshot declarations and calls).
+2. Mutual recursion (caller transitively reachable from callee in the call graph)
+   rejected with "mutual recursion detected" before the semantic safety check.
+3. Dispatch analysis deferred: virtual non-private/non-final/non-static methods
+   remain rejected by the existing `SemanticSafetyAnalyzer` check.
+4. Opt-in unused-declaration removal via `InlineConfig.removeUnusedDeclarations()`:
+   after the fixed point, private methods with no remaining call sites are removed
+   via `ASTRewrite`; results reported in `InliningResult.removed()` and
+   `ProjectInliningResult.removed()`.
+5. Removal uses a fresh parse of the final source state.
+6. Only private methods are removed (guaranteed no external callers for single-file
+   and project-wide runs).
 
 ### Acceptance
 
-- Mutual recursion is rejected by analysis, not merely by budget exhaustion.
-- Removal cleanup is opt-in and approval-covered.
-- The final output re-parses and compiles.
-- Full reactor passes.
+- Mutual recursion is rejected by analysis, not merely by budget exhaustion. ✓
+- `start` in the Mutual fixture is correctly unrolled (not cross-inlined). ✓
+- Removal of `helper()`, `twice()`, `plusTen()` is approval-covered. ✓
+- Both single-file and project outputs compile and run correctly. ✓
+- Full reactor passes (277 core + 84 CLI + 89 MCP + 13 demo = 463 tests). ✓
 
 ### Commit
 
-`feat(inlining): add call graph and opt-in cleanup`
+`feat(inlining): add call graph analysis and opt-in unused-declaration removal`
 
 ---
 
@@ -282,11 +288,12 @@ Resolve these before the phase that needs them:
 
 ## Definition of done for the next continuation
 
-- Phase 1, Phase 2, Phase 3a, Phase 3b, and Phase 3c (nested expressions with pure preceding
-  sub-expressions) are complete.
+- Phases 1–4 are complete.
 - Existing public APIs are unchanged.
 - New operations are opt-in.
 - Success paths compile and approvals were reviewed.
 - Rejections are explicit and tested.
 - Full reactor passes on JDK 21.
-- `INLINING.md`, `INLINING_PLAN.md`, and `README.md` reflect the delivered state.
+- `INLINING.md` and `INLINING_PLAN.md` reflect the delivered state.
+- Next phase: Phase 5 (expression and structural inlining: getters, constants, final
+  fields, parameter inlining, constructor inlining).

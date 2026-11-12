@@ -230,6 +230,30 @@ class ProjectInliningEngineTest {
     }
 
     @Test
+    void unused_declarations_are_removed_after_project_inlining() throws Exception {
+        MavenProject project = project("same-type");
+        Map<String, String> inputs = inputs("same-type");
+
+        ProjectInliningResult result = InliningEngine.inlineProject(
+                project, new InlineConfig(100, 100_000, true));
+
+        assertThat(result.changedFiles()).hasSize(2);
+        assertThat(result.fixedPoint()).isTrue();
+        assertThat(result.removed()).hasSize(2);
+        assertThat(result.removed())
+                .anySatisfy(r -> assertThat(r.methodName()).isEqualTo("twice"))
+                .anySatisfy(r -> assertThat(r.methodName()).isEqualTo("plusTen"));
+
+        Map<String, String> sources = merged(inputs, result.changedFiles());
+        assertThat(sources.get("Alpha.java")).doesNotContain("private int twice");
+        assertThat(sources.get("Beta.java")).doesNotContain("private int plusTen");
+
+        Path classes = compileProject(sources);
+        assertThat(invoke(classes, "com.example.Alpha", "run")).isEqualTo(6);
+        assertThat(invoke(classes, "com.example.Beta", "run")).isEqualTo(15);
+    }
+
+    @Test
     void code_growth_budget_blocks_all_candidates() throws Exception {
         ProjectInliningResult result = InliningEngine.inlineProject(
                 project("same-type"), new InlineConfig(20, 0));

@@ -799,13 +799,40 @@ class InliningEngineTest {
 
         assertThat(result.transformationCount()).isEqualTo(4);
         assertThat(result.fixedPoint()).isFalse();
+        assertThat(result.rejected())
+                .anySatisfy(rejection -> assertThat(rejection.reason()).contains("mutual recursion"));
         assertCompiles("Mutual", result.source());
 
         Approvals.verify(
             RefactoringStoryBoard.titled("Aggressive inline: mutual recursion stopped by budget")
                 .javaSection("Input", source)
                 .refactoring("inline all", "`first`, `second`",
-                        "mutual recursion keeps producing candidates; the maxTransformations budget stops it")
+                        "first↔second cross-calls are rejected as mutual recursion; start is unrolled until budget")
+                .javaSection("Output", result.source())
+                .build()
+        );
+    }
+
+    @Test
+    void unused_declarations_are_removed_after_inlining() throws Exception {
+        String source = fixtures.load("inline-aggressive/unused-after-inlining/input/Foo.java");
+
+        InliningResult result = InliningEngine.inlineAll(
+                source, "Foo.java", new InlineConfig(100, 100_000, true));
+
+        assertThat(result.transformationCount()).isEqualTo(1);
+        assertThat(result.fixedPoint()).isTrue();
+        assertThat(result.removed()).hasSize(1);
+        assertThat(result.removed().get(0).methodName()).isEqualTo("helper");
+        assertThat(result.source()).doesNotContain("private int helper");
+        assertCompiles("Foo", result.source());
+        assertThat(compileAndInvoke("Foo", result.source(), "run")).isEqualTo(42);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: unused declaration removed after inlining")
+                .javaSection("Input", source)
+                .refactoring("inline all with removal", "`helper()`",
+                        "helper() is inlined into run() and removed because no call sites remain")
                 .javaSection("Output", result.source())
                 .build()
         );

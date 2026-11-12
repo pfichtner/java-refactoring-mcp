@@ -2,11 +2,12 @@
 
 Status: Phase 1 hardening, Phase 2 project-wide same-type and cross-type instance
 inlining, Phase 3a pure argument substitution, Phase 3b explicit receiver capture,
-and Phase 3c call-position widening (side-effect-free assignment LHS and nested
-expressions with pure preceding sub-expressions) are complete. Cross-type static
-inlining, class-initialization analysis, and CLI/MCP wiring remain deferred. The
-engine is an isolated prototype, not yet wired into CLI/MCP. No existing public API
-was changed.
+Phase 3c call-position widening (side-effect-free assignment LHS and nested
+expressions with pure preceding sub-expressions), and Phase 4 call-graph analysis
+(mutual recursion detection, opt-in unused-declaration removal) are complete.
+Cross-type static inlining, class-initialization analysis, and CLI/MCP wiring remain
+deferred. The engine is an isolated prototype, not yet wired into CLI/MCP. No
+existing public API was changed.
 
 Central question:
 
@@ -280,6 +281,7 @@ is preserved. Cross-object locking requires alias analysis and is out of scope.
 | Cross-type instance on caller supertype, final/non-virtual, accessible, no `super`/generic | Accept |
 | Cross-type static, generic declaring type, body uses `super`/qualified `this`, inaccessible member/type | Reject |
 | Direct recursion, anonymous receiver | Reject |
+| Mutual recursion (caller transitively reachable from callee in call graph) | Reject |
 | Body cannot complete normally and has no return | Reject |
 
 ---
@@ -311,7 +313,7 @@ continues to hold.
 
 | Conceptual component | Proposed role | Spike status |
 |---|---|---|
-| `JavaInliningEngine` | Entry point, budget handling, candidate scheduling | `InliningEngine` (single CU) |
+| `JavaInliningEngine` | Entry point, budget handling, candidate scheduling | `InliningEngine` (single CU and project) |
 | `InlineMethod` | Method-call transformation | `InlineMethodTransformation` |
 | `InlineVariable` | Local/temporary/constant/field capture | Existing `JdtInliner`; not unified |
 | `InlineConstant` | Constant references | Existing `JdtInliner.inlineConstant` |
@@ -321,9 +323,9 @@ continues to hold.
 | `InlineLambda` | Lambda target/type substitution | Not implemented |
 | `InlineAnonymousClass` | Single-use class flattening | Not implemented |
 | `SemanticSafetyAnalyzer` | Central safety gate | Implemented for the spike subset |
-| `CallGraphAnalyzer` | Recursion, dispatch, reachability | Not implemented; direct recursion only |
+| `CallGraphAnalyzer` | Mutual-recursion detection (direct+indirect); dispatch reachability not yet implemented | Implemented for cycle detection |
 | `DataFlowAnalyzer` | Multiple evaluation, purity, definite assignment | Argument capture only |
-| `IterativeInliningOptimizer` | Fixed-point/budgeted scheduler | `inlineAll` (single CU) and `inlineProject` (project, same-type) |
+| `IterativeInliningOptimizer` | Fixed-point/budgeted scheduler | `inlineAll` (single CU) and `inlineProject` (project) |
 
 ### 4.3 Iterative pipeline
 
@@ -376,7 +378,7 @@ over "we ran out of budget".
 
 ## 5. Technical spike
 
-### 5.1 Implemented transformations
+### 5.1 Implemented transformations (Phase 4 additions in the last four bullets)
 
 - Simple private method call, static call through the type, and explicit `this`
   receiver resolved by binding.
@@ -409,6 +411,16 @@ over "we ran out of budget".
   explicit receivers, checked exceptions, nested-expression call positions,
   `super`/constructor calls, method references, side-effecting assignment left-hand
   sides, direct recursion, and non-completing bodies.
+- Call graph built per pass (single-file and project) using `CallGraphAnalyzer`; mutual
+  recursion (caller transitively reachable from callee) is rejected with a diagnostic
+  before the semantic safety check runs.
+- Opt-in unused-declaration removal (`InlineConfig.removeUnusedDeclarations()`): after
+  the fixed point, private methods whose binding key was inlined and whose call sites are
+  all gone are removed via `ASTRewrite`; the removed set is reported in
+  `InliningResult.removed()` and `ProjectInliningResult.removed()`.
+- `InlineConfig` extended with `removeUnusedDeclarations` boolean (two-argument
+  constructor retained for backward compatibility).
+- `InliningResult` and `ProjectInliningResult` extended with `List<Removed> removed()`.
 
 ### 5.2 Algorithm
 
@@ -453,7 +465,7 @@ conflicts instead of guessing.
 
 `refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.java`
 
-- 36 approval/semantic tests.
+- 39 approval/semantic tests.
 - Successful outputs are compiled with the JDK compiler.
 - Runtime tests compile and invoke original and transformed classes, covering
   side-effecting arguments, pure single-use substitution, written/loop/lambda argument
@@ -461,11 +473,15 @@ conflicts instead of guessing.
   `try/finally` ordering, captures, labels, overloads, and static calls.
 - The chain test asserts a fixed point after three transformations; budget tests assert
   the applied count and fixed-point flag.
+- Mutual recursion test asserts that cross-calls between `first` and `second` are
+  rejected with "mutual recursion" and that only `start` is unrolled until budget.
+- Unused-declaration removal test: `helper()` inlined into `run()`, then removed;
+  asserts `removed().size()==1`, `methodName()=="helper"`, and compile + runtime equality.
 - Rejections assert the diagnostic fragment and record it in approved markdown.
 
 `refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.java`
 
-- 11 approval/semantic tests for project-wide runs.
+- 12 approval/semantic tests for project-wide runs.
 - Same-type fixture: two files change, both outputs compile and run.
 - Cross-type instance fixture: the subclass output gains the `Duration` import, compiles,
   and runs.
@@ -475,12 +491,14 @@ conflicts instead of guessing.
 - Batch equivalence: project result for each file equals single-file `inlineAll`.
 - Dry-run: fixture bytes are unchanged on disk.
 - Budgets: `maxTransformations` and project-wide `maxCodeGrowthChars`.
+- Project removal: same-type fixture with `removeUnusedDeclarations=true`; `twice` and
+  `plusTen` removed after all call sites inlined; compiles and runs.
 
 Fixtures live under
 `refactor-core/src/test/resources/fixtures/inline-aggressive/` and
 `refactor-core/src/test/resources/fixtures/projects/inline-aggressive-project/`.
 
-The full Maven test suite passes: 275 core + 84 CLI + 89 MCP + 13 demo tests (461 total).
+The full Maven test suite passes: 277 core + 84 CLI + 89 MCP + 13 demo tests (463 total).
 
 ### 5.4 What the spike proves
 
@@ -614,8 +632,9 @@ Known edge cases to test before promotion:
 7. **Adapters**: expose an opt-in aggressive operation through CLI and MCP once the
    engine API and diagnostics are stable.
 
-Phase 3c (nested expression positions) is now complete. The next implementation step
-is Phase 4 (call graph): mutual-recursion detection by analysis rather than budget,
-dispatch analysis for the non-private/final/static remainder, and opt-in removal of
-declarations whose all call sites have been inlined. Cross-type static inlining still
-waits for exact class-initialization analysis.
+Phase 4 (call graph and cleanup) is now complete: mutual-recursion is detected by
+analysis rather than budget, and opt-in removal of declarations whose all call sites
+have been inlined is implemented. Dispatch analysis for virtual methods is not
+implemented; virtual calls remain rejected. Cross-type static inlining still waits for
+exact class-initialization analysis. The next implementation step is Phase 5
+(expression and structural inlining: getters, constants, final fields, parameters).
