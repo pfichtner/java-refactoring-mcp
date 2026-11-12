@@ -263,24 +263,30 @@ Implement one item at a time, each with its own safety analyzer and fixtures:
 
 ## Phase 6 — CLI and MCP exposure
 
-### Work
+Status: **complete**.
 
-1. Add an opt-in operation, for example `inline_method_aggressive`.
-2. Keep both adapters thin; both call the same engine entry point.
-3. Expose:
-   - changed-file map;
-   - applied count;
-   - fixed-point status;
-   - rejection diagnostics;
-   - dry-run behavior.
-4. Add CLI storyboard and MCP server tests.
-5. Update `README.md` and `APPROVALS.md` when the operation becomes user-facing.
+### Work completed
+
+1. Added `inline-aggressive` CLI command (`InlineAggressiveCommand`) extending
+   `AbstractRefactoringCommand`. Options: `--project`, `--max-transformations` (default 100),
+   `--max-code-growth` (default 100 000), `--remove-unused-declarations`. Output reports
+   transformation count and fixed-point status in the success line.
+2. Added `inline_aggressive` MCP tool (`InlineAggressiveTool`). Required: `project_root`.
+   Optional: `dry_run`, `max_transformations`, `max_code_growth_chars`, `remove_declaration`.
+   Response includes applied count and fixed-point status prepended to the file listing.
+3. Added two new `Property` enum values: `MAX_TRANSFORMATIONS`, `MAX_CODE_GROWTH_CHARS`.
+4. Registered command in `Main.subcommands`; registered tool in `RefactoringServer.TOOLS`.
+5. CLI storyboard tests: `CliRefactoringStoryBook.inline_aggressive` (dry-run) and
+   `CliApplyStoryBook.inline_aggressive` (apply). Fixtures: `inline-aggressive-project/same-type`.
+6. MCP tests: `RefactoringServerToolTest.tool_inline_aggressive_returns_preview` and
+   `tool_inline_aggressive_applies`. Golden-master `RefactoringServerTest.list_refactorings_golden_master`
+   updated to reflect 32 tools.
 
 ### Acceptance
 
-- CLI and MCP produce identical results for the same fixture project.
-- Analyze does not modify files.
-- Full reactor passes.
+- CLI and MCP produce identical inlined sources for the same fixture project. ✓
+- Dry-run does not modify files. ✓
+- Full reactor passes (298 core + 86 CLI + 91 MCP = 475 tests). ✓
 
 ### Commit
 
@@ -326,13 +332,11 @@ Resolve these before the phase that needs them:
 
 ## Definition of done for the next continuation
 
-- Phases 1–4, Phase 5a (getter inlining), Phase 5b (constant inlining), Phase 5c
-  (private final instance-field inlining), Phase 5d (delegating constructor inlining),
-  and Phase 5e (delegation elimination) are complete.
+- Phases 1–4, Phase 5a–5e, and Phase 6 (CLI/MCP exposure) are complete.
 - Existing public APIs are unchanged.
 - New operations are opt-in.
 - Success paths compile and approvals were reviewed.
 - Rejections are explicit and tested.
-- Full reactor passes on JDK 21 (471 tests).
+- Full reactor passes on JDK 21 (298 core + 86 CLI + 91 MCP = 475 tests).
 - `INLINING.md` and `INLINING_PLAN.md` reflect the delivered state.
-- Next phase: Phase 5f (lambda and anonymous-class flattening) or Phase 6 (CLI/MCP exposure).
+- Next phase: Phase 5f (lambda and anonymous-class flattening).

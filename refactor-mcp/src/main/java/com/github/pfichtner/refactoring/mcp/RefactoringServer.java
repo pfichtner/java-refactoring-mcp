@@ -42,6 +42,7 @@ public class RefactoringServer {
             ConvertToStaticImportTool.convertToStaticImport(),
             ExtractVariableTool.extractVariable(),
             InlineMethodTool.inlineMethod(),
+            InlineAggressiveTool.inlineAggressive(),
             ExtractConstantTool.extractConstant(),
             IntroduceParamTool.introduceParam(),
             RemoveParamTool.removeParam(),

@@ -269,6 +269,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | extract | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_method.approved.md) |
 | extract-superclass | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_superclass.approved.md) |
 | extract-var | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.extract_variable.approved.md) |
+| inline-aggressive | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.inline_aggressive.approved.md) |
 | inline-const | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.inline_constant.approved.md) |
 | inline-method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.inline_method.approved.md) |
 | inline-var | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliApplyStoryBook.inline_variable.approved.md) |
@@ -310,6 +311,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | extract | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_method.approved.md) |
 | extract-superclass | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_superclass.approved.md) |
 | extract-var | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.extract_variable.approved.md) |
+| inline-aggressive | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.inline_aggressive.approved.md) |
 | inline-const | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.inline_constant.approved.md) |
 | inline-method | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.inline_method.approved.md) |
 | inline-var | [→](refactor-cli/src/test/java/com/github/pfichtner/refactoring/cli/CliRefactoringStoryBook.inline_variable.approved.md) |
@@ -515,6 +517,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Tool extract method returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_extract_method_returns_preview.approved.txt) |
 | Tool extract superclass returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_extract_superclass_returns_preview.approved.txt) |
 | Tool extract variable returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_extract_variable_returns_preview.approved.txt) |
+| Tool inline aggressive returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_inline_aggressive_returns_preview.approved.txt) |
 | Tool inline constant returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_inline_constant_returns_preview.approved.txt) |
 | Tool inline method returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_inline_method_returns_preview.approved.txt) |
 | Tool inline variable by variable and method name returns preview | [→](refactor-mcp/src/test/java/com/github/pfichtner/refactoring/mcp/RefactoringServerToolTest.tool_inline_variable_by_variable_and_method_name_returns_preview.approved.txt) |

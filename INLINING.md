@@ -11,12 +11,13 @@ with their literal values), Phase 5c private final instance-field inlining
 (replacing references to private final non-static fields whose declaration
 initializer is a pure expression with that initializer), Phase 5d delegating
 constructor inlining (replacing this(args) constructor-delegation calls with the
-body of the target constructor), and Phase 5e delegation elimination (replacing
-calls to single-delegated-call methods with the inner call in-place, working at
-any position including nested expressions) are complete. Cross-type static inlining,
-class-initialization analysis, and CLI/MCP wiring remain deferred. The engine is
-an isolated prototype, not yet wired into CLI/MCP. No existing public API was
-changed.
+body of the target constructor), Phase 5e delegation elimination (replacing calls
+to single-delegated-call methods with the inner call in-place, working at any
+position including nested expressions), and Phase 6 CLI/MCP exposure
+(inline-aggressive CLI command and inline_aggressive MCP tool wiring the engine
+into both adapters with dry-run, budget options, and remove-unused-declarations
+support) are complete. Cross-type static inlining and class-initialization
+analysis remain deferred. No existing public API was changed.
 
 Central question:
 
@@ -699,8 +700,12 @@ Known edge cases to test before promotion:
 Phase 4 (call graph and cleanup) is complete, Phase 5a (getter inlining) is complete,
 Phase 5b (compile-time constant inlining) is complete, Phase 5c (private final
 instance-field inlining) is complete, Phase 5d (delegating constructor inlining) is
-complete, and Phase 5e (delegation elimination as a composed transform) is complete.
-Dispatch analysis for virtual methods is not implemented; virtual calls remain rejected.
-Cross-type static inlining still waits for exact class-initialization analysis. The next
-implementation steps are Phase 5f (lambda and anonymous-class flattening) and Phase 6
-(CLI/MCP exposure).
+complete, Phase 5e (delegation elimination as a composed transform) is complete, and
+Phase 6 (CLI/MCP exposure) is complete. The engine is wired into both adapters:
+`inline-aggressive` (CLI) and `inline_aggressive` (MCP). Both expose dry-run,
+`--max-transformations`, `--max-code-growth` / `max_code_growth_chars`,
+`--remove-unused-declarations` / `remove_declaration`, and return applied count plus
+fixed-point status in their output. Dispatch analysis for virtual methods is not
+implemented; virtual calls remain rejected. Cross-type static inlining still waits for
+exact class-initialization analysis. The next implementation step is Phase 5f
+(lambda and anonymous-class flattening).

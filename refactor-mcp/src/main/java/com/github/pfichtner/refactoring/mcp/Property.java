@@ -59,6 +59,12 @@ enum Property {
     NEW_RETURN_TYPE("new_return_type", String.class, "New return type source text (e.g. \"double\"). Omit to leave unchanged."),
 
     // -------------------------------------------------------------------------
+    // Integer limits
+    // -------------------------------------------------------------------------
+    MAX_TRANSFORMATIONS("max_transformations", Integer.class, "Max number of inline transformations (default: 100)."),
+    MAX_CODE_GROWTH_CHARS("max_code_growth_chars", Integer.class, "Max code growth in characters (default: 100 000)."),
+
+    // -------------------------------------------------------------------------
     // Array / list arguments
     // -------------------------------------------------------------------------
     METHOD_NAMES("method_names", String[].class, "Methods to include; empty = all public non-static."),
