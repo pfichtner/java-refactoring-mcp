@@ -98,6 +98,13 @@ as anchor when the call is the iterable expression and the for-statement is dire
 a block; both positions reuse the existing prelude-insertion and in-place replacement
 mechanism unchanged; two new single-file approval tests:
 `call_as_array_dimension_is_inlined` and `call_as_enhanced_for_iterable_is_inlined`)
+and Phase 16 additional safe call positions (`SwitchExpression` governing expression;
+`InlineMethodTransformation.evaluationOrderViolation` gains a `SwitchExpression` case
+that returns null when the call is the selector — `child == switchExpr.getExpression()` —
+since the selector is always evaluated unconditionally before any arm is selected; calls
+in arm positions are rejected with "switch expression arm: arm may not be evaluated;
+hoisting would always evaluate it"; one new single-file approval test:
+`call_as_switch_expression_selector_is_inlined`)
 and Phase 15 additional safe call positions (`InstanceofExpression` and
 `PatternInstanceofExpression` left operand, and `ForStatement` expression initializer;
 `InlineMethodTransformation.evaluationOrderViolation` gains an `InstanceofExpression` /
@@ -409,6 +416,8 @@ is preserved. Cross-object locking requires alias analysis and is out of scope.
 | `ForStatement` initializer: call is the initializer of a single-fragment VDE that is the sole `ForStatement` initializer, for-statement is directly in a block | Accept (body hoisted before for-statement, initializer replaced with result variable) |
 | `ForStatement` expression initializer: call's traversal path places it in the sole expression of `forStmt.initializers()`, for-statement is directly in a block | Accept (body hoisted before for-statement, expression replaced with result variable) |
 | `InstanceofExpression` / `PatternInstanceofExpression` left operand: call is the tested expression | Accept (left operand evaluated first; body hoisted before enclosing statement, operand replaced with result variable) |
+| `SwitchExpression` selector: call is the governing expression of a Java 14+ switch expression | Accept (selector always evaluated unconditionally; body hoisted before enclosing statement, selector replaced with result variable) |
+| `SwitchExpression` arm: call is inside an arm expression of a switch expression | Reject with "switch expression arm" diagnostic |
 | Same-type explicit receiver, non-static nested | Accept (capture once + null check; type variables in scope) |
 | Cross-type explicit receiver, non-static nested, accessible body, body/signature does not reference type variable | Accept (capture once + null check + receiver substitution) |
 | Cross-type explicit receiver, all type args concrete (no wildcard/capture/raw), body uses no complex-type-arg type variable | Accept (type substitution applied to receiver, result, params, and body) |
@@ -707,7 +716,7 @@ conflicts instead of guessing.
 
 `refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.java`
 
-- 81 approval/semantic tests (2 new for Phase 15 additional call positions).
+- 84 approval/semantic tests (1 new for Phase 16 switch expression selector).
 - Successful outputs are compiled with the JDK compiler.
 - Runtime tests compile and invoke original and transformed classes, covering
   side-effecting arguments, pure single-use substitution, written/loop/lambda argument
@@ -740,7 +749,7 @@ Fixtures live under
 `refactor-core/src/test/resources/fixtures/inline-aggressive/` and
 `refactor-core/src/test/resources/fixtures/projects/inline-aggressive-project/`.
 
-The full Maven test suite passes: 326 core + 86 CLI + 91 MCP tests (503 total).
+The full Maven test suite passes: 327 core + 86 CLI + 91 MCP tests (504 total).
 
 ### 5.4 What the spike proves
 

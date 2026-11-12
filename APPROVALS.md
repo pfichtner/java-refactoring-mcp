@@ -390,6 +390,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Aggressive inline — rejected: array index with impure array expression | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.call_as_array_index_with_impure_array_is_rejected.approved.md) |
 | Aggressive inline: call as enhanced-for iterable | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.call_as_enhanced_for_iterable_is_inlined.approved.md) |
 | Aggressive inline: call as instanceof left operand | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.call_as_instanceof_left_operand_is_inlined.approved.md) |
+| Aggressive inline: call as switch expression selector | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.call_as_switch_expression_selector_is_inlined.approved.md) |
 | Aggressive inline: call as switch selector | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.call_as_switch_selector_is_inlined.approved.md) |
 | Aggressive inline: call as ternary condition | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.call_as_ternary_condition_is_inlined.approved.md) |
 | Aggressive inline: call in constructor argument | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.call_in_constructor_argument_is_inlined.approved.md) |

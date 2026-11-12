@@ -1753,6 +1753,31 @@ class InliningEngineTest {
     }
 
     // -------------------------------------------------------------------------
+    // Phase 16 — Additional safe call positions (switch expression selector)
+    // -------------------------------------------------------------------------
+
+    @Test
+    void call_as_switch_expression_selector_is_inlined() throws Exception {
+        String source = fixtures.load("inline-aggressive/switch-expression-selector/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "compute()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+        assertCompiles("Foo", result);
+
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(10);
+        assertThat(compileAndInvoke("Foo", result, "run")).isEqualTo(10);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: call as switch expression selector")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`compute()` at " + Fixtures.lineCol(source, offset),
+                        "switch expression selector; body hoisted before enclosing statement, selector replaced with result")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    // -------------------------------------------------------------------------
     // Compilation helpers
     // -------------------------------------------------------------------------
 

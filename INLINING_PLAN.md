@@ -708,6 +708,34 @@ Full reactor: 326 core + 86 CLI + 91 MCP tests (503 total) pass.
 
 ---
 
+## Phase 16 — Additional safe call positions (switch expression selector)
+
+Status: **complete**.
+
+`InlineMethodTransformation.evaluationOrderViolation` gains a `SwitchExpression` case:
+when the call is the governing expression (selector) of a `SwitchExpression` —
+i.e., `child == switchExpr.getExpression()` — the method returns null (accepted):
+the selector is always evaluated unconditionally before any arm is selected, so
+hoisting the inlined body before the enclosing statement preserves evaluation order.
+When the call is in any other position inside a `SwitchExpression` (e.g., inside an
+arm expression), the method returns a rejection diagnostic: "switch expression arm:
+arm may not be evaluated; hoisting would always evaluate it".
+
+New import in `InlineMethodTransformation`: `SwitchExpression`.
+
+One new single-file approval test:
+- `call_as_switch_expression_selector_is_inlined` — `compute()` returns `1`; body
+  hoisted before the `int result = switch (...)` declaration; `switch (__inline_result)`
+  selects `case 1 -> 10`; compiles and runtime returns 10.
+
+Full reactor: 327 core + 86 CLI + 91 MCP tests (504 total) pass.
+
+### Commit
+
+`feat(inlining): additional safe call positions — switch expression selector (Phase 16)`
+
+---
+
 ## Definition of done for the next continuation
 
 - Phases 1–4, Phase 5a–5f, Phase 6 (CLI/MCP exposure), Phase 7a–7c, Phase 8, Phase 9,
@@ -716,8 +744,9 @@ Full reactor: 326 core + 86 CLI + 91 MCP tests (503 total) pass.
   argument), Phase 12 (additional safe call positions: throw expression, switch
   selector), Phase 13 (additional safe call positions: array dimension expression,
   enhanced-for iterable), Phase 14 (additional safe call positions: array access
-  index, for-loop variable-declaration initializer), and Phase 15 (additional safe call
-  positions: instanceof/pattern-instanceof left operand, for-loop expression initializer)
+  index, for-loop variable-declaration initializer), Phase 15 (additional safe call
+  positions: instanceof/pattern-instanceof left operand, for-loop expression initializer),
+  and Phase 16 (additional safe call positions: Java 14+ switch expression selector)
   are complete.
 - Existing public APIs are unchanged.
 - New operations are opt-in.
@@ -733,7 +762,6 @@ Full reactor: 326 core + 86 CLI + 91 MCP tests (503 total) pass.
   restriction); cross-type static calls on generic declaring types are still conservatively
   rejected; superclass/interface/wrapper flattening requires a separate design review;
   multi-dimensional array creation where an earlier dimension is not pure is rejected
-  (not supported).
+  (not supported); calls inside switch expression arms are rejected (arm may not execute).
 - Next phase: superclass/interface/wrapper flattening (separate design review required),
-  or further safe call positions (for-loop with multiple expression initializers,
-  `SwitchExpression` selector, etc.).
+  or further safe call positions (for-loop with multiple expression initializers, etc.).

@@ -42,6 +42,7 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.SwitchExpression;
 import org.eclipse.jdt.core.dom.SwitchStatement;
 import org.eclipse.jdt.core.dom.ThrowStatement;
 import org.eclipse.jdt.core.dom.IMethodBinding;
@@ -504,6 +505,13 @@ final class InlineMethodTransformation {
 
         if (parent instanceof InstanceofExpression || parent instanceof PatternInstanceofExpression) {
             return null; // left operand is evaluated first; no reordering issue
+        }
+
+        if (parent instanceof SwitchExpression switchExpr) {
+            if (child == switchExpr.getExpression()) {
+                return null; // selector always evaluated first; body can be hoisted before the enclosing statement
+            }
+            return "switch expression arm: arm may not be evaluated; hoisting would always evaluate it";
         }
 
         return "nested call position not supported (call is in "
