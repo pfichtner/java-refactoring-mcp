@@ -3,11 +3,12 @@
 Status: Phase 1 hardening, Phase 2 project-wide same-type and cross-type instance
 inlining, Phase 3a pure argument substitution, Phase 3b explicit receiver capture,
 Phase 3c call-position widening (side-effect-free assignment LHS and nested
-expressions with pure preceding sub-expressions), and Phase 4 call-graph analysis
-(mutual recursion detection, opt-in unused-declaration removal) are complete.
-Cross-type static inlining, class-initialization analysis, and CLI/MCP wiring remain
-deferred. The engine is an isolated prototype, not yet wired into CLI/MCP. No
-existing public API was changed.
+expressions with pure preceding sub-expressions), Phase 4 call-graph analysis
+(mutual recursion detection, opt-in unused-declaration removal), and Phase 5a getter
+inlining (direct expression substitution for single-return pure-body methods) are
+complete. Cross-type static inlining, class-initialization analysis, and CLI/MCP
+wiring remain deferred. The engine is an isolated prototype, not yet wired into
+CLI/MCP. No existing public API was changed.
 
 Central question:
 
@@ -421,6 +422,14 @@ over "we ran out of budget".
 - `InlineConfig` extended with `removeUnusedDeclarations` boolean (two-argument
   constructor retained for backward compatibility).
 - `InliningResult` and `ProjectInliningResult` extended with `List<Removed> removed()`.
+- Phase 5a getter inlining: `GetterInliningTransformation` performs direct expression
+  substitution for methods whose body is a single `return <pure-expr>;`. When the
+  hoisting transformation rejects a call position (impure left operand, side-effecting
+  earlier argument, or side-effecting assignment LHS), the getter transformation
+  substitutes the return expression in-place without hoisting, preserving evaluation
+  order. `InliningEngine.tryTransform` tries hoisting first and falls back to getter
+  inlining on `InlineRejectedException`. `InliningSupport` gains `isGetterBody`,
+  `isGetterExpressionPure`, and `thisExpressions` helpers.
 
 ### 5.2 Algorithm
 

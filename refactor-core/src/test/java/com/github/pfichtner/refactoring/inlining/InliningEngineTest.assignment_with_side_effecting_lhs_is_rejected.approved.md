@@ -15,7 +15,8 @@ public class Foo {
     }
 
     private int compute() {
-        return 1;
+        int x = 1;
+        return x;
     }
 }
 ```

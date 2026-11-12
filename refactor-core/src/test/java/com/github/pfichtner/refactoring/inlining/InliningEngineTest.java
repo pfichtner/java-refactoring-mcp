@@ -426,8 +426,29 @@ class InliningEngineTest {
     }
 
     @Test
-    void non_pure_preceding_expression_is_rejected() throws Exception {
+    void getter_body_substituted_at_right_of_impure_infix() throws Exception {
         String source = fixtures.load("inline-aggressive/unsafe-nested-side-effect/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "compute()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+        assertCompiles("Foo", result);
+
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(2);
+        assertThat(compileAndInvoke("Foo", result, "run")).isEqualTo(2);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: pure getter substituted at right of impure infix")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`compute()` at " + Fixtures.lineCol(source, offset),
+                        "single-return pure body; substituted directly without hoisting")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void non_getter_body_nested_in_impure_infix_is_rejected() throws Exception {
+        String source = fixtures.load("inline-aggressive/getter-impure-body-nested/input/Foo.java");
         int offset = Fixtures.offsetOf(source, "compute()");
 
         InlineRejectedException exception = assertThatExceptionOfType(InlineRejectedException.class)
@@ -436,11 +457,32 @@ class InliningEngineTest {
         assertThat(exception.getMessage()).contains("side effects");
 
         Approvals.verify(
-            RefactoringStoryBoard.titled("Aggressive inline — rejected: non-pure preceding expression")
+            RefactoringStoryBoard.titled("Aggressive inline — rejected: non-getter body in impure infix")
                 .javaSection("Input", source)
                 .refactoring("inline method", "`compute()` at " + Fixtures.lineCol(source, offset),
-                        "sideEffect() left of + is not pure; hoisting would reorder its side effect")
+                        "multi-statement body is not a getter; hoisting would reorder sideEffect()")
                 .diagnostic(exception.getMessage())
+                .build()
+        );
+    }
+
+    @Test
+    void getter_body_substituted_in_argument_position() throws Exception {
+        String source = fixtures.load("inline-aggressive/getter-nested-argument/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "getValue()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+        assertCompiles("Foo", result);
+
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(21);
+        assertThat(compileAndInvoke("Foo", result, "run")).isEqualTo(21);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: getter substituted in argument position")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`getValue()` at " + Fixtures.lineCol(source, offset),
+                        "single-return field getter; substituted in-place after impure left operand")
+                .javaSection("Output", result)
                 .build()
         );
     }
@@ -710,6 +752,24 @@ class InliningEngineTest {
                 .refactoring("inline method", "`compute()` at " + Fixtures.lineCol(source, offset),
                         "array index evaluation would be reordered relative to the inlined body")
                 .diagnostic(exception.getMessage())
+                .build()
+        );
+    }
+
+    @Test
+    void getter_body_substituted_in_assignment_rhs_despite_side_effecting_lhs() throws Exception {
+        String source = fixtures.load("inline-aggressive/getter-assignment-rhs/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "compute()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+        assertCompiles("Foo", result);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: getter substituted in assignment RHS despite side-effecting LHS")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`compute()` at " + Fixtures.lineCol(source, offset),
+                        "single-return pure getter substituted in-place; LHS evaluation order preserved")
+                .javaSection("Output", result)
                 .build()
         );
     }

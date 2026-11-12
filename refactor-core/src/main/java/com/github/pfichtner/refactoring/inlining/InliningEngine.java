@@ -62,7 +62,7 @@ public final class InliningEngine {
         if (reason != null) {
             throw new InlineRejectedException(reason);
         }
-        return InlineMethodTransformation.apply(cu, source, call, decl, binding);
+        return tryTransform(cu, source, call, decl, binding);
     }
 
     public static InliningResult inlineAll(String source, String unitName) {
@@ -113,7 +113,7 @@ public final class InliningEngine {
                 }
 
                 try {
-                    String next = InlineMethodTransformation.apply(cu, current, call, decl, binding);
+                    String next = tryTransform(cu, current, call, decl, binding);
                     if (next.equals(current)) {
                         addRejection(rejected, rejectedKeys, methodName, offset,
                                 "transformation produced no change");
@@ -209,7 +209,7 @@ public final class InliningEngine {
                     }
 
                     try {
-                        String next = InlineMethodTransformation.apply(cu, source, call, decl, binding);
+                        String next = tryTransform(cu, source, call, decl, binding);
                         if (next.equals(source)) {
                             addProjectRejection(rejected, rejectedKeys, file, methodName, offset,
                                     "transformation produced no change");
@@ -255,6 +255,27 @@ public final class InliningEngine {
             }
         }
         return new ProjectInliningResult(changed, applied, rejected, removed, fixedPoint);
+    }
+
+    // -------------------------------------------------------------------------
+    // Transformation selection
+    // -------------------------------------------------------------------------
+
+    /**
+     * Tries the hoisting transformation first. When that rejects the call site position,
+     * falls back to getter inlining (direct expression substitution), which works at any
+     * position. If the getter fallback does not apply, re-throws the hoisting rejection.
+     */
+    private static String tryTransform(
+            CompilationUnit cu, String source,
+            MethodInvocation call, MethodDeclaration decl, IMethodBinding binding) {
+        try {
+            return InlineMethodTransformation.apply(cu, source, call, decl, binding);
+        } catch (InlineRejectedException hoistRejection) {
+            String getterResult = GetterInliningTransformation.tryApply(cu, source, call, decl, binding);
+            if (getterResult != null) return getterResult;
+            throw hoistRejection;
+        }
     }
 
     // -------------------------------------------------------------------------

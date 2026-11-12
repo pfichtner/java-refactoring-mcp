@@ -1,4 +1,4 @@
-# Aggressive inline — rejected: non-pure preceding expression
+# Aggressive inline — rejected: non-getter body in impure infix
 
 
 ### Input:
@@ -15,14 +15,15 @@ public class Foo {
     }
 
     private int compute() {
-        return 2;
+        int x = this.value;
+        return x + 1;
     }
 }
 ```
 
 ### Refactoring:
 **inline method** `compute()` at line 5, col 31  
-sideEffect() left of + is not pure; hoisting would reorder its side effect
+multi-statement body is not a getter; hoisting would reorder sideEffect()
 
 ### Diagnostic:
 ```

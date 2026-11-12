@@ -206,7 +206,13 @@ Status: complete.
 
 Implement one item at a time, each with its own safety analyzer and fixtures:
 
-1. Getter inlining for side-effect-free, non-overridable getters.
+1. Getter inlining for side-effect-free, non-overridable getters. **Status: complete.**
+   `GetterInliningTransformation` substitutes the return expression of a single-return
+   pure-body method directly at the call site (no hoisting) when the hoisting
+   transformation rejects the position. Enabled positions: right operand of an impure
+   infix, argument after an impure earlier arg, assignment RHS with side-effecting LHS.
+   Three new fixtures (`getter-impure-body-nested`, `getter-nested-argument`,
+   `getter-assignment-rhs`) and four new/updated tests in `InliningEngineTest`.
 2. Constant and final-field inlining.
 3. Parameter inlining at a single call site.
 4. Constructor inlining for simple constructors only.
@@ -288,12 +294,12 @@ Resolve these before the phase that needs them:
 
 ## Definition of done for the next continuation
 
-- Phases 1–4 are complete.
+- Phases 1–4 and Phase 5a (getter inlining) are complete.
 - Existing public APIs are unchanged.
 - New operations are opt-in.
 - Success paths compile and approvals were reviewed.
 - Rejections are explicit and tested.
 - Full reactor passes on JDK 21.
 - `INLINING.md` and `INLINING_PLAN.md` reflect the delivered state.
-- Next phase: Phase 5 (expression and structural inlining: getters, constants, final
+- Next phase: Phase 5b (constant and final-field inlining: getters, constants, final
   fields, parameter inlining, constructor inlining).

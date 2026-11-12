@@ -24,6 +24,7 @@ import org.eclipse.jdt.core.dom.EmptyStatement;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.ForStatement;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
@@ -40,6 +41,7 @@ import org.eclipse.jdt.core.dom.NodeFinder;
 import org.eclipse.jdt.core.dom.NullLiteral;
 import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.PostfixExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.ReturnStatement;
@@ -152,6 +154,18 @@ final class InliningSupport {
         return result;
     }
 
+    static List<ThisExpression> thisExpressions(ASTNode node) {
+        List<ThisExpression> result = new ArrayList<>();
+        node.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(ThisExpression n) {
+                result.add(n);
+                return true;
+            }
+        });
+        return result;
+    }
+
     static List<SimpleName> simpleNames(ASTNode node) {
         List<SimpleName> names = new ArrayList<>();
         node.accept(new ASTVisitor() {
@@ -246,6 +260,66 @@ final class InliningSupport {
                 return false;
             }
             return isPure(prefix.getOperand());
+        }
+        return false;
+    }
+
+    /**
+     * True when the method body is a single {@code return} of a getter-pure expression.
+     * Getter-pure extends {@link #isPure} by also allowing field reads.
+     */
+    static boolean isGetterBody(MethodDeclaration decl) {
+        Block body = decl.getBody();
+        if (body == null) return false;
+        @SuppressWarnings("unchecked")
+        List<Statement> stmts = body.statements();
+        if (stmts.size() != 1 || !(stmts.get(0) instanceof ReturnStatement ret)) return false;
+        Expression expr = ret.getExpression();
+        return expr != null && isGetterExpressionPure(expr);
+    }
+
+    /**
+     * True when {@code expression} is side-effect-free and can be safely substituted
+     * in-place at a call site without hoisting. Extends {@link #isPure} by also
+     * allowing field reads: unqualified instance fields, {@code this.field}, and
+     * static fields accessed via a type name.
+     */
+    static boolean isGetterExpressionPure(Expression expression) {
+        if (isPure(expression)) return true;
+        if (expression instanceof SimpleName name) {
+            return name.resolveBinding() instanceof IVariableBinding;
+        }
+        if (expression instanceof FieldAccess access) {
+            return access.getExpression() instanceof ThisExpression te
+                    && te.getQualifier() == null;
+        }
+        if (expression instanceof QualifiedName qn) {
+            return qn.getQualifier().resolveBinding() instanceof ITypeBinding;
+        }
+        if (expression instanceof InfixExpression infix) {
+            InfixExpression.Operator op = infix.getOperator();
+            if (op == InfixExpression.Operator.CONDITIONAL_AND
+                    || op == InfixExpression.Operator.CONDITIONAL_OR) return false;
+            if (!isGetterExpressionPure(infix.getLeftOperand())
+                    || !isGetterExpressionPure(infix.getRightOperand())) return false;
+            @SuppressWarnings("unchecked")
+            List<Expression> extended = infix.extendedOperands();
+            for (Expression ext : extended) {
+                if (!isGetterExpressionPure(ext)) return false;
+            }
+            return true;
+        }
+        if (expression instanceof CastExpression cast) {
+            return isGetterExpressionPure(cast.getExpression());
+        }
+        if (expression instanceof PrefixExpression prefix) {
+            PrefixExpression.Operator op = prefix.getOperator();
+            if (op == PrefixExpression.Operator.INCREMENT
+                    || op == PrefixExpression.Operator.DECREMENT) return false;
+            return isGetterExpressionPure(prefix.getOperand());
+        }
+        if (expression instanceof ParenthesizedExpression pe) {
+            return isGetterExpressionPure(pe.getExpression());
         }
         return false;
     }
