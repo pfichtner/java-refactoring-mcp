@@ -461,21 +461,46 @@ Full reactor: 310 core + 86 CLI + 91 MCP tests pass.
 
 ---
 
+## Phase 9 — Complex-type-argument substitution
+
+Status: **complete**.
+
+`substituteTypeVariables` in `InlineMethodTransformation` now handles parameterized and
+array type arguments via structural node replacement:
+- When the substituted binding is `isParameterizedType()` or `isArray()`, the method
+  finds the parent `SimpleType` of the matched `SimpleName` in the copied body and
+  replaces it with the full type node produced by `typeBindingToAstType(ast, substituted)`.
+- Simple type arguments (e.g., `String`) continue to use the existing `setIdentifier` path.
+- `typeVarSubstitutionRejection` in `SemanticSafetyAnalyzer` now only rejects raw generic
+  types and wildcard/captured type arguments; the former guard that rejected complex type
+  arguments when the body used a type variable has been removed.
+- Dead helpers `typeVariableUsageRejection` and `bodyUsesTypeVariable` have been removed.
+- New test: `cross_type_generic_explicit_receiver_with_parameterized_type_arg_is_inlined`
+  — `Box<List<String>>` with `final T copy() { T result = item; return result; }` inlined
+  into `Foo.run`; the body type `T result` becomes `List<String> result`. Approval file
+  reviewed and committed.
+- Full reactor: 311 core + 86 CLI + 91 MCP tests pass.
+
+### Commit
+
+`feat(inlining): complex-type-argument substitution (Phase 9)`
+
+---
+
 ## Definition of done for the next continuation
 
-- Phases 1–4, Phase 5a–5f, Phase 6 (CLI/MCP exposure), Phase 7a–7c, and Phase 8
-  (type-variable substitution for cross-type generic explicit receiver inlining) are complete.
+- Phases 1–4, Phase 5a–5f, Phase 6 (CLI/MCP exposure), Phase 7a–7c, Phase 8
+  (type-variable substitution for cross-type generic explicit receiver inlining), and
+  Phase 9 (complex-type-argument structural substitution) are complete.
 - Existing public APIs are unchanged.
 - New operations are opt-in.
 - Success paths compile and approvals were reviewed.
 - Rejections are explicit and tested.
 - Full reactor passes on JDK 21.
 - `INLINING.md` and `INLINING_PLAN.md` reflect the delivered state.
-- Remaining limitations: body substitution only works for simple (non-parameterized,
-  non-array) type arguments when the body uses the type variable; complex type arguments
-  are rejected in that case. The `crossTypeRejection` path (non-explicit-receiver
-  supertype-inherited calls) still rejects all generic declaring types.
-- Next phase: lift the complex-body-substitution limitation (replace `SimpleType(T)` with
-  full parameterized/array type node instead of just renaming the SimpleName identifier),
-  or extend generic substitution to the `crossTypeRejection` path, or superclass/interface/
-  wrapper flattening (separate design review required).
+- Remaining limitations: the `crossTypeRejection` path (non-explicit-receiver
+  supertype-inherited calls) still rejects all generic declaring types; type-variable
+  substitution is only implemented for the explicit-receiver cross-type path.
+- Next phase: extend generic substitution to the `crossTypeRejection` path (implicit
+  receiver, supertype-inherited calls where the caller's superclass carries the type
+  arguments), or superclass/interface/wrapper flattening (separate design review required).

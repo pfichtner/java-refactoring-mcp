@@ -480,6 +480,25 @@ class InliningEngineTest {
     }
 
     @Test
+    void cross_type_generic_explicit_receiver_with_parameterized_type_arg_is_inlined() throws Exception {
+        String source = fixtures.load(
+                "inline-aggressive/explicit-receiver-generic-cross-type-param-arg/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "box.copy()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+        assertCompiles("Foo", result);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: cross-type generic explicit receiver with parameterized type argument")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`box.copy()` at " + Fixtures.lineCol(source, offset),
+                        "type variable T substituted with List<String>; body type references structurally replaced")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
     void checked_exception_method_is_rejected() throws Exception {
         String source = fixtures.load("inline-aggressive/unsafe-checked-exception/input/Foo.java");
         int offset = Fixtures.offsetOf(source, "read()");

@@ -47,6 +47,14 @@ and runs a mirror-walk substituteTypeVariables pass to rename type-variable Simp
 nodes in the copied body to their concrete counterparts; InlineImports.create gains
 an overload accepting List<ITypeBinding> substitutedTypes so imports for concrete type
 arguments are added alongside the existing body/signature imports)
+and Phase 9 complex-type-argument substitution (lifting the Phase 8 guard that
+rejected cross-type generic explicit receiver calls where the body references a type
+variable and the type argument is itself a parameterized type or an array;
+`substituteTypeVariables` now detects such cases and performs structural replacement of
+the parent `SimpleType` node with the full type node produced by `typeBindingToAstType`
+instead of calling `SimpleName.setIdentifier`; `typeVarSubstitutionRejection` now only
+rejects raw types and wildcard/captured type arguments; the previously dead helper
+`typeVariableUsageRejection` and `bodyUsesTypeVariable` have been removed)
 are complete. No existing public API was changed.
 
 Central question:
@@ -317,7 +325,8 @@ is preserved. Cross-object locking requires alias analysis and is out of scope.
 | Same-type explicit receiver, non-static nested | Accept (capture once + null check; type variables in scope) |
 | Cross-type explicit receiver, non-static nested, accessible body, body/signature does not reference type variable | Accept (capture once + null check + receiver substitution) |
 | Cross-type explicit receiver, all type args concrete (no wildcard/capture/raw), body uses no complex-type-arg type variable | Accept (type substitution applied to receiver, result, params, and body) |
-| Cross-type explicit receiver, body references type variable and a type arg is parameterized or array | Reject with complex-type-argument diagnostic |
+| Cross-type explicit receiver, all type args concrete and simple, body uses type variable | Accept (structural SimpleType replacement in copied body) |
+| Cross-type explicit receiver, all type args concrete; some parameterized or array, body uses type variable | Accept (structural SimpleType replacement in copied body; full parameterized/array type node generated) |
 | Cross-type explicit receiver, wildcard or captured type argument | Reject with wildcard/capture diagnostic |
 | Cross-type explicit receiver, raw generic type (no type arguments at call site) | Reject with raw-type diagnostic |
 | Non-static nested cross-type explicit receiver | Reject |
@@ -697,12 +706,13 @@ Implemented but intentionally narrow:
   loops, lambdas, and local/anonymous classes. The parameter must not be written in the
   callee.
 - Method-level generics and varargs are rejected.
-- Same-type explicit receiver inlining now supports generic declaring types (type
+- Same-type explicit receiver inlining supports generic declaring types (type
   variables are in scope within the same-class caller). Cross-type explicit receiver
-  inlining on generic types is allowed when the method body and signature do not
-  reference any type variable of the declaring type. Cross-type calls where the body
-  or signature uses a type variable are still rejected (type substitution not yet
-  implemented).
+  inlining on generic types performs type-variable substitution: simple concrete type
+  arguments are substituted by renaming the `SimpleName` node identifier; parameterized
+  and array type arguments trigger structural replacement of the parent `SimpleType`
+  node with the full type from `typeBindingToAstType`. Wildcard, captured, and raw
+  generic type arguments are still rejected.
 - `synchronized` methods and checked exceptions are rejected.
 - Formatting is not normalised; inserted code can mix tabs and spaces, and modified
   copied bodies may fall back to compact JDT formatting. The approved output is the

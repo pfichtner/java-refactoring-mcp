@@ -47,6 +47,7 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.StructuralPropertyDescriptor;
@@ -661,7 +662,7 @@ final class InlineMethodTransformation {
         return ast.newSimpleType(ast.newSimpleName(binding.getName()));
     }
 
-    private static void substituteTypeVariables(
+    static void substituteTypeVariables(
             ASTNode originalBody, ASTNode copiedBody, Map<String, ITypeBinding> typeVarSubst) {
         List<SimpleName> originalNames = simpleNames(originalBody);
         List<SimpleName> copiedNames = simpleNames(copiedBody);
@@ -670,7 +671,16 @@ final class InlineMethodTransformation {
             if (b instanceof ITypeBinding tb && tb.isTypeVariable()) {
                 ITypeBinding substituted = typeVarSubst.get(tb.getName());
                 if (substituted != null) {
-                    copiedNames.get(i).setIdentifier(substituted.getName());
+                    SimpleName copiedName = copiedNames.get(i);
+                    if (substituted.isParameterizedType() || substituted.isArray()) {
+                        ASTNode parent = copiedName.getParent();
+                        if (parent instanceof SimpleType simpleType) {
+                            Type newType = typeBindingToAstType(copiedBody.getAST(), substituted);
+                            replaceNode(simpleType, newType);
+                        }
+                    } else {
+                        copiedName.setIdentifier(substituted.getName());
+                    }
                 }
             }
         }

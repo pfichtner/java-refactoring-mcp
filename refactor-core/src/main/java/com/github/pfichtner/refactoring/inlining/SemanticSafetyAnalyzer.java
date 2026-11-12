@@ -200,37 +200,7 @@ final class SemanticSafetyAnalyzer {
                         + " type substitution not possible";
             }
         }
-        Set<String> typeVarNames = new HashSet<>();
-        for (ITypeBinding tv : typeParams) {
-            typeVarNames.add(tv.getName());
-        }
-        if (bodyUsesTypeVariable(decl.getBody(), typeVarNames)) {
-            for (ITypeBinding typeArg : typeArgs) {
-                if (typeArg.isParameterizedType() || typeArg.isArray()) {
-                    return "cross-type generic explicit receiver: complex type argument"
-                            + " not yet supported when body references type variable";
-                }
-            }
-        }
         return null;
-    }
-
-    private static boolean bodyUsesTypeVariable(Block body, Set<String> typeVarNames) {
-        boolean[] found = {false};
-        body.accept(new ASTVisitor() {
-            @Override
-            public boolean visit(SimpleName name) {
-                if (found[0]) return false;
-                IBinding b = name.resolveBinding();
-                if (b instanceof ITypeBinding tb
-                        && tb.isTypeVariable()
-                        && typeVarNames.contains(tb.getName())) {
-                    found[0] = true;
-                }
-                return !found[0];
-            }
-        });
-        return found[0];
     }
 
     private static String explicitReceiverRejection(
@@ -439,40 +409,6 @@ final class SemanticSafetyAnalyzer {
             return false;
         }
         return true;
-    }
-
-    /**
-     * Returns a rejection reason when the method body or signature references a type variable
-     * declared by the declaring type. Used to guard cross-type generic explicit receiver inlining:
-     * the type variable is not in scope at the cross-type call site, so substitution would be needed.
-     * Returns {@code null} when no type variable reference is found (safe to proceed).
-     */
-    private static String typeVariableUsageRejection(
-            MethodDeclaration decl, ITypeBinding declaringType) {
-
-        Set<String> typeVarNames = new HashSet<>();
-        for (ITypeBinding tv : declaringType.getTypeDeclaration().getTypeParameters()) {
-            typeVarNames.add(tv.getName());
-        }
-        if (typeVarNames.isEmpty()) return null;
-
-        String[] reason = {null};
-        decl.accept(new ASTVisitor() {
-            @Override
-            public boolean visit(SimpleName name) {
-                if (reason[0] != null) return false;
-                IBinding b = name.resolveBinding();
-                if (b instanceof ITypeBinding tb
-                        && tb.isTypeVariable()
-                        && typeVarNames.contains(tb.getName())) {
-                    reason[0] = "cross-type generic explicit receiver: method references type variable '"
-                            + tb.getName() + "' of the generic declaring type;"
-                            + " type substitution is not supported";
-                }
-                return reason[0] == null;
-            }
-        });
-        return reason[0];
     }
 
     private static boolean samePackage(ITypeBinding a, ITypeBinding b) {

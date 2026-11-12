@@ -392,7 +392,13 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Aggressive inline: static final int constant | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.constant_int_field_is_inlined.approved.md) |
 | Aggressive inline: static final String constant | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.constant_string_field_is_inlined.approved.md) |
 | Aggressive inline — rejected: constructor call | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.constructor_call_is_rejected.approved.md) |
-| Aggressive inline — rejected: cross-type explicit receiver | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.cross_type_explicit_receiver_is_rejected.approved.md) |
+| Aggressive inline: cross-type explicit receiver | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.cross_type_explicit_receiver_is_inlined.approved.md) |
+| Aggressive inline — rejected: cross-type explicit receiver body has private field | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.cross_type_explicit_receiver_with_private_body_is_rejected.approved.md) |
+| Aggressive inline: cross-type generic explicit receiver with parameterized type argument | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.cross_type_generic_explicit_receiver_with_parameterized_type_arg_is_inlined.approved.md) |
+| Aggressive inline: cross-type generic explicit receiver with typed parameter | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.cross_type_generic_explicit_receiver_with_typed_param_is_inlined.approved.md) |
+| Aggressive inline: cross-type generic explicit receiver with typed return | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.cross_type_generic_explicit_receiver_with_typed_return_is_inlined.approved.md) |
+| Aggressive inline — rejected: cross-type generic explicit receiver with wildcard type argument | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.cross_type_generic_explicit_receiver_with_wildcard_is_rejected.approved.md) |
+| Aggressive inline: cross-type generic explicit receiver without type variable | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.cross_type_generic_explicit_receiver_without_type_var_is_inlined.approved.md) |
 | Aggressive inline all: delegating constructor | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.delegating_constructor_inlined_all_passes.approved.md) |
 | Aggressive inline: delegating constructor | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.delegating_constructor_no_args_is_inlined.approved.md) |
 | Aggressive inline — rejected: chained delegating constructor | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.delegating_constructor_with_chained_this_is_rejected.approved.md) |
@@ -411,7 +417,6 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Aggressive inline: private final String field | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.final_field_string_is_inlined.approved.md) |
 | Aggressive inline: private final field with arithmetic initializer | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.final_field_with_arithmetic_initializer_is_inlined.approved.md) |
 | Aggressive inline: generated labels avoid existing names | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.generated_labels_and_names_do_not_collide.approved.md) |
-| Aggressive inline — rejected: generic explicit receiver | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.generic_explicit_receiver_is_rejected.approved.md) |
 | Aggressive inline: pure getter substituted at right of impure infix | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.getter_body_substituted_at_right_of_impure_infix.approved.md) |
 | Aggressive inline: getter substituted in argument position | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.getter_body_substituted_in_argument_position.approved.md) |
 | Aggressive inline: getter substituted in assignment RHS despite side-effecting LHS | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.getter_body_substituted_in_assignment_rhs_despite_side_effecting_lhs.approved.md) |
@@ -433,6 +438,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Aggressive inline: argument used in a loop | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.pure_argument_used_in_loop_keeps_temporary.approved.md) |
 | Aggressive inline: pure argument used twice | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.pure_multi_use_argument_keeps_temporary.approved.md) |
 | Aggressive inline: pure single-use argument substituted | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.pure_single_use_argument_is_substituted.approved.md) |
+| Aggressive inline: same-type generic explicit receiver | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.same_type_generic_explicit_receiver_is_inlined.approved.md) |
 | Aggressive inline: simple-name assignment | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.simple_name_assignment_is_accepted.approved.md) |
 | Aggressive inline — rejected: super call | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.super_call_is_rejected.approved.md) |
 | Aggressive inline: return in finally overrides | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.try_finally_return_overrides_earlier_return.approved.md) |
@@ -482,6 +488,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 ### Project inlining engine
 | Test case | Approval |
 |-----------|----------|
+| Project inline: cross-type explicit receiver | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_explicit_receiver_is_inlined.approved.md) |
 | Project inline — rejected: cross-type import conflict | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_import_conflict_is_rejected.approved.md) |
 | Project inline: cross-type instance method and import | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_instance_method_is_inlined_with_import.approved.md) |
 | Project inline — rejected: cross-type private member | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_private_member_is_rejected.approved.md) |
