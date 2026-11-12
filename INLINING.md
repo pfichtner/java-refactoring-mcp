@@ -1,10 +1,10 @@
 # Aggressive Java Inlining — Investigation and Technical Spike
 
 Status: Phase 1 hardening, Phase 2 project-wide same-type and cross-type instance
-inlining, and Phase 3a pure argument substitution are complete. Explicit receivers,
-additional call positions, cross-type static inlining, class-initialization analysis,
-and CLI/MCP wiring remain deferred. The engine is an isolated prototype, not yet wired
-into CLI/MCP. No existing public API was changed.
+inlining, Phase 3a pure argument substitution, and Phase 3b explicit receiver capture
+are complete. Additional call positions, cross-type static inlining,
+class-initialization analysis, and CLI/MCP wiring remain deferred. The engine is an
+isolated prototype, not yet wired into CLI/MCP. No existing public API was changed.
 
 Central question:
 
@@ -108,7 +108,7 @@ renaming, argument temporaries, and return rewriting.
 |---|---|---|---|
 | Private method, same type | Yes (single return or void) | Yes | Realistic; implementation proves it |
 | Static method, same type | Partly | Yes (implicit/type-qualified) | Realistic |
-| Instance method, same type, non-virtual | Partly | Yes if private/final or type is final | Must reject virtual dispatch otherwise |
+| Instance method, same type, non-virtual | Partly | Yes if private/final or type is final; explicit receivers captured once | Must reject virtual dispatch otherwise; explicit receivers restricted to non-generic, non-static nested types |
 | Cross-class method | No | Yes for guarded instance calls | Accepted only on a caller supertype, non-generic, no `super`/qualified `this`, all copied types/members accessible; imports are added. Static calls stay rejected pending class-initialization analysis |
 | Multiple returns | No | Yes (result temp + labeled break) | Realistic for statement-root call sites |
 | Local variables | No scoping/renaming | Yes (copy + collision rename) | Realistic |
@@ -159,7 +159,8 @@ reject the candidate with a diagnostic. It never edits first and checks later.
 ### 3.1 Evaluation order and side effects
 
 Java evaluates the receiver, then arguments left to right, then enters the method.
-The spike binds each argument to a synthetic local in the callee's parameter order
+The spike binds an explicit receiver to a synthetic local, binds each argument to a
+synthetic local in the callee's parameter order, then checks the receiver for null
 before copying the body. Therefore:
 
 - every argument is evaluated exactly once;
@@ -201,9 +202,14 @@ adopt the same capture rule before being called aggressive.
   preserved.
 - Parameters become locals, so assignment to a parameter inside the body still
   affects only the captured copy.
-- The spike accepts instance methods only when the receiver is implicit or `this`.
-  In that case `this` and `super` in the body still denote the same object.
-  An explicit receiver such as `other.read()` is rejected because `this` would change.
+- Instance methods with an implicit or `this` receiver need no capture; `this` and
+  `super` in the body still denote the same object.
+- Same-type explicit receivers such as `other.read()` are captured once, checked for
+  null, and rewritten: unqualified `this`, implicit instance fields, and implicit
+  instance methods are qualified with the captured receiver.
+- Explicit receivers are rejected for cross-type calls, generic declaring types, and
+  non-static nested declaring types. Bodies using `super`, qualified `this`, or local
+  and anonymous classes are also rejected for explicit receivers.
 - Calls inside anonymous classes are rejected because the nearest named type check
   fails; calls inside lambdas retain the enclosing method's `this`.
 
@@ -211,15 +217,18 @@ adopt the same capture rule before being called aggressive.
 
 Method-level type parameters are rejected because parameter substitution and return
 type copying would need type-variable substitution. Class-level type variables are
-safe while the declaration and call share the same type. Cross-class generic
-inlining is a research item.
+safe while the declaration and call share the same type. Explicit receivers of
+generic declaring types stay rejected because receiver capture would need
+type-variable substitution. Cross-class generic inlining is a research item.
 
 ### 3.6 Exceptions and reachability
 
 - A checked exception declared by the target is rejected. Inlining would move the
   obligation to catch/declare it to every call site.
-- Unchecked exceptions propagate in the same order because argument capture and body
-  statements preserve sequencing.
+- Unchecked exceptions propagate in the same order because receiver capture, argument
+  capture, and body statements preserve sequencing. An explicit receiver is checked
+  with `Objects.requireNonNull` before the body runs, so null receivers still fail at
+  the call site after arguments are evaluated.
 - Returns are rewritten to assignments plus a labeled `break`. A `finally` block
   still runs on the break, so `return`/`finally` ordering is preserved.
 - Bodies that never complete normally are rejected when they have no return, because
@@ -260,7 +269,8 @@ is preserved. Cross-object locking requires alias analysis and is out of scope.
 | Multiple returns, locals, language constructs inside body | Accept |
 | Value-returning, side-effecting arguments | Accept (capture once) |
 | Nested expression call position | Reject |
-| Explicit instance receiver | Reject |
+| Same-type explicit receiver, non-generic, non-static nested | Accept (capture once + null check) |
+| Cross-type, generic, or non-static nested explicit receiver | Reject |
 | Virtual dispatch possible | Reject |
 | Checked exception declared | Reject |
 | Generic method, varargs | Reject |
@@ -368,6 +378,8 @@ over "we ran out of budget".
 
 - Simple private method call, static call through the type, and explicit `this`
   receiver resolved by binding.
+- Same-type explicit receiver calls such as `other.read()`, captured once with a null
+  check and rewritten through the captured receiver.
 - Method with local variables, multiple returns, `try/finally`, and existing labels.
 - Locals captured by lambdas, anonymous classes, and local classes.
 - Pattern variables, enhanced-for variables, and catch parameters.
@@ -386,27 +398,30 @@ over "we ran out of budget".
   diagnostic.
 - Budget stops for `maxTransformations` and `maxCodeGrowthChars`, including mutual
   recursion and project-wide growth.
-- Explicit rejection of synchronized methods, explicit receivers, checked
-  exceptions, nested-expression call positions, `super`/constructor calls, method
-  references, side-effecting assignment left-hand sides, direct recursion, and
-  non-completing bodies.
+- Explicit rejection of synchronized methods, cross-type/generic/non-static-nested
+  explicit receivers, checked exceptions, nested-expression call positions,
+  `super`/constructor calls, method references, side-effecting assignment left-hand
+  sides, direct recursion, and non-completing bodies.
 
 ### 5.2 Algorithm
 
 For a value-returning call at a supported statement root:
 
-1. Bind each argument to a fresh local of the formal parameter's type, unless it is a
+1. For an explicit receiver, bind it to a fresh local of the declaring type and add a
+   null check before the body runs.
+2. Bind each argument to a fresh local of the formal parameter's type, unless it is a
    pure argument used once outside a loop or closure; substitute that argument directly.
-2. Copy the callee body with `ASTNode.copySubtree`.
-3. Rename callee locals only when their names collide with caller-visible names.
-4. Rename callee labels that collide with caller labels, including their
+3. Copy the callee body with `ASTNode.copySubtree`.
+4. Rename callee locals only when their names collide with caller-visible names.
+5. Rename callee labels that collide with caller labels, including their
    `break`/`continue` references.
-5. Replace parameter uses with the captured locals, using binding keys from the
-   original body.
-6. Create a result local of the declared return type.
-7. Rewrite each own `return expr` into `result = expr; break label;`.
-8. Insert the argument/results statements before the containing statement and replace
-   the call expression with the result local.
+6. Replace parameter uses with the captured locals, using binding keys from the
+   original body. For an explicit receiver, rewrite unqualified `this`, implicit
+   instance fields, and implicit instance method calls to the captured receiver.
+7. Create a result local of the declared return type.
+8. Rewrite each own `return expr` into `result = expr; break label;`.
+9. Insert the receiver/argument/result statements before the containing statement and
+   replace the call expression with the result local.
 
 Void calls replace the expression statement with the copied body. Early returns use
 the same labeled break so they exit the whole inlined body, not just an inner loop.
@@ -431,11 +446,12 @@ conflicts instead of guessing.
 
 `refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.java`
 
-- 31 approval/semantic tests.
+- 36 approval/semantic tests.
 - Successful outputs are compiled with the JDK compiler.
 - Runtime tests compile and invoke original and transformed classes, covering
   side-effecting arguments, pure single-use substitution, written/loop/lambda argument
-  fallbacks, `try/finally` ordering, captures, labels, overloads, and static calls.
+  fallbacks, explicit receivers (including null and side-effect-once cases),
+  `try/finally` ordering, captures, labels, overloads, and static calls.
 - The chain test asserts a fixed point after three transformations; budget tests assert
   the applied count and fixed-point flag.
 - Rejections assert the diagnostic fragment and record it in approved markdown.
@@ -457,7 +473,7 @@ Fixtures live under
 `refactor-core/src/test/resources/fixtures/inline-aggressive/` and
 `refactor-core/src/test/resources/fixtures/projects/inline-aggressive-project/`.
 
-The full Maven test suite passes: 270 core + 84 CLI + 89 MCP + 13 demo tests (456 total).
+The full Maven test suite passes: 275 core + 84 CLI + 89 MCP + 13 demo tests (461 total).
 
 ### 5.4 What the spike proves
 
@@ -510,6 +526,8 @@ Implemented but intentionally narrow:
   loops, lambdas, and local/anonymous classes. The parameter must not be written in the
   callee.
 - Method-level generics and varargs are rejected.
+- Explicit receivers are limited to same-type calls on non-generic, non-static nested
+  declaring types; cross-type and generic receivers are rejected.
 - `synchronized` methods and checked exceptions are rejected.
 - Formatting is not normalised; inserted code can mix tabs and spaces, and modified
   copied bodies may fall back to compact JDT formatting. The approved output is the
@@ -542,13 +560,14 @@ Known edge cases to test before promotion:
 - Project-wide same-type inlining across files, one candidate per file per pass.
 - Project-wide cross-type instance inlining from a caller supertype, with normal and
   static import insertion and conflict rejection.
+- Same-type explicit receiver capture with a null check and `this`/field/method
+  rewriting; cross-type, generic, and non-static nested receivers stay rejected.
 - Semantic rejection with diagnostics for the unsafe subset.
 
 **Technically feasible, not implemented**
 
 - Cross-type static method inlining with class initialization analysis.
-- Explicit receiver inlining by binding the receiver to a temporary and substituting
-  `this` carefully.
+- Explicit receiver inlining for cross-type and generic declaring types.
 - Getter, constant, final-field, parameter, and temporary inlining.
 - Broader purity analysis (method calls, field reads, arithmetic) and additional call
   positions.
@@ -577,9 +596,9 @@ Known edge cases to test before promotion:
 2. **Project model** (partial): project-wide same-type and guarded cross-type instance
    inlining with imports are complete. Next: exact class-initialization analysis for
    cross-type static calls.
-3. **Data flow** (partial): conservative purity/use-count analysis and pure single-use
-   argument substitution are complete. Next: receiver capture and additional safe call
-   positions.
+3. **Data flow** (partial): conservative purity/use-count analysis, pure single-use
+   argument substitution, and same-type explicit receiver capture are complete. Next:
+   additional safe call positions.
 4. **Call graph**: recursion (direct and mutual), dispatch, reachability, unused
    declaration removal.
 5. **Expression inlining**: getters, constants, final fields, parameters, temporaries.
@@ -588,6 +607,6 @@ Known edge cases to test before promotion:
 7. **Adapters**: expose an opt-in aggressive operation through CLI and MCP once the
    engine API and diagnostics are stable.
 
-The next implementation step is the remainder of the data-flow phase: explicit receiver
-capture, then additional call positions with evaluation-order checks. Cross-type static
-inlining still waits for exact class-initialization analysis.
+The next implementation step is the remainder of the data-flow phase: additional call
+positions with evaluation-order checks. Cross-type static inlining still waits for exact
+class-initialization analysis.

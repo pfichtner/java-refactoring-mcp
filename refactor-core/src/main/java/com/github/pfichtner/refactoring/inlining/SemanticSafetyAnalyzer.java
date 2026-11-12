@@ -15,6 +15,7 @@ import java.util.List;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
@@ -34,6 +35,7 @@ import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.SuperFieldAccess;
 import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 import org.eclipse.jdt.core.dom.ThisExpression;
+import org.eclipse.jdt.core.dom.TypeDeclarationStatement;
 
 /**
  * Rejects method inlining when Java execution semantics cannot be preserved
@@ -95,10 +97,12 @@ final class SemanticSafetyAnalyzer {
         }
 
         Expression receiver = call.getExpression();
+        boolean explicitReceiver = receiver != null && !(receiver instanceof ThisExpression);
         boolean staticMethod = isStatic(modifiers);
         if (!staticMethod) {
-            if (receiver != null && !(receiver instanceof ThisExpression)) {
-                return "instance method is invoked on an explicit receiver; 'this' would change";
+            if (explicitReceiver) {
+                String explicit = explicitReceiverRejection(sameType, decl, declaringType);
+                if (explicit != null) return explicit;
             }
             if (!isPrivate(modifiers) && !isFinal(modifiers)
                     && !isFinal(declaringType.getModifiers())) {
@@ -146,6 +150,70 @@ final class SemanticSafetyAnalyzer {
         String signature = inaccessibleSignature(decl, callType);
         if (signature != null) return signature;
         return inaccessibleBody(decl.getBody(), callType);
+    }
+
+    private static String explicitReceiverRejection(
+            boolean sameType, MethodDeclaration decl, ITypeBinding declaringType) {
+
+        if (!sameType) {
+            return "cross-type explicit receiver inlining is not supported";
+        }
+        if (declaringType.getTypeDeclaration().getTypeParameters().length > 0) {
+            return "generic declaring types are not supported for explicit receivers";
+        }
+        if (!declaringType.isTopLevel() && !isStatic(declaringType.getModifiers())) {
+            return "explicit receiver inlining does not support non-static nested declaring types";
+        }
+        String lexical = explicitReceiverLexicalUsage(decl.getBody());
+        if (lexical != null) return lexical;
+        if (hasNestedTypeDeclaration(decl.getBody())) {
+            return "explicit receiver inlining does not support local or anonymous classes in the body";
+        }
+        return null;
+    }
+
+    private static String explicitReceiverLexicalUsage(Block body) {
+        String[] reason = {null};
+        body.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(SuperMethodInvocation node) {
+                reason[0] = "explicit receiver inlining does not support 'super'";
+                return false;
+            }
+
+            @Override
+            public boolean visit(SuperFieldAccess node) {
+                reason[0] = "explicit receiver inlining does not support 'super'";
+                return false;
+            }
+
+            @Override
+            public boolean visit(ThisExpression node) {
+                if (node.getQualifier() != null) {
+                    reason[0] = "explicit receiver inlining does not support qualified 'this'";
+                }
+                return reason[0] == null;
+            }
+        });
+        return reason[0];
+    }
+
+    private static boolean hasNestedTypeDeclaration(Block body) {
+        boolean[] found = {false};
+        body.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(AnonymousClassDeclaration node) {
+                found[0] = true;
+                return false;
+            }
+
+            @Override
+            public boolean visit(TypeDeclarationStatement node) {
+                found[0] = true;
+                return false;
+            }
+        });
+        return found[0];
     }
 
     private static String superOrQualifiedThis(Block body) {

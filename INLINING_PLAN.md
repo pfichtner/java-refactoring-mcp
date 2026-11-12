@@ -131,7 +131,7 @@ step.
 
 ## Phase 3 — Data-flow and expression positions
 
-Status: Phase 3a complete. Commit: `feat(inlining): substitute pure single-use arguments`.
+Status: Phase 3b complete. Commit: `feat(inlining): capture explicit receivers`.
 
 ### Phase 3a — Pure argument substitution (complete)
 
@@ -142,14 +142,17 @@ Status: Phase 3a complete. Commit: `feat(inlining): substitute pure single-use a
 3. Runtime-equivalence tests for substitution and for written, multi-use, loop-contained,
    and lambda-captured fallbacks.
 
-### Phase 3b — Receiver capture (next)
+### Phase 3b — Receiver capture (complete)
 
-1. Capture explicit receivers once.
-2. Substitute `this` only when the receiver is provably the same instance.
-3. Keep `super` and qualified `this` rejected.
-4. Add side-effect-once, null-receiver, and private-member fixtures.
+1. Capture same-type explicit receivers once before the arguments.
+2. Add a null check and rewrite unqualified `this`, instance fields, and instance
+   method calls to the captured receiver.
+3. Keep cross-type, generic, and non-static nested explicit receivers rejected, along
+   with `super`, qualified `this`, and local/anonymous classes in the body.
+4. Added side-effect-once, null-receiver, private-member, cross-type, generic, and
+   non-static nested fixtures.
 
-### Phase 3c — Additional call positions
+### Phase 3c — Additional call positions (next)
 
 1. Assignment RHS with a side-effect-free LHS.
 2. Nested expressions with pure arguments and a safe insertion point.
@@ -264,7 +267,8 @@ before running the commands.
 Resolve these before the phase that needs them:
 
 1. Cross-class static inlining: how to preserve class initialization triggers.
-2. Explicit receiver support: when is substituting `this` provably safe.
+2. Cross-type and generic explicit receiver support: capturing the receiver's
+   enclosing instance and substituting type variables.
 3. Method removal: opt-in flag versus always keeping declarations.
 4. Formatting: decided to keep JDT output and document mixed/compact formatting; no
    formatter in Phase 1.
@@ -278,7 +282,7 @@ Resolve these before the phase that needs them:
 
 ## Definition of done for the next continuation
 
-- Phase 1, Phase 2, and Phase 3a are complete.
+- Phase 1, Phase 2, Phase 3a, and Phase 3b are complete.
 - Existing public APIs are unchanged.
 - New operations are opt-in.
 - Success paths compile and approvals were reviewed.

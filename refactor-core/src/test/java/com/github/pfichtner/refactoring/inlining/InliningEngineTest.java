@@ -250,20 +250,135 @@ class InliningEngineTest {
     }
 
     @Test
-    void unsafe_explicit_receiver_is_rejected() throws Exception {
-        String source = fixtures.load("inline-aggressive/unsafe-receiver/input/Foo.java");
+    void explicit_receiver_is_captured_once() throws Exception {
+        String source = fixtures.load("inline-aggressive/explicit-receiver/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "other.read()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+
+        assertThat(compileAndInvoke("Foo", source, "run"))
+                .as("original behaviour")
+                .isEqualTo(9);
+        assertThat(compileAndInvoke("Foo", result, "run"))
+                .as("the receiver is captured once; private members resolve through it")
+                .isEqualTo(9);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: explicit receiver captured")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`other.read()` at " + Fixtures.lineCol(source, offset),
+                        "the receiver is bound once and 'this' plus implicit instance members are rewritten")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void explicit_receiver_side_effect_runs_once() throws Exception {
+        String source = fixtures.load("inline-aggressive/explicit-receiver-side-effect/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "other.read()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+
+        assertThat(compileAndInvoke("Foo", source, "run"))
+                .as("original behaviour evaluates the receiver once")
+                .isEqualTo(1);
+        assertThat(compileAndInvoke("Foo", result, "run"))
+                .as("the side-effecting receiver must still be evaluated once")
+                .isEqualTo(1);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: explicit receiver side effect once")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`other.read()` at " + Fixtures.lineCol(source, offset),
+                        "receiver captured once; the body uses it twice")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void explicit_receiver_null_check_is_preserved() throws Exception {
+        String source = fixtures.load("inline-aggressive/explicit-receiver-null/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "other.read()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+
+        assertThat(compileAndInvoke("Foo", source, "run"))
+                .as("original behaviour")
+                .isEqualTo(false);
+        assertThat(compileAndInvoke("Foo", result, "run"))
+                .as("a null receiver must still throw NullPointerException")
+                .isEqualTo(false);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: explicit receiver null check")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`other.read()` at " + Fixtures.lineCol(source, offset),
+                        "the captured receiver gets an explicit null check before the body runs")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void cross_type_explicit_receiver_is_rejected() throws Exception {
+        String source = fixtures.load(
+                "inline-aggressive/unsafe-explicit-receiver-cross-type/input/Foo.java");
         int offset = Fixtures.offsetOf(source, "other.read()");
 
         InlineRejectedException exception = assertThatExceptionOfType(InlineRejectedException.class)
                 .isThrownBy(() -> InliningEngine.inlineAt(source, "Foo.java", offset))
                 .actual();
-        assertThat(exception.getMessage()).contains("explicit receiver");
+        assertThat(exception.getMessage()).contains("cross-type explicit receiver");
 
         Approvals.verify(
-            RefactoringStoryBoard.titled("Aggressive inline — rejected: explicit receiver")
+            RefactoringStoryBoard.titled("Aggressive inline — rejected: cross-type explicit receiver")
                 .javaSection("Input", source)
                 .refactoring("inline method", "`other.read()` at " + Fixtures.lineCol(source, offset),
-                        "'this' inside the body refers to the receiver, not the caller")
+                        "receiver rewriting for the cross-type case is not implemented")
+                .diagnostic(exception.getMessage())
+                .build()
+        );
+    }
+
+    @Test
+    void non_static_nested_explicit_receiver_is_rejected() throws Exception {
+        String source = fixtures.load(
+                "inline-aggressive/unsafe-explicit-receiver-inner/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "other.read()");
+
+        InlineRejectedException exception = assertThatExceptionOfType(InlineRejectedException.class)
+                .isThrownBy(() -> InliningEngine.inlineAt(source, "Foo.java", offset))
+                .actual();
+        assertThat(exception.getMessage()).contains("non-static nested");
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline — rejected: inner explicit receiver")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`other.read()` at " + Fixtures.lineCol(source, offset),
+                        "rewriting the receiver's enclosing instance is not implemented")
+                .diagnostic(exception.getMessage())
+                .build()
+        );
+    }
+
+    @Test
+    void generic_explicit_receiver_is_rejected() throws Exception {
+        String source = fixtures.load(
+                "inline-aggressive/unsafe-explicit-receiver-generic/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "other.read()");
+
+        InlineRejectedException exception = assertThatExceptionOfType(InlineRejectedException.class)
+                .isThrownBy(() -> InliningEngine.inlineAt(source, "Foo.java", offset))
+                .actual();
+        assertThat(exception.getMessage()).contains("generic declaring types");
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline — rejected: generic explicit receiver")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`other.read()` at " + Fixtures.lineCol(source, offset),
+                        "capturing a receiver of a generic declaring type is not implemented")
                 .diagnostic(exception.getMessage())
                 .build()
         );

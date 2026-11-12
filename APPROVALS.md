@@ -382,8 +382,13 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Aggressive inline: captured locals renamed consistently | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.captured_locals_are_renamed_consistently.approved.md) |
 | Aggressive inline — rejected: checked exception | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.checked_exception_method_is_rejected.approved.md) |
 | Aggressive inline — rejected: constructor call | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.constructor_call_is_rejected.approved.md) |
+| Aggressive inline — rejected: cross-type explicit receiver | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.cross_type_explicit_receiver_is_rejected.approved.md) |
 | Aggressive inline — rejected: direct recursion | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.direct_recursion_is_rejected.approved.md) |
+| Aggressive inline: explicit receiver captured | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.explicit_receiver_is_captured_once.approved.md) |
+| Aggressive inline: explicit receiver null check | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.explicit_receiver_null_check_is_preserved.approved.md) |
+| Aggressive inline: explicit receiver side effect once | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.explicit_receiver_side_effect_runs_once.approved.md) |
 | Aggressive inline: generated labels avoid existing names | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.generated_labels_and_names_do_not_collide.approved.md) |
+| Aggressive inline — rejected: generic explicit receiver | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.generic_explicit_receiver_is_rejected.approved.md) |
 | Aggressive inline: iterative chain until fixed point | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.inline_chain_reaches_fixed_point.approved.md) |
 | Aggressive inline: method with local variables | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.inline_method_with_local_variables.approved.md) |
 | Aggressive inline: multiple return statements | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.inline_method_with_multiple_returns.approved.md) |
@@ -393,6 +398,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Aggressive inline: mutual recursion stopped by budget | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.mutual_recursion_stops_at_budget.approved.md) |
 | Aggressive inline — rejected: nested expression position | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.nested_expression_call_is_rejected.approved.md) |
 | Aggressive inline — rejected: non-completing void body | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.non_completing_void_body_is_rejected.approved.md) |
+| Aggressive inline — rejected: inner explicit receiver | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.non_static_nested_explicit_receiver_is_rejected.approved.md) |
 | Aggressive inline: overload and explicit this receiver | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.overload_and_this_receiver_are_resolved_by_binding.approved.md) |
 | Aggressive inline: pattern, for, and catch variables | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.pattern_for_and_catch_variables_are_renamed.approved.md) |
 | Aggressive inline: argument assigned inside callee | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.pure_argument_assigned_in_callee_keeps_temporary.approved.md) |
@@ -405,7 +411,6 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Aggressive inline: return in finally overrides | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.try_finally_return_overrides_earlier_return.approved.md) |
 | Aggressive inline: finally runs before return | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.try_finally_runs_before_return.approved.md) |
 | Aggressive inline: type-qualified static call | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.type_qualified_static_call_is_accepted.approved.md) |
-| Aggressive inline — rejected: explicit receiver | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.unsafe_explicit_receiver_is_rejected.approved.md) |
 | Aggressive inline — rejected: synchronized method | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.unsafe_synchronized_method_is_rejected.approved.md) |
 
 ### Introduce indirection

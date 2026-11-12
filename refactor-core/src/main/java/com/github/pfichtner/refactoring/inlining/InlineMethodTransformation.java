@@ -5,6 +5,7 @@ import static com.github.pfichtner.refactoring.inlining.InliningSupport.enclosin
 import static com.github.pfichtner.refactoring.inlining.InliningSupport.isVoid;
 import static com.github.pfichtner.refactoring.inlining.InliningSupport.ownReturns;
 import static com.github.pfichtner.refactoring.inlining.InliningSupport.simpleNames;
+import static org.eclipse.jdt.core.dom.Modifier.isStatic;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,6 +25,7 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ContinueStatement;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
@@ -31,11 +33,14 @@ import org.eclipse.jdt.core.dom.LabeledStatement;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.StructuralPropertyDescriptor;
+import org.eclipse.jdt.core.dom.SuperFieldAccess;
+import org.eclipse.jdt.core.dom.ThisExpression;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
@@ -78,6 +83,13 @@ final class InlineMethodTransformation {
         Set<String> generatedAvoid = new HashSet<>(callerNames);
         generatedAvoid.addAll(identifiers(decl.getBody()));
 
+        Expression receiver = call.getExpression();
+        boolean instanceMethod = !isStatic(binding.getModifiers());
+        String receiverName = instanceMethod && receiver != null
+                        && !(receiver instanceof ThisExpression)
+                ? fresh("__inline_receiver", generatedAvoid)
+                : null;
+
         Map<String, String> localRenames = planLocalRenames(decl.getBody(), callerNames, generatedAvoid);
         Map<String, String> labelRenames = planLabelRenames(decl.getBody(), caller, generatedAvoid);
 
@@ -92,6 +104,10 @@ final class InlineMethodTransformation {
         Map<String, String> parameterTemps = new HashMap<>();
         Map<String, Expression> parameterArguments = new HashMap<>();
         List<Statement> prelude = new ArrayList<>();
+        if (receiverName != null) {
+            prelude.add(variableDeclaration(ast, receiverName,
+                    receiverType(ast, binding.getDeclaringClass()), receiver));
+        }
         for (int i = 0; i < params.size(); i++) {
             SingleVariableDeclaration param = params.get(i);
             IVariableBinding paramBinding = param.resolveBinding();
@@ -108,11 +124,14 @@ final class InlineMethodTransformation {
                 prelude.add(variableDeclaration(ast, tempName, param.getType(), argument));
             }
         }
+        if (receiverName != null) {
+            prelude.add(nullCheck(ast, receiverName));
+        }
 
         Block bodyCopy = (Block) ASTNode.copySubtree(ast, decl.getBody());
         renameLabels(bodyCopy, labelRenames);
         substituteNames(ast, decl.getBody(), bodyCopy,
-                parameterTemps, parameterArguments, localRenames);
+                parameterTemps, parameterArguments, localRenames, receiverName);
 
         List<ReturnStatement> returns = ownReturns(bodyCopy);
         String resultName = null;
@@ -301,11 +320,15 @@ final class InlineMethodTransformation {
             AST ast, ASTNode originalBody, ASTNode copiedBody,
             Map<String, String> parameterTemps,
             Map<String, Expression> parameterArguments,
-            Map<String, String> localRenames) {
+            Map<String, String> localRenames,
+            String receiverName) {
 
         List<SimpleName> originalNames = simpleNames(originalBody);
         List<SimpleName> copiedNames = simpleNames(copiedBody);
-        if (originalNames.size() != copiedNames.size()) {
+        List<ThisExpression> originalThis = thisExpressions(originalBody);
+        List<ThisExpression> copiedThis = thisExpressions(copiedBody);
+        if (originalNames.size() != copiedNames.size()
+                || originalThis.size() != copiedThis.size()) {
             throw new IllegalStateException("Copied method body does not mirror the original body");
         }
 
@@ -326,6 +349,35 @@ final class InlineMethodTransformation {
             String renamed = localRenames.get(variable.getKey());
             if (renamed != null) {
                 copiedNames.get(i).setIdentifier(renamed);
+                continue;
+            }
+            if (receiverName != null
+                    && variable.isField()
+                    && !variable.isEnumConstant()
+                    && !isStatic(variable.getModifiers())
+                    && isUnqualifiedFieldName(originalNames.get(i))) {
+                FieldAccess access = ast.newFieldAccess();
+                access.setExpression(ast.newSimpleName(receiverName));
+                access.setName(ast.newSimpleName(variable.getName()));
+                replaceNode(copiedNames.get(i), access);
+            }
+        }
+
+        for (int i = 0; i < originalNames.size(); i++) {
+            if (receiverName != null
+                    && originalNames.get(i).resolveBinding() instanceof IMethodBinding method
+                    && !isStatic(method.getModifiers())
+                    && isUnqualifiedMethodName(originalNames.get(i))) {
+                MethodInvocation invocation = (MethodInvocation) copiedNames.get(i).getParent();
+                invocation.setExpression(ast.newSimpleName(receiverName));
+            }
+        }
+
+        if (receiverName != null) {
+            for (int i = 0; i < originalThis.size(); i++) {
+                if (originalThis.get(i).getQualifier() == null) {
+                    replaceNode(copiedThis.get(i), ast.newSimpleName(receiverName));
+                }
             }
         }
     }
@@ -372,6 +424,46 @@ final class InlineMethodTransformation {
         BreakStatement statement = ast.newBreakStatement();
         statement.setLabel(ast.newSimpleName(label));
         return statement;
+    }
+
+    private static boolean isUnqualifiedFieldName(SimpleName name) {
+        ASTNode parent = name.getParent();
+        if (parent instanceof FieldAccess access) {
+            return access.getName() != name;
+        }
+        return !(parent instanceof QualifiedName) && !(parent instanceof SuperFieldAccess);
+    }
+
+    private static boolean isUnqualifiedMethodName(SimpleName name) {
+        ASTNode parent = name.getParent();
+        return parent instanceof MethodInvocation invocation
+                && invocation.getName() == name
+                && invocation.getExpression() == null;
+    }
+
+    private static List<ThisExpression> thisExpressions(ASTNode body) {
+        List<ThisExpression> result = new ArrayList<>();
+        body.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(ThisExpression node) {
+                result.add(node);
+                return true;
+            }
+        });
+        return result;
+    }
+
+    private static Type receiverType(AST ast, ITypeBinding declaringType) {
+        return ast.newSimpleType(ast.newName(declaringType.getErasure().getQualifiedName()));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Statement nullCheck(AST ast, String receiverName) {
+        MethodInvocation invocation = ast.newMethodInvocation();
+        invocation.setExpression(ast.newName("java.util.Objects"));
+        invocation.setName(ast.newSimpleName("requireNonNull"));
+        invocation.arguments().add(ast.newSimpleName(receiverName));
+        return ast.newExpressionStatement(invocation);
     }
 
     // -------------------------------------------------------------------------

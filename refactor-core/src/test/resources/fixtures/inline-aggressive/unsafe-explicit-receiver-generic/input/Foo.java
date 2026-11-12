@@ -1,7 +1,7 @@
-public class Foo {
+public class Foo<T> {
     private int value = 1;
 
-    public int run(Foo other) {
+    public int run(Foo<T> other) {
         return other.read();
     }
 
