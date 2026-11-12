@@ -1595,6 +1595,52 @@ class InliningEngineTest {
     }
 
     // -------------------------------------------------------------------------
+    // Phase 13 — Additional safe call positions (array dimension, enhanced-for)
+    // -------------------------------------------------------------------------
+
+    @Test
+    void call_as_array_dimension_is_inlined() throws Exception {
+        String source = fixtures.load("inline-aggressive/array-dimension/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "compute()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+        assertCompiles("Foo", result);
+
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(3);
+        assertThat(compileAndInvoke("Foo", result, "run")).isEqualTo(3);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: call as array dimension")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`compute()` at " + Fixtures.lineCol(source, offset),
+                        "array dimension; body hoisted before enclosing statement, dimension replaced with result")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void call_as_enhanced_for_iterable_is_inlined() throws Exception {
+        String source = fixtures.load("inline-aggressive/enhanced-for-iterable/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "compute()");
+
+        String result = InliningEngine.inlineAt(source, "Foo.java", offset);
+        assertCompiles("Foo", result);
+
+        assertThat(compileAndInvoke("Foo", source, "run")).isEqualTo(6);
+        assertThat(compileAndInvoke("Foo", result, "run")).isEqualTo(6);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: call as enhanced-for iterable")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`compute()` at " + Fixtures.lineCol(source, offset),
+                        "enhanced-for iterable; body hoisted before for statement, iterable replaced with result")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    // -------------------------------------------------------------------------
     // Compilation helpers
     // -------------------------------------------------------------------------
 

@@ -87,6 +87,17 @@ when the call is the switch selector and the switch-statement is directly in a b
 both cases use `replaceWholeStatement=false` so the existing prelude-insertion and
 in-place call replacement mechanism is reused unchanged; two new single-file approval
 tests: `call_in_throw_expression_is_inlined` and `call_as_switch_selector_is_inlined`)
+and Phase 13 additional safe call positions (`ArrayCreation` dimension expression and
+`EnhancedForStatement` iterable; `InlineMethodTransformation.evaluationOrderViolation`
+gains an `ArrayCreation` case — when the call is a dimension expression of an array
+creation, all earlier dimension expressions are checked for purity; pure preceding
+dimensions allow hoisting, an impure earlier dimension rejects with a targeted
+diagnostic; `InlineMethodTransformation.findNestedCallSite` gains an
+`EnhancedForStatement` terminal case that returns a `CallSite` with the for-statement
+as anchor when the call is the iterable expression and the for-statement is directly in
+a block; both positions reuse the existing prelude-insertion and in-place replacement
+mechanism unchanged; two new single-file approval tests:
+`call_as_array_dimension_is_inlined` and `call_as_enhanced_for_iterable_is_inlined`)
 are complete. No existing public API was changed.
 
 Central question:
@@ -361,6 +372,9 @@ is preserved. Cross-object locking requires alias analysis and is out of scope.
 | Constructor argument: outer-class expression or preceding argument has side effects | Reject with reorder diagnostic |
 | `throw` expression: call is the expression of a throw-statement directly in a block | Accept (body hoisted before throw-statement, expression replaced with result variable) |
 | `switch` selector: call is the selector of a switch-statement directly in a block | Accept (body hoisted before switch-statement, selector replaced with result variable) |
+| `ArrayCreation` dimension: call is a dimension expression, all earlier dimensions side-effect-free | Accept (body hoisted before enclosing statement, dimension replaced with result variable) |
+| `ArrayCreation` dimension: an earlier dimension expression has side effects | Reject with reorder diagnostic |
+| `EnhancedForStatement` iterable: call is the iterable expression of an enhanced for-statement in a block | Accept (body hoisted before for-statement, iterable replaced with result variable) |
 | Same-type explicit receiver, non-static nested | Accept (capture once + null check; type variables in scope) |
 | Cross-type explicit receiver, non-static nested, accessible body, body/signature does not reference type variable | Accept (capture once + null check + receiver substitution) |
 | Cross-type explicit receiver, all type args concrete (no wildcard/capture/raw), body uses no complex-type-arg type variable | Accept (type substitution applied to receiver, result, params, and body) |
@@ -659,7 +673,7 @@ conflicts instead of guessing.
 
 `refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.java`
 
-- 76 approval/semantic tests (2 new for Phase 12 additional call positions).
+- 78 approval/semantic tests (2 new for Phase 13 additional call positions).
 - Successful outputs are compiled with the JDK compiler.
 - Runtime tests compile and invoke original and transformed classes, covering
   side-effecting arguments, pure single-use substitution, written/loop/lambda argument
@@ -692,7 +706,7 @@ Fixtures live under
 `refactor-core/src/test/resources/fixtures/inline-aggressive/` and
 `refactor-core/src/test/resources/fixtures/projects/inline-aggressive-project/`.
 
-The full Maven test suite passes: 319 core + 86 CLI + 91 MCP tests (496 total).
+The full Maven test suite passes: 321 core + 86 CLI + 91 MCP tests (498 total).
 
 ### 5.4 What the spike proves
 

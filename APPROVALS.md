@@ -385,6 +385,8 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Aggressive inline: anonymous Runnable flattened to lambda | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.anonymous_runnable_is_converted_to_lambda.approved.md) |
 | Aggressive inline: argument side effects evaluated once | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.argument_side_effects_are_evaluated_once.approved.md) |
 | Aggressive inline — rejected: side-effecting assignment LHS | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.assignment_with_side_effecting_lhs_is_rejected.approved.md) |
+| Aggressive inline: call as array dimension | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.call_as_array_dimension_is_inlined.approved.md) |
+| Aggressive inline: call as enhanced-for iterable | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.call_as_enhanced_for_iterable_is_inlined.approved.md) |
 | Aggressive inline: call as switch selector | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.call_as_switch_selector_is_inlined.approved.md) |
 | Aggressive inline: call as ternary condition | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.call_as_ternary_condition_is_inlined.approved.md) |
 | Aggressive inline: call in constructor argument | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.call_in_constructor_argument_is_inlined.approved.md) |

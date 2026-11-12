@@ -8,7 +8,9 @@ import static com.github.pfichtner.refactoring.inlining.InliningSupport.ownRetur
 import static com.github.pfichtner.refactoring.inlining.InliningSupport.simpleNames;
 import static org.eclipse.jdt.core.dom.Modifier.isStatic;
 
+import org.eclipse.jdt.core.dom.ArrayCreation;
 import org.eclipse.jdt.core.dom.ArrayType;
+import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.ParameterizedType;
 import org.eclipse.jdt.core.dom.PrimitiveType;
@@ -328,12 +330,19 @@ final class InlineMethodTransformation {
                 return new CallSite(switchStmt, false);
             }
 
+            if (parent instanceof EnhancedForStatement forStmt && forStmt.getExpression() == child) {
+                if (!(forStmt.getParent() instanceof Block)) {
+                    throw reject("nested expression: containing enhanced-for statement is not directly in a block");
+                }
+                return new CallSite(forStmt, false);
+            }
+
             break;
         }
 
         throw reject("call is not the whole expression of a supported statement "
                 + "(variable initializer, return, simple assignment, expression statement, "
-                + "if condition, throw expression, or switch selector)");
+                + "if condition, throw expression, switch selector, or enhanced-for iterable)");
     }
 
     /**
@@ -438,6 +447,21 @@ final class InlineMethodTransformation {
                     if (!isPure(args.get(i))) {
                         return "hoisting before statement would reorder evaluation: "
                                 + "earlier argument of constructor call has side effects";
+                    }
+                }
+            }
+            return null;
+        }
+
+        if (parent instanceof ArrayCreation creation) {
+            @SuppressWarnings("unchecked")
+            List<Expression> dims = creation.dimensions();
+            int dimIdx = dims.indexOf(child);
+            if (dimIdx >= 0) {
+                for (int i = 0; i < dimIdx; i++) {
+                    if (!isPure(dims.get(i))) {
+                        return "hoisting before statement would reorder evaluation: "
+                                + "earlier array dimension has side effects";
                     }
                 }
             }

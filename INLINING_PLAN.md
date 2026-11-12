@@ -591,13 +591,51 @@ Full reactor: 319 core + 86 CLI + 91 MCP tests (496 total) pass.
 
 ---
 
+---
+
+## Phase 13 — Additional safe call positions (array dimension, enhanced-for iterable)
+
+Status: **complete**.
+
+`InlineMethodTransformation.evaluationOrderViolation` gains an `ArrayCreation` case:
+when the call is a dimension expression of an array creation, all earlier dimension
+expressions are checked for purity via `isPure`; if all earlier dimensions are pure the
+call is accepted (returns null); if any earlier dimension is impure the call is rejected
+with "earlier array dimension has side effects".
+
+`InlineMethodTransformation.findNestedCallSite` gains an `EnhancedForStatement`
+terminal case: when the traversal chain ends at an enhanced-for statement whose iterable
+expression is `child` and the for-statement is directly in a block, a
+`CallSite(forStmt, false)` is returned. The existing prelude-insertion and in-place
+replacement mechanism hoists the body before the for-statement and replaces the iterable
+with the result variable.
+
+New imports: `ArrayCreation`, `EnhancedForStatement` added to `InlineMethodTransformation`.
+
+Two new single-file approval tests:
+- `call_as_array_dimension_is_inlined` — `compute()` returns `3`; body hoisted before
+  the `int[] arr = new int[compute()]` declaration; array created with length 3;
+  compiles and runtime returns 3.
+- `call_as_enhanced_for_iterable_is_inlined` — `compute()` returns `int[]{1,2,3}`;
+  body hoisted before the enhanced-for statement; loop iterates over result; compiles
+  and runtime returns 6.
+
+Full reactor: 321 core + 86 CLI + 91 MCP tests (498 total) pass.
+
+### Commit
+
+`feat(inlining): additional safe call positions — array dimension and enhanced-for iterable (Phase 13)`
+
+---
+
 ## Definition of done for the next continuation
 
 - Phases 1–4, Phase 5a–5f, Phase 6 (CLI/MCP exposure), Phase 7a–7c, Phase 8, Phase 9,
   Phase 10 (generic type-variable substitution for implicit-receiver cross-type calls),
   Phase 11 (additional safe call positions: if-condition, ternary condition, constructor
-  argument), and Phase 12 (additional safe call positions: throw expression, switch
-  selector) are complete.
+  argument), Phase 12 (additional safe call positions: throw expression, switch
+  selector), and Phase 13 (additional safe call positions: array dimension expression,
+  enhanced-for iterable) are complete.
 - Existing public APIs are unchanged.
 - New operations are opt-in.
 - Success paths compile and approvals were reviewed.
@@ -609,7 +647,7 @@ Full reactor: 319 core + 86 CLI + 91 MCP tests (496 total) pass.
   `assert` condition is not supported (condition is not evaluated when assertions are
   disabled, so hoisting changes semantics); cross-type static calls on generic declaring
   types are still conservatively rejected; superclass/interface/wrapper flattening
-  requires a separate design review.
+  requires a separate design review; multi-dimensional array creation where an earlier
+  dimension is not pure is rejected (not supported).
 - Next phase: superclass/interface/wrapper flattening (separate design review required),
-  or further safe call positions (`while` condition via loop restructuring, array
-  dimension expression, etc.).
+  or further safe call positions (`for`-loop initializer, array index expression, etc.).
