@@ -22,6 +22,7 @@ import java.util.Set;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ConstructorInvocation;
 import org.eclipse.jdt.core.dom.Expression;
@@ -247,6 +248,34 @@ public final class InliningEngine {
                 }
             }
 
+            // If no prior tier made progress, try anonymous-class-to-lambda flattening.
+            if (!progress) {
+                for (ClassInstanceCreation anonNode
+                        : AnonymousClassFlatteningTransformation.collectCandidates(cu)) {
+                    String typeName = AnonymousClassFlatteningTransformation.typeName(anonNode);
+                    int offset = anonNode.getStartPosition();
+                    String reason = AnonymousClassFlatteningTransformation.rejectionReason(anonNode);
+                    if (reason != null) {
+                        addRejection(rejected, rejectedKeys, typeName, offset, reason);
+                        continue;
+                    }
+                    String next = AnonymousClassFlatteningTransformation.tryApply(cu, current, anonNode);
+                    if (next == null || next.equals(current)) continue;
+                    int growth = next.length() - source.length();
+                    if (growth > config.maxCodeGrowthChars()) {
+                        budgetBlocked = true;
+                        addRejection(rejected, rejectedKeys, typeName, offset,
+                                "code growth limit exceeded (" + growth + " > "
+                                        + config.maxCodeGrowthChars() + " chars)");
+                        continue;
+                    }
+                    current = next;
+                    applied.add(new InliningResult.Applied(typeName, offset));
+                    progress = true;
+                    break;
+                }
+            }
+
             if (!progress) {
                 fixedPoint = !budgetBlocked;
                 break;
@@ -427,6 +456,35 @@ public final class InliningEngine {
                         applied.add(new ProjectInliningResult.Applied(file,
                                 FinalFieldInliningTransformation.fieldName(fieldRef),
                                 fieldRef.getStartPosition()));
+                        progress = true;
+                        appliedInFile = true;
+                        break;
+                    }
+                }
+
+                // If no prior tier applied in this file, try anonymous-class-to-lambda flattening.
+                if (!appliedInFile) {
+                    for (ClassInstanceCreation anonNode
+                            : AnonymousClassFlatteningTransformation.collectCandidates(cu)) {
+                        String typeName = AnonymousClassFlatteningTransformation.typeName(anonNode);
+                        int offset = anonNode.getStartPosition();
+                        String reason = AnonymousClassFlatteningTransformation.rejectionReason(anonNode);
+                        if (reason != null) {
+                            addProjectRejection(rejected, rejectedKeys, file, typeName, offset, reason);
+                            continue;
+                        }
+                        String next = AnonymousClassFlatteningTransformation.tryApply(cu, source, anonNode);
+                        if (next == null || next.equals(source)) continue;
+                        int growth = totalLength(current, file, next) - originalLength;
+                        if (growth > config.maxCodeGrowthChars()) {
+                            budgetBlocked = true;
+                            addProjectRejection(rejected, rejectedKeys, file, typeName, offset,
+                                    "code growth limit exceeded (" + growth + " > "
+                                            + config.maxCodeGrowthChars() + " chars)");
+                            continue;
+                        }
+                        current.put(file, next);
+                        applied.add(new ProjectInliningResult.Applied(file, typeName, offset));
                         progress = true;
                         appliedInFile = true;
                         break;

@@ -249,7 +249,17 @@ Implement one item at a time, each with its own safety analyzer and fixtures:
    tries delegation as the third fallback after hoisting and getter inlining. Two approval
    tests: `inlineAt` (single delegation step at nested position) and `inlineAll` (full
    two-pass chain: delegation then getter inlining).
-6. Lambda and anonymous-class flattening.
+6. Lambda and anonymous-class flattening. **Status: complete.**
+   `AnonymousClassFlatteningTransformation` converts anonymous class declarations that
+   implement a functional interface into lambda expressions. Safety conditions: exactly
+   one body declaration (the SAM override), no field declarations, no unqualified `this`
+   or `super` in the body, no nested type declarations, no generic/varargs SAM, no
+   constructor arguments. Parameters use inferred types (`VariableDeclarationFragment`).
+   Body is simplified to expression form for single-return or single-statement-expression
+   bodies; otherwise a block lambda is produced. Added as the last tier in `inlineAll`
+   and `inlineProject`, after final-field inlining. Rejections tracked in
+   `InliningResult` / `ProjectInliningResult`. Four approval tests: `anon-runnable`,
+   `anon-comparator`, `anon-with-this` (rejected), `anon-with-fields` (rejected).
 7. Superclass/interface/wrapper flattening only after a separate design review.
 
 ### Acceptance per item
@@ -332,11 +342,12 @@ Resolve these before the phase that needs them:
 
 ## Definition of done for the next continuation
 
-- Phases 1–4, Phase 5a–5e, and Phase 6 (CLI/MCP exposure) are complete.
+- Phases 1–4, Phase 5a–5f, and Phase 6 (CLI/MCP exposure) are complete.
 - Existing public APIs are unchanged.
 - New operations are opt-in.
 - Success paths compile and approvals were reviewed.
 - Rejections are explicit and tested.
-- Full reactor passes on JDK 21 (298 core + 86 CLI + 91 MCP = 475 tests).
+- Full reactor passes on JDK 21 (302 core + 86 CLI + 91 MCP = 479 tests).
 - `INLINING.md` and `INLINING_PLAN.md` reflect the delivered state.
-- Next phase: Phase 5f (lambda and anonymous-class flattening).
+- Next phase: Phase 7 (superclass/interface/wrapper flattening) requires a separate
+  design review before implementation.

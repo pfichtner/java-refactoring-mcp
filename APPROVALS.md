@@ -379,6 +379,10 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 ### Inlining engine
 | Test case | Approval |
 |-----------|----------|
+| Aggressive inline — rejected: anonymous class uses 'this' | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.anonymous_class_using_this_is_rejected.approved.md) |
+| Aggressive inline — rejected: anonymous class has fields | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.anonymous_class_with_fields_is_rejected.approved.md) |
+| Aggressive inline: anonymous Comparator flattened to lambda | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.anonymous_comparator_is_converted_to_lambda.approved.md) |
+| Aggressive inline: anonymous Runnable flattened to lambda | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.anonymous_runnable_is_converted_to_lambda.approved.md) |
 | Aggressive inline: argument side effects evaluated once | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.argument_side_effects_are_evaluated_once.approved.md) |
 | Aggressive inline — rejected: side-effecting assignment LHS | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.assignment_with_side_effecting_lhs_is_rejected.approved.md) |
 | Aggressive inline: captured locals renamed consistently | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.captured_locals_are_renamed_consistently.approved.md) |

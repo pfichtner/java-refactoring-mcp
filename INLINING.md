@@ -13,11 +13,13 @@ initializer is a pure expression with that initializer), Phase 5d delegating
 constructor inlining (replacing this(args) constructor-delegation calls with the
 body of the target constructor), Phase 5e delegation elimination (replacing calls
 to single-delegated-call methods with the inner call in-place, working at any
-position including nested expressions), and Phase 6 CLI/MCP exposure
-(inline-aggressive CLI command and inline_aggressive MCP tool wiring the engine
-into both adapters with dry-run, budget options, and remove-unused-declarations
-support) are complete. Cross-type static inlining and class-initialization
-analysis remain deferred. No existing public API was changed.
+position including nested expressions), Phase 5f anonymous-class-to-lambda
+flattening (replacing anonymous functional-interface implementations with lambda
+expressions, using expression-form lambda bodies when possible), and Phase 6
+CLI/MCP exposure (inline-aggressive CLI command and inline_aggressive MCP tool
+wiring the engine into both adapters with dry-run, budget options, and
+remove-unused-declarations support) are complete. Cross-type static inlining and
+class-initialization analysis remain deferred. No existing public API was changed.
 
 Central question:
 
@@ -487,6 +489,22 @@ over "we ran out of budget".
   Two approval tests: `inlineAt` showing delegation substitution at a nested position
   that hoisting cannot reach, and `inlineAll` showing the full cascade (delegation then
   getter inlining) across multiple passes.
+- Phase 5f anonymous-class-to-lambda flattening: `AnonymousClassFlatteningTransformation`
+  converts anonymous class declarations that implement a functional interface (single
+  abstract method) into lambda expressions. Safety conditions: exactly one body
+  declaration (the SAM override), no field declarations, no unqualified `this` or
+  `super` in the body, no nested type declarations, no generic type parameters or
+  varargs on the SAM, and no constructor arguments on the creation expression.
+  Parameters are copied as inferred-type `VariableDeclarationFragment` nodes. The body
+  is simplified to expression form when it contains a single `return expr;` or a single
+  statement expression (void call, assignment, increment); otherwise a block lambda is
+  produced. `InliningEngine.inlineAll` and `inlineProject` run the flattening loop as
+  the last tier, after the final-field loop, so inlined constants or methods inside the
+  anonymous class body are simplified first. Rejections are tracked in `InliningResult`
+  and `ProjectInliningResult` with stable diagnostic messages. Four approval tests:
+  `anon-runnable` (void, single statement → expression lambda), `anon-comparator`
+  (value-returning, two parameters → expression lambda with inferred types), and two
+  rejections (`anon-with-this`, `anon-with-fields`).
 
 ### 5.2 Algorithm
 
@@ -700,12 +718,13 @@ Known edge cases to test before promotion:
 Phase 4 (call graph and cleanup) is complete, Phase 5a (getter inlining) is complete,
 Phase 5b (compile-time constant inlining) is complete, Phase 5c (private final
 instance-field inlining) is complete, Phase 5d (delegating constructor inlining) is
-complete, Phase 5e (delegation elimination as a composed transform) is complete, and
-Phase 6 (CLI/MCP exposure) is complete. The engine is wired into both adapters:
-`inline-aggressive` (CLI) and `inline_aggressive` (MCP). Both expose dry-run,
-`--max-transformations`, `--max-code-growth` / `max_code_growth_chars`,
-`--remove-unused-declarations` / `remove_declaration`, and return applied count plus
-fixed-point status in their output. Dispatch analysis for virtual methods is not
-implemented; virtual calls remain rejected. Cross-type static inlining still waits for
-exact class-initialization analysis. The next implementation step is Phase 5f
-(lambda and anonymous-class flattening).
+complete, Phase 5e (delegation elimination as a composed transform) is complete,
+Phase 5f (anonymous-class-to-lambda flattening) is complete, and Phase 6 (CLI/MCP
+exposure) is complete. The engine is wired into both adapters: `inline-aggressive`
+(CLI) and `inline_aggressive` (MCP). Both expose dry-run, `--max-transformations`,
+`--max-code-growth` / `max_code_growth_chars`, `--remove-unused-declarations` /
+`remove_declaration`, and return applied count plus fixed-point status in their output.
+Dispatch analysis for virtual methods is not implemented; virtual calls remain rejected.
+Cross-type static inlining still waits for exact class-initialization analysis.
+Superclass/interface/wrapper flattening requires a separate design review. The
+anonymous-class-to-lambda flattening is the last conservative step in Phase 5.

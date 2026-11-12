@@ -1230,6 +1230,84 @@ class InliningEngineTest {
     }
 
     // -------------------------------------------------------------------------
+    // Phase 5f — Anonymous-class-to-lambda flattening
+    // -------------------------------------------------------------------------
+
+    @Test
+    void anonymous_runnable_is_converted_to_lambda() throws Exception {
+        String source = fixtures.load("inline-aggressive/anon-runnable/input/Foo.java");
+
+        InliningResult result = InliningEngine.inlineAll(source, "Foo.java");
+        assertCompiles("Foo", result.source());
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: anonymous Runnable flattened to lambda")
+                .javaSection("Input", source)
+                .refactoring("flatten anonymous class", "anonymous Runnable",
+                        "single-statement void body; expression-form lambda")
+                .javaSection("Output", result.source())
+                .build()
+        );
+    }
+
+    @Test
+    void anonymous_comparator_is_converted_to_lambda() throws Exception {
+        String source = fixtures.load("inline-aggressive/anon-comparator/input/Foo.java");
+
+        InliningResult result = InliningEngine.inlineAll(source, "Foo.java");
+        assertCompiles("Foo", result.source());
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: anonymous Comparator flattened to lambda")
+                .javaSection("Input", source)
+                .refactoring("flatten anonymous class", "anonymous Comparator with two parameters",
+                        "single-return body; expression-form lambda with inferred parameter types")
+                .javaSection("Output", result.source())
+                .build()
+        );
+    }
+
+    @Test
+    void anonymous_class_using_this_is_rejected() throws Exception {
+        String source = fixtures.load("inline-aggressive/anon-with-this/input/Foo.java");
+
+        InliningResult result = InliningEngine.inlineAll(source, "Foo.java");
+
+        assertThat(result.applied()).isEmpty();
+        assertThat(result.rejected())
+                .anyMatch(r -> r.reason().contains("'this'"));
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline — rejected: anonymous class uses 'this'")
+                .javaSection("Input", source)
+                .refactoring("flatten anonymous class", "anonymous Runnable",
+                        "rejected: 'this' in lambda would refer to the enclosing type, not the anonymous class")
+                .diagnostic(result.rejected().get(0).reason())
+                .build()
+        );
+    }
+
+    @Test
+    void anonymous_class_with_fields_is_rejected() throws Exception {
+        String source = fixtures.load("inline-aggressive/anon-with-fields/input/Foo.java");
+
+        InliningResult result = InliningEngine.inlineAll(source, "Foo.java");
+
+        assertThat(result.applied()).isEmpty();
+        assertThat(result.rejected())
+                .anyMatch(r -> r.reason().contains("body declarations"));
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline — rejected: anonymous class has fields")
+                .javaSection("Input", source)
+                .refactoring("flatten anonymous class", "anonymous Runnable",
+                        "rejected: anonymous class has field declarations beyond the SAM override")
+                .diagnostic(result.rejected().get(0).reason())
+                .build()
+        );
+    }
+
+    // -------------------------------------------------------------------------
     // Compilation helpers
     // -------------------------------------------------------------------------
 
