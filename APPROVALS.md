@@ -399,6 +399,8 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Aggressive inline: cross-type generic explicit receiver with typed return | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.cross_type_generic_explicit_receiver_with_typed_return_is_inlined.approved.md) |
 | Aggressive inline — rejected: cross-type generic explicit receiver with wildcard type argument | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.cross_type_generic_explicit_receiver_with_wildcard_is_rejected.approved.md) |
 | Aggressive inline: cross-type generic explicit receiver without type variable | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.cross_type_generic_explicit_receiver_without_type_var_is_inlined.approved.md) |
+| Aggressive inline: cross-type generic implicit receiver | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.cross_type_generic_implicit_receiver_is_inlined.approved.md) |
+| Aggressive inline — rejected: cross-type generic implicit receiver with raw type | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.cross_type_generic_implicit_receiver_raw_is_rejected.approved.md) |
 | Aggressive inline all: delegating constructor | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.delegating_constructor_inlined_all_passes.approved.md) |
 | Aggressive inline: delegating constructor | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.delegating_constructor_no_args_is_inlined.approved.md) |
 | Aggressive inline — rejected: chained delegating constructor | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.delegating_constructor_with_chained_this_is_rejected.approved.md) |
@@ -489,6 +491,7 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Test case | Approval |
 |-----------|----------|
 | Project inline: cross-type explicit receiver | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_explicit_receiver_is_inlined.approved.md) |
+| Project inline: cross-type generic instance method | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_generic_instance_method_is_inlined.approved.md) |
 | Project inline — rejected: cross-type import conflict | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_import_conflict_is_rejected.approved.md) |
 | Project inline: cross-type instance method and import | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_instance_method_is_inlined_with_import.approved.md) |
 | Project inline — rejected: cross-type private member | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.cross_type_private_member_is_rejected.approved.md) |

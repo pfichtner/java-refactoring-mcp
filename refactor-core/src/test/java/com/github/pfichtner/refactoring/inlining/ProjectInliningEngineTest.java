@@ -235,6 +235,31 @@ class ProjectInliningEngineTest {
     }
 
     @Test
+    void cross_type_generic_instance_method_is_inlined() throws Exception {
+        MavenProject project = project("cross-type-generic-instance");
+        Map<String, String> inputs = inputs("cross-type-generic-instance");
+
+        ProjectInliningResult result = InliningEngine.inlineProject(project);
+
+        assertThat(result.changedFiles()).hasSize(1);
+        assertThat(result.transformationCount()).isEqualTo(1);
+        assertThat(result.fixedPoint()).isTrue();
+
+        Map<String, String> sources = merged(inputs, result.changedFiles());
+        Path classes = compileProject(sources);
+        assertThat(invoke(classes, "com.example.app.StringBox", "run")).isEqualTo("Hello");
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Project inline: cross-type generic instance method")
+                .inputProject(inputs)
+                .refactoring("inline project", "`get()`",
+                        "inherited method from generic supertype Box<String>; type variable T substituted with String")
+                .outputProject(result.changedFiles())
+                .build()
+        );
+    }
+
+    @Test
     void project_batch_equals_per_file_inline_all() throws Exception {
         MavenProject project = project("same-type");
         ProjectInliningResult result = InliningEngine.inlineProject(project);

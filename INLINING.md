@@ -55,6 +55,18 @@ the parent `SimpleType` node with the full type node produced by `typeBindingToA
 instead of calling `SimpleName.setIdentifier`; `typeVarSubstitutionRejection` now only
 rejects raw types and wildcard/captured type arguments; the previously dead helper
 `typeVariableUsageRejection` and `bodyUsesTypeVariable` have been removed)
+and Phase 10 generic type-variable substitution for implicit-receiver cross-type
+instance calls (the hard-block "generic declaring types are not supported by cross-type
+inlining" in `SemanticSafetyAnalyzer.crossTypeRejection` is replaced by the same soft
+`typeVarSubstitutionRejection` check used by the explicit-receiver path; calls where
+the caller is a subtype of a generic declaring type and all type arguments at the
+supertype binding are concrete and non-wildcard now proceed to type-variable
+substitution via the existing `buildTypeVarSubstitution` / `substituteTypeVariables`
+path in `InlineMethodTransformation`; raw generic supertype extensions are rejected
+with the existing "raw generic type" diagnostic; two new single-file tests cover the
+success and raw-rejection cases; a new project-level test covers cross-package
+inheritance where `Box<String>.get()` is inlined into a `StringBox` subclass with
+T→String substitution)
 are complete. No existing public API was changed.
 
 Central question:
@@ -334,7 +346,9 @@ is preserved. Cross-object locking requires alias analysis and is out of scope.
 | Checked exception declared | Reject |
 | Generic method, varargs | Reject |
 | Synchronized method | Reject |
-| Cross-type instance on caller supertype, final/non-virtual, accessible, no `super`/generic | Accept |
+| Cross-type instance on caller supertype, final/non-virtual, accessible, no `super`; non-generic declaring type | Accept |
+| Cross-type instance on caller supertype, generic declaring type, all type args concrete and non-wildcard | Accept (type-variable substitution applied to result, params, and body) |
+| Cross-type instance on caller supertype, generic declaring type, raw extension (no type args) | Reject with raw-type diagnostic |
 | Cross-type static, declaring type has no static initializer or non-constant static field, accessible body | Accept (falls through to signature/body accessibility checks) |
 | Cross-type static, declaring type has static initializer block or non-constant static field initializer | Reject with class-initialization diagnostic |
 | Cross-type static, declaring type is not a TypeDeclaration (enum, annotation) | Reject conservatively |
@@ -618,7 +632,7 @@ conflicts instead of guessing.
 
 `refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.java`
 
-- 42 approval/semantic tests (3 new for Phase 7c generic explicit receiver).
+- 70 approval/semantic tests (2 new for Phase 10 implicit-receiver generic cross-type).
 - Successful outputs are compiled with the JDK compiler.
 - Runtime tests compile and invoke original and transformed classes, covering
   side-effecting arguments, pure single-use substitution, written/loop/lambda argument
@@ -634,7 +648,7 @@ conflicts instead of guessing.
 
 `refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/ProjectInliningEngineTest.java`
 
-- 12 approval/semantic tests for project-wide runs.
+- 15 approval/semantic tests for project-wide runs (1 new for Phase 10 generic cross-type instance).
 - Same-type fixture: two files change, both outputs compile and run.
 - Cross-type instance fixture: the subclass output gains the `Duration` import, compiles,
   and runs.
@@ -651,7 +665,7 @@ Fixtures live under
 `refactor-core/src/test/resources/fixtures/inline-aggressive/` and
 `refactor-core/src/test/resources/fixtures/projects/inline-aggressive-project/`.
 
-The full Maven test suite passes: 307 core + 86 CLI + 91 MCP tests (484 total).
+The full Maven test suite passes: 313 core + 86 CLI + 91 MCP tests (490 total).
 
 ### 5.4 What the spike proves
 

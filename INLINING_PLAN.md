@@ -487,20 +487,50 @@ array type arguments via structural node replacement:
 
 ---
 
+## Phase 10 — Generic type-variable substitution for implicit-receiver cross-type calls
+
+Status: **complete**.
+
+The hard-block `"generic declaring types are not supported by cross-type inlining"` in
+`SemanticSafetyAnalyzer.crossTypeRejection` (the implicit-receiver / supertype-inherited
+call path) is replaced by the same soft `typeVarSubstitutionRejection` check used by
+the explicit-receiver path. When the caller is a subtype of a generic declaring type and
+all type arguments at the supertype binding are concrete (no wildcard, no capture, non-raw),
+the call proceeds to `InlineMethodTransformation`, which already builds a type-variable
+substitution map from `binding.getDeclaringClass()` and applies it to result type,
+parameter-temp types, and body `SimpleName` nodes. No changes to
+`InlineMethodTransformation` were needed; the transformation already handled this case
+generically once the safety gate allowed it through.
+
+New fixtures and tests:
+- Single-file success: `cross-type-generic-implicit-receiver` — `StringBox extends Box<String>`
+  calling inherited `final T get()`, T→String substituted in result type and body.
+- Single-file rejection: `cross-type-generic-implicit-receiver-raw` — `RawBox extends GenericBox`
+  (raw), rejected with "raw generic type" diagnostic.
+- Project-level success: `cross-type-generic-instance` — `com.example.app.StringBox extends
+  Box<String>`, inherited `get()` inlined, `item` field returns `"Hello"` at runtime.
+
+Full reactor: 313 core + 86 CLI + 91 MCP tests (490 total) pass.
+
+### Commit
+
+`feat(inlining): generic substitution for implicit-receiver cross-type calls (Phase 10)`
+
+---
+
 ## Definition of done for the next continuation
 
-- Phases 1–4, Phase 5a–5f, Phase 6 (CLI/MCP exposure), Phase 7a–7c, Phase 8
-  (type-variable substitution for cross-type generic explicit receiver inlining), and
-  Phase 9 (complex-type-argument structural substitution) are complete.
+- Phases 1–4, Phase 5a–5f, Phase 6 (CLI/MCP exposure), Phase 7a–7c, Phase 8, Phase 9,
+  and Phase 10 (generic type-variable substitution for implicit-receiver cross-type calls)
+  are complete.
 - Existing public APIs are unchanged.
 - New operations are opt-in.
 - Success paths compile and approvals were reviewed.
 - Rejections are explicit and tested.
 - Full reactor passes on JDK 21.
 - `INLINING.md` and `INLINING_PLAN.md` reflect the delivered state.
-- Remaining limitations: the `crossTypeRejection` path (non-explicit-receiver
-  supertype-inherited calls) still rejects all generic declaring types; type-variable
-  substitution is only implemented for the explicit-receiver cross-type path.
-- Next phase: extend generic substitution to the `crossTypeRejection` path (implicit
-  receiver, supertype-inherited calls where the caller's superclass carries the type
-  arguments), or superclass/interface/wrapper flattening (separate design review required).
+- Remaining limitations: cross-type static calls on generic declaring types are still
+  conservatively rejected; superclass/interface/wrapper flattening requires a separate
+  design review.
+- Next phase: superclass/interface/wrapper flattening (separate design review required),
+  or additional safe call positions for existing transformations.

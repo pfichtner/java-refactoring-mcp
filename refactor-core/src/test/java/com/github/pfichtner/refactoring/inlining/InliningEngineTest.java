@@ -499,6 +499,46 @@ class InliningEngineTest {
     }
 
     @Test
+    void cross_type_generic_implicit_receiver_is_inlined() throws Exception {
+        String source = fixtures.load(
+                "inline-aggressive/cross-type-generic-implicit-receiver/input/StringBox.java");
+        int offset = Fixtures.offsetOf(source, "get();");
+
+        String result = InliningEngine.inlineAt(source, "StringBox.java", offset);
+        assertCompiles("StringBox", result);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: cross-type generic implicit receiver")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`get()` at " + Fixtures.lineCol(source, offset),
+                        "inherited method from generic supertype; type variable T substituted with String")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void cross_type_generic_implicit_receiver_raw_is_rejected() throws Exception {
+        String source = fixtures.load(
+                "inline-aggressive/cross-type-generic-implicit-receiver-raw/input/RawBox.java");
+        int offset = Fixtures.offsetOf(source, "get();");
+
+        InlineRejectedException exception = assertThatExceptionOfType(InlineRejectedException.class)
+                .isThrownBy(() -> InliningEngine.inlineAt(source, "RawBox.java", offset))
+                .actual();
+        assertThat(exception.getMessage()).contains("raw generic type");
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline — rejected: cross-type generic implicit receiver with raw type")
+                .javaSection("Input", source)
+                .refactoring("inline method", "`get()` at " + Fixtures.lineCol(source, offset),
+                        "raw generic type: type substitution not possible")
+                .diagnostic(exception.getMessage())
+                .build()
+        );
+    }
+
+    @Test
     void checked_exception_method_is_rejected() throws Exception {
         String source = fixtures.load("inline-aggressive/unsafe-checked-exception/input/Foo.java");
         int offset = Fixtures.offsetOf(source, "read()");

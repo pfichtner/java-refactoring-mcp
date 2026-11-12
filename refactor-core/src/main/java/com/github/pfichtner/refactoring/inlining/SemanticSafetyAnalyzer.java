@@ -157,7 +157,8 @@ final class SemanticSafetyAnalyzer {
             return "cross-type callee is not a supertype of the caller; 'this' would change";
         }
         if (declaringType.getTypeDeclaration().getTypeParameters().length > 0) {
-            return "generic declaring types are not supported by cross-type inlining";
+            String typeVarRejection = typeVarSubstitutionRejection(decl, declaringType);
+            if (typeVarRejection != null) return typeVarRejection;
         }
         String superUsage = superOrQualifiedThis(decl.getBody());
         if (superUsage != null) return superUsage;
