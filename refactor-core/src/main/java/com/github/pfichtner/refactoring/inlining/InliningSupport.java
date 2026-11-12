@@ -105,16 +105,21 @@ final class InliningSupport {
         return found[0];
     }
 
-    static MethodInvocation findInvocation(CompilationUnit cu, int offset) {
+    /**
+     * Finds the innermost {@link MethodInvocation} or {@link ConstructorInvocation}
+     * at {@code offset}, or throws {@link InlineRejectedException} when the node at
+     * that position is a call type that is not supported.
+     */
+    static ASTNode findCallNode(CompilationUnit cu, int offset) {
         ASTNode node = NodeFinder.perform(cu, offset, 1);
         while (node != null) {
-            if (node instanceof MethodInvocation invocation) return invocation;
+            if (node instanceof MethodInvocation) return node;
+            if (node instanceof ConstructorInvocation) return node;
             if (node instanceof SuperMethodInvocation) {
                 throw new InlineRejectedException(
                         "super method calls are not supported by aggressive inlining");
             }
             if (node instanceof ClassInstanceCreation
-                    || node instanceof ConstructorInvocation
                     || node instanceof SuperConstructorInvocation) {
                 throw new InlineRejectedException(
                         "constructor calls are not supported by aggressive inlining");
@@ -126,6 +131,15 @@ final class InliningSupport {
             node = node.getParent();
         }
         throw new InlineRejectedException("No method call found at offset " + offset + ".");
+    }
+
+    /** Convenience wrapper that asserts the found call node is a {@link MethodInvocation}. */
+    static MethodInvocation findInvocation(CompilationUnit cu, int offset) {
+        ASTNode node = findCallNode(cu, offset);
+        if (node instanceof MethodInvocation mi) return mi;
+        throw new InlineRejectedException(
+                "No method invocation found at offset " + offset
+                        + "; found " + node.getClass().getSimpleName() + " instead.");
     }
 
     /**

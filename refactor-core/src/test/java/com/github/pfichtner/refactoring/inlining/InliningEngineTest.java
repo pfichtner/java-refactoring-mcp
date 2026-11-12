@@ -1076,6 +1076,123 @@ class InliningEngineTest {
     }
 
     // -------------------------------------------------------------------------
+    // Phase 5d — Delegating constructor inlining
+    // -------------------------------------------------------------------------
+
+    @Test
+    void delegating_constructor_no_args_is_inlined() throws Exception {
+        String source = fixtures.load("inline-aggressive/delegating-constructor/input/Counter.java");
+        int offset = Fixtures.offsetOf(source, "this(0)");
+
+        String result = InliningEngine.inlineAt(source, "Counter.java", offset);
+        assertCompiles("Counter", result);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: delegating constructor")
+                .javaSection("Input", source)
+                .refactoring("inline constructor", "`this(0)` at " + Fixtures.lineCol(source, offset),
+                        "this() call replaced by target constructor body")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void delegating_constructor_with_params_is_inlined() throws Exception {
+        String source = fixtures.load("inline-aggressive/delegating-constructor-params/input/Range.java");
+        int offset = Fixtures.offsetOf(source, "this(start, start + 10)");
+
+        String result = InliningEngine.inlineAt(source, "Range.java", offset);
+        assertCompiles("Range", result);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: delegating constructor with params")
+                .javaSection("Input", source)
+                .refactoring("inline constructor",
+                        "`this(start, start + 10)` at " + Fixtures.lineCol(source, offset),
+                        "parameters bound to temporaries; this() call replaced by target body")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void delegating_constructor_with_early_return_is_inlined() throws Exception {
+        String source = fixtures.load(
+                "inline-aggressive/delegating-constructor-early-return/input/Validated.java");
+        int offset = Fixtures.offsetOf(source, "this(0)");
+
+        String result = InliningEngine.inlineAt(source, "Validated.java", offset);
+        assertCompiles("Validated", result);
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline: delegating constructor with early return")
+                .javaSection("Input", source)
+                .refactoring("inline constructor", "`this(0)` at " + Fixtures.lineCol(source, offset),
+                        "early return rewritten to labeled break; this() call replaced by target body")
+                .javaSection("Output", result)
+                .build()
+        );
+    }
+
+    @Test
+    void delegating_constructor_inlined_all_passes() throws Exception {
+        String source = fixtures.load("inline-aggressive/delegating-constructor/input/Counter.java");
+
+        InliningResult result = InliningEngine.inlineAll(source, "Counter.java");
+        assertCompiles("Counter", result.source());
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline all: delegating constructor")
+                .javaSection("Input", source)
+                .refactoring("inline all", "`Counter()` delegating constructor",
+                        "this() call replaced by target constructor body; fixed point reached")
+                .javaSection("Output", result.source())
+                .build()
+        );
+    }
+
+    @Test
+    void delegating_constructor_with_explicit_super_is_rejected() throws Exception {
+        String source = fixtures.load("inline-aggressive/unsafe-delegating-super-call/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "this(0)");
+
+        InlineRejectedException exception = assertThatExceptionOfType(InlineRejectedException.class)
+                .isThrownBy(() -> InliningEngine.inlineAt(source, "Foo.java", offset))
+                .actual();
+        assertThat(exception.getMessage()).contains("super()");
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline — rejected: delegating constructor with super()")
+                .javaSection("Input", source)
+                .refactoring("inline constructor", "`this(0)` at " + Fixtures.lineCol(source, offset),
+                        "rejected: target has explicit super() call")
+                .diagnostic(exception.getMessage())
+                .build()
+        );
+    }
+
+    @Test
+    void delegating_constructor_with_chained_this_is_rejected() throws Exception {
+        String source = fixtures.load("inline-aggressive/unsafe-delegating-chain/input/Foo.java");
+        int offset = Fixtures.offsetOf(source, "this(42)");
+
+        InlineRejectedException exception = assertThatExceptionOfType(InlineRejectedException.class)
+                .isThrownBy(() -> InliningEngine.inlineAt(source, "Foo.java", offset))
+                .actual();
+        assertThat(exception.getMessage()).contains("chain");
+
+        Approvals.verify(
+            RefactoringStoryBoard.titled("Aggressive inline — rejected: chained delegating constructor")
+                .javaSection("Input", source)
+                .refactoring("inline constructor", "`this(42)` at " + Fixtures.lineCol(source, offset),
+                        "rejected: target also delegates via this()")
+                .diagnostic(exception.getMessage())
+                .build()
+        );
+    }
+
+    // -------------------------------------------------------------------------
     // Compilation helpers
     // -------------------------------------------------------------------------
 

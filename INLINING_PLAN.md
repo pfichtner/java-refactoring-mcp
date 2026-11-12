@@ -228,7 +228,15 @@ Implement one item at a time, each with its own safety analyzer and fixtures:
    with that initializer. Atomic initializers substitute directly; compound initializers
    are wrapped in `ParenthesizedExpression`. Both unqualified and `this.field` access
    are handled. The engine runs the final-field loop after the constant loop.
-4. Constructor inlining for simple constructors only.
+4. Constructor inlining for simple constructors only. **Status: complete.**
+   `ConstructorInliningTransformation` inlines `this(args)` delegating constructor calls
+   by replacing them with the target constructor's body. Parameters are captured in
+   temporaries when not pure-single-use; pure single-use arguments are substituted
+   directly. Early `return;` → labeled `break` (same mechanism as void method inlining).
+   Rejected: explicit `super()` in target, chained `this()`, checked exceptions, generics,
+   varargs. `InliningEngine.inlineAt` dispatches on `ConstructorInvocation`; `inlineAll`
+   and `inlineProject` add a constructor-inlining tier between method and constant tiers.
+   Six approval tests: three successes and two rejections.
 5. Delegation elimination as a composed transform.
 6. Lambda and anonymous-class flattening.
 7. Superclass/interface/wrapper flattening only after a separate design review.
@@ -307,12 +315,13 @@ Resolve these before the phase that needs them:
 
 ## Definition of done for the next continuation
 
-- Phases 1–4, Phase 5a (getter inlining), Phase 5b (constant inlining), and Phase 5c
-  (private final instance-field inlining) are complete.
+- Phases 1–4, Phase 5a (getter inlining), Phase 5b (constant inlining), Phase 5c
+  (private final instance-field inlining), and Phase 5d (delegating constructor
+  inlining) are complete.
 - Existing public APIs are unchanged.
 - New operations are opt-in.
 - Success paths compile and approvals were reviewed.
 - Rejections are explicit and tested.
-- Full reactor passes on JDK 21 (467 tests).
+- Full reactor passes on JDK 21 (469 tests).
 - `INLINING.md` and `INLINING_PLAN.md` reflect the delivered state.
-- Next phase: Phase 5d (constructor inlining for simple constructors).
+- Next phase: Phase 5e (delegation elimination as a composed transform).

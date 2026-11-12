@@ -387,6 +387,12 @@ Each link opens the approval showing input code, the refactoring applied, and ex
 | Aggressive inline: static final String constant | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.constant_string_field_is_inlined.approved.md) |
 | Aggressive inline — rejected: constructor call | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.constructor_call_is_rejected.approved.md) |
 | Aggressive inline — rejected: cross-type explicit receiver | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.cross_type_explicit_receiver_is_rejected.approved.md) |
+| Aggressive inline all: delegating constructor | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.delegating_constructor_inlined_all_passes.approved.md) |
+| Aggressive inline: delegating constructor | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.delegating_constructor_no_args_is_inlined.approved.md) |
+| Aggressive inline — rejected: chained delegating constructor | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.delegating_constructor_with_chained_this_is_rejected.approved.md) |
+| Aggressive inline: delegating constructor with early return | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.delegating_constructor_with_early_return_is_inlined.approved.md) |
+| Aggressive inline — rejected: delegating constructor with super() | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.delegating_constructor_with_explicit_super_is_rejected.approved.md) |
+| Aggressive inline: delegating constructor with params | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.delegating_constructor_with_params_is_inlined.approved.md) |
 | Aggressive inline — rejected: direct recursion | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.direct_recursion_is_rejected.approved.md) |
 | Aggressive inline: explicit receiver captured | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.explicit_receiver_is_captured_once.approved.md) |
 | Aggressive inline: explicit receiver null check | [→](refactor-core/src/test/java/com/github/pfichtner/refactoring/inlining/InliningEngineTest.explicit_receiver_null_check_is_preserved.approved.md) |

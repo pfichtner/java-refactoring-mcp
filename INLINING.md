@@ -7,12 +7,14 @@ expressions with pure preceding sub-expressions), Phase 4 call-graph analysis
 (mutual recursion detection, opt-in unused-declaration removal), Phase 5a getter
 inlining (direct expression substitution for single-return pure-body methods),
 Phase 5b compile-time constant inlining (replacing static final field references
-with their literal values), and Phase 5c private final instance-field inlining
+with their literal values), Phase 5c private final instance-field inlining
 (replacing references to private final non-static fields whose declaration
-initializer is a pure expression with that initializer) are complete. Cross-type
-static inlining, class-initialization analysis, and CLI/MCP wiring remain deferred.
-The engine is an isolated prototype, not yet wired into CLI/MCP. No existing public
-API was changed.
+initializer is a pure expression with that initializer), and Phase 5d delegating
+constructor inlining (replacing this(args) constructor-delegation calls with the
+body of the target constructor) are complete. Cross-type static inlining,
+class-initialization analysis, and CLI/MCP wiring remain deferred. The engine is
+an isolated prototype, not yet wired into CLI/MCP. No existing public API was
+changed.
 
 Central question:
 
@@ -456,6 +458,18 @@ over "we ran out of budget".
   reference inlined in one pass may expose new method or constant candidates in the next.
   Four approval tests cover `int`, `String`, `this`-qualified access, and compound
   arithmetic initializers.
+- Phase 5d delegating constructor inlining: `ConstructorInliningTransformation` inlines
+  `this(args)` delegating constructor calls by replacing them with the body of the target
+  constructor. Parameters are bound to temporaries when not pure-single-use; pure
+  single-use arguments are substituted directly. Early `return;` statements in the target
+  body are rewritten to a labeled `break` (the same mechanism as void method inlining).
+  Rejected cases: target has an explicit `super()` call; target itself delegates via
+  `this()` (chain); target declares a checked exception; target has generic type
+  parameters or varargs. `InlineEngine.inlineAt` dispatches to the constructor path when
+  the offset lands on a `ConstructorInvocation` node. `inlineAll` and `inlineProject`
+  collect `ConstructorInvocation` candidates as a tier between method-call inlining and
+  constant inlining. Six approval tests: three successes (`no-args`, `params`, `early-return`
+  plus the `inlineAll` variant) and two rejections (`super()`, chained `this()`).
 
 ### 5.2 Algorithm
 
@@ -670,5 +684,6 @@ Phase 4 (call graph and cleanup) is complete, Phase 5a (getter inlining) is comp
 Phase 5b (compile-time constant inlining) is complete, and Phase 5c (private final
 instance-field inlining) is complete. Dispatch analysis for virtual methods is not
 implemented; virtual calls remain rejected. Cross-type static inlining still waits for
-exact class-initialization analysis. The next implementation step is Phase 5d
-(constructor inlining for simple constructors).
+exact class-initialization analysis. Phase 5d (delegating constructor inlining)
+is complete. The next implementation step is Phase 5e (delegation elimination as a
+composed transform).

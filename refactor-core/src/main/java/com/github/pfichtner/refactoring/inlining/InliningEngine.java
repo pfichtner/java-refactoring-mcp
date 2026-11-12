@@ -1,6 +1,7 @@
 package com.github.pfichtner.refactoring.inlining;
 
 import static com.github.pfichtner.refactoring.inlining.InliningSupport.enclosingMethod;
+import static com.github.pfichtner.refactoring.inlining.InliningSupport.findCallNode;
 import static com.github.pfichtner.refactoring.inlining.InliningSupport.findInvocation;
 import static com.github.pfichtner.refactoring.inlining.InliningSupport.findMethodDeclaration;
 import static org.eclipse.jdt.core.dom.Modifier.isPrivate;
@@ -19,8 +20,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.ConstructorInvocation;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
@@ -50,7 +53,11 @@ public final class InliningEngine {
     /** Inlines the call at {@code offset}, or throws if the transformation is unsafe. */
     public static String inlineAt(String source, String unitName, int offset) {
         CompilationUnit cu = JdtProjectSources.parseUnitWithBindings(source, unitName);
-        MethodInvocation call = findInvocation(cu, offset);
+        ASTNode callNode = findCallNode(cu, offset);
+        if (callNode instanceof ConstructorInvocation constructorCall) {
+            return inlineConstructorAt(cu, source, constructorCall);
+        }
+        MethodInvocation call = (MethodInvocation) callNode;
         IMethodBinding binding = call.resolveMethodBinding();
         if (binding == null) {
             throw new InlineRejectedException("Cannot resolve method call at offset " + offset + ".");
@@ -65,6 +72,24 @@ public final class InliningEngine {
             throw new InlineRejectedException(reason);
         }
         return tryTransform(cu, source, call, decl, binding);
+    }
+
+    private static String inlineConstructorAt(
+            CompilationUnit cu, String source, ConstructorInvocation call) {
+        IMethodBinding binding = call.resolveConstructorBinding();
+        if (binding == null) {
+            throw new InlineRejectedException("Cannot resolve constructor binding.");
+        }
+        MethodDeclaration decl = findMethodDeclaration(cu, binding);
+        if (decl == null) {
+            throw new InlineRejectedException(
+                    "Target constructor is not declared in this compilation unit.");
+        }
+        String reason = ConstructorInliningTransformation.rejectionReason(cu, call, decl, binding);
+        if (reason != null) {
+            throw new InlineRejectedException(reason);
+        }
+        return ConstructorInliningTransformation.apply(cu, source, call, decl, binding);
     }
 
     public static InliningResult inlineAll(String source, String unitName) {
@@ -139,7 +164,52 @@ public final class InliningEngine {
                 }
             }
 
-            // If no method was inlined this pass, try compile-time constant field references.
+            // If no method was inlined this pass, try delegating constructor invocations.
+            if (!progress) {
+                for (ConstructorInvocation constructorCall
+                        : ConstructorInliningTransformation.collectCandidates(cu)) {
+                    IMethodBinding binding = constructorCall.resolveConstructorBinding();
+                    if (binding == null) continue;
+                    MethodDeclaration decl = findMethodDeclaration(cu, binding);
+                    if (decl == null) continue;
+
+                    String constructorName = binding.getName();
+                    int offset = constructorCall.getStartPosition();
+
+                    String reason = ConstructorInliningTransformation.rejectionReason(
+                            cu, constructorCall, decl, binding);
+                    if (reason != null) {
+                        addRejection(rejected, rejectedKeys, constructorName, offset, reason);
+                        continue;
+                    }
+                    try {
+                        String next = ConstructorInliningTransformation.apply(
+                                cu, current, constructorCall, decl, binding);
+                        if (next.equals(current)) {
+                            addRejection(rejected, rejectedKeys, constructorName, offset,
+                                    "transformation produced no change");
+                            continue;
+                        }
+                        int growth = next.length() - source.length();
+                        if (growth > config.maxCodeGrowthChars()) {
+                            budgetBlocked = true;
+                            addRejection(rejected, rejectedKeys, constructorName, offset,
+                                    "code growth limit exceeded (" + growth + " > "
+                                            + config.maxCodeGrowthChars() + " chars)");
+                            continue;
+                        }
+                        current = next;
+                        applied.add(new InliningResult.Applied(constructorName, offset));
+                        inlinedKeys.add(binding.getMethodDeclaration().getKey());
+                        progress = true;
+                        break;
+                    } catch (InlineRejectedException e) {
+                        addRejection(rejected, rejectedKeys, constructorName, offset, e.getMessage());
+                    }
+                }
+            }
+
+            // If no method or constructor was inlined, try compile-time constant field references.
             if (!progress) {
                 for (Name constantRef : ConstantInliningTransformation.collectCandidates(cu)) {
                     String next = ConstantInliningTransformation.tryInline(cu, current, constantRef);
@@ -274,7 +344,56 @@ public final class InliningEngine {
                     }
                 }
 
-                // If no method was inlined in this file, try constant field references.
+                // If no method was inlined in this file, try delegating constructors.
+                if (!appliedInFile) {
+                    for (ConstructorInvocation constructorCall
+                            : ConstructorInliningTransformation.collectCandidates(cu)) {
+                        IMethodBinding binding = constructorCall.resolveConstructorBinding();
+                        if (binding == null) continue;
+                        MethodDeclaration decl = snapshot.declaration(binding);
+                        if (decl == null) decl = findMethodDeclaration(cu, binding);
+                        if (decl == null) continue;
+
+                        String constructorName = binding.getName();
+                        int offset = constructorCall.getStartPosition();
+
+                        String reason = ConstructorInliningTransformation.rejectionReason(
+                                cu, constructorCall, decl, binding);
+                        if (reason != null) {
+                            addProjectRejection(rejected, rejectedKeys, file,
+                                    constructorName, offset, reason);
+                            continue;
+                        }
+                        try {
+                            String next = ConstructorInliningTransformation.apply(
+                                    cu, source, constructorCall, decl, binding);
+                            if (next.equals(source)) {
+                                addProjectRejection(rejected, rejectedKeys, file, constructorName,
+                                        offset, "transformation produced no change");
+                                continue;
+                            }
+                            int growth = totalLength(current, file, next) - originalLength;
+                            if (growth > config.maxCodeGrowthChars()) {
+                                budgetBlocked = true;
+                                addProjectRejection(rejected, rejectedKeys, file, constructorName,
+                                        offset, "code growth limit exceeded (" + growth
+                                                + " > " + config.maxCodeGrowthChars() + " chars)");
+                                continue;
+                            }
+                            current.put(file, next);
+                            applied.add(new ProjectInliningResult.Applied(file, constructorName, offset));
+                            inlinedKeys.add(binding.getMethodDeclaration().getKey());
+                            progress = true;
+                            appliedInFile = true;
+                            break;
+                        } catch (InlineRejectedException e) {
+                            addProjectRejection(rejected, rejectedKeys, file,
+                                    constructorName, offset, e.getMessage());
+                        }
+                    }
+                }
+
+                // If no method or constructor was inlined in this file, try constant field references.
                 if (!appliedInFile) {
                     for (Name constantRef : ConstantInliningTransformation.collectCandidates(cu)) {
                         String next = ConstantInliningTransformation.tryInline(cu, source, constantRef);
